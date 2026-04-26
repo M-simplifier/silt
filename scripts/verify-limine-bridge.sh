@@ -60,6 +60,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_boot_info_ok_bytes[20] __
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_boot_span_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 83u, 80u, 65u, 78u, 95u, 79u, 75u, 33u, 33u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the boot-span marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
   exit 1
@@ -162,6 +167,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_boot_info_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the boot-info marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_boot_span_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the boot-span marker pointer from static bytes" >&2
   exit 1
 fi
 
