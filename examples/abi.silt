@@ -1,0 +1,22 @@
+; Hosted ABI widening seed for stage0: layout-by-value externs plus pointer
+; externs returning Unit.
+
+(layout Header 16 8
+  ((magic U64 0)
+   (next Addr 8)))
+
+(extern header-magic (Pi ((hdr Header)) U64) header_magic)
+(extern header-zero (Pi ((ptr (Ptr Header))) Unit) header_zero)
+
+(claim inspect-header (Pi ((ptr (Ptr Header))) (Eff Heap U64)))
+(def inspect-header
+  (fn ((ptr (Ptr Header)))
+    (bind Heap Header U64
+      (load Header ptr)
+      (fn ((hdr 1 Header))
+        (pure Heap U64 (header-magic hdr))))))
+
+(claim call-header-zero (Pi ((ptr (Ptr Header))) Unit))
+(def call-header-zero
+  (fn ((ptr (Ptr Header)))
+    (header-zero ptr)))

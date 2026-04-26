@@ -1,0 +1,106 @@
+; Layout value construction seed for stage0: field-complete nominal aggregates
+; as real source-level values.
+
+(layout Header 16 8
+  ((magic U64 0)
+   (next Addr 8)))
+
+(extern header-magic (Pi ((hdr Header)) U64) header_magic)
+
+(claim header-template Header)
+(def header-template
+  (layout Header
+    ((magic (u64 77))
+     (next (addr 4096)))))
+
+(claim header-template-positional Header)
+(def header-template-positional
+  (layout-values Header
+    (u64 77)
+    (addr 4096)))
+
+(claim header-template-positional-next Addr)
+(def header-template-positional-next
+  (field Header next header-template-positional))
+
+(claim header-template-magic U64)
+(def header-template-magic
+  (header-magic header-template))
+
+(claim header-template-next Addr)
+(def header-template-next
+  (field Header next header-template))
+
+(claim header-magic-from-arg (Pi ((hdr Header)) U64))
+(def header-magic-from-arg
+  (fn ((hdr Header))
+    (field Header magic hdr)))
+
+(claim retarget-header (Pi ((hdr Header) (next-addr Addr)) Header))
+(def retarget-header
+  (fn ((hdr Header) (next-addr Addr))
+    (with-field Header next hdr next-addr)))
+
+(claim retarget-template Header)
+(def retarget-template
+  (with-field Header next header-template (addr 8192)))
+
+(claim retarget-template-next Addr)
+(def retarget-template-next
+  (field Header next retarget-template))
+
+(claim retargeted-magic-from-arg (Pi ((hdr Header) (next-addr Addr)) U64))
+(def retargeted-magic-from-arg
+  (fn ((hdr Header) (next-addr Addr))
+    (field Header magic (with-field Header next hdr next-addr))))
+
+(claim repack-header (Pi ((hdr Header) (magic U64) (next-addr Addr)) Header))
+(def repack-header
+  (fn ((hdr Header) (magic U64) (next-addr Addr))
+    (with-fields Header hdr
+      ((magic magic)
+       (next next-addr)))))
+
+(claim repacked-template Header)
+(def repacked-template
+  (with-fields Header header-template
+    ((magic (u64 99))
+     (next (addr 12288)))))
+
+(claim repacked-template-magic U64)
+(def repacked-template-magic
+  (field Header magic repacked-template))
+
+(claim repacked-template-next Addr)
+(def repacked-template-next
+  (field Header next repacked-template))
+
+(claim override-template-next Addr)
+(def override-template-next
+  (field Header next
+    (with-fields Header header-template
+      ((next (addr 8192))
+       (next (addr 12288))))))
+
+(claim let-layout-next Addr)
+(def let-layout-next
+  (let-layout Header ((next next)) header-template next))
+
+(claim let-layout-magic-from-arg (Pi ((hdr Header)) U64))
+(def let-layout-magic-from-arg
+  (fn ((hdr Header))
+    (let-layout Header ((magic magic) (next 0 ignored)) hdr magic)))
+
+(claim store-header-template (Pi ((dst (Ptr Header))) (Eff Heap Unit)))
+(def store-header-template
+  (fn ((dst (Ptr Header)))
+    (store Header dst header-template)))
+
+(claim store-and-read-magic (Pi ((dst (Ptr Header))) (Eff Heap U64)))
+(def store-and-read-magic
+  (fn ((dst (Ptr Header)))
+    (bind Heap Unit U64
+      (store Header dst header-template)
+      (fn ((done 1 Unit))
+        (let ((ignored 0 done))
+          (load U64 (ptr-field Header magic dst)))))))

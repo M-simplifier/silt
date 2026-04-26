@@ -1,0 +1,198 @@
+; Stage1-style examples with lets, generic data, matching, nat-elim, quantities,
+; effects, and U64 primitives.
+
+(claim two Nat)
+(def two (let ((one (S Z))) (S one)))
+
+(claim not (Pi ((b Bool)) Bool))
+(def not
+  (fn ((b Bool))
+    (match b
+      ((True) False)
+      ((False) True))))
+
+(claim add (Pi ((a Nat) (b Nat)) Nat))
+(def add
+  (fn ((a Nat) (b Nat))
+    (nat-elim Nat
+      b
+      (fn ((k Nat) (rec Nat)) (S rec))
+      a)))
+
+(claim three Nat)
+(def three (add two (S Z)))
+
+(claim choose-left (Pi ((A 0 Type) (B 0 Type) (x 1 A) (y 0 B)) A))
+(def choose-left
+  (fn ((A 0 Type) (B 0 Type) (x 1 A) (y 0 B))
+    x))
+
+(claim erase-first (Pi ((proof 0 Nat) (x 1 Nat)) Nat))
+(def erase-first
+  (fn ((proof 0 Nat) (x 1 Nat))
+    x))
+
+(claim word-answer U64)
+(def word-answer (u64-add (u64 40) (u64 2)))
+
+(claim word-inc (Pi ((x U64)) U64))
+(def word-inc
+  (fn ((x U64))
+    (u64-add x (u64 1))))
+
+(claim eff-three (Eff Console Console Nat))
+(def eff-three
+  (bind Console Console Console Nat Nat
+    (pure Console Nat (S Z))
+    (fn ((x 1 Nat))
+      (pure Console Nat (S x)))))
+
+(claim pred (Pi ((n Nat)) Nat))
+(def pred
+  (fn ((n Nat))
+    (match n
+      ((Z) Z)
+      ((S k) k))))
+
+(data Option ((A 0 Type))
+  (None)
+  (Some A))
+
+(claim unwrap-or (Pi ((A 0 Type) (fallback A) (opt (Option A))) A))
+(def unwrap-or
+  (fn ((A 0 Type) (fallback A) (opt (Option A)))
+    (match opt
+      ((None) fallback)
+      ((Some value) value))))
+
+(claim picked Nat)
+(def picked
+  (unwrap-or Nat (S Z) (Some Nat Z)))
+
+(claim page-align-down (Pi ((x U64)) U64))
+(def page-align-down
+  (fn ((x U64))
+    (u64-shl (u64-shr x (u64 12)) (u64 12))))
+
+(claim u64-size U64)
+(def u64-size
+  (size-of U64))
+
+(claim u64-align U64)
+(def u64-align
+  (align-of U64))
+
+(layout Header 16 8
+  ((magic U64 0)
+   (next Addr 8)))
+
+(claim header-size U64)
+(def header-size
+  (size-of Header))
+
+(claim header-align U64)
+(def header-align
+  (align-of Header))
+
+(claim header-magic-offset U64)
+(def header-magic-offset
+  (field-offset Header magic))
+
+(claim header-next-offset U64)
+(def header-next-offset
+  (field-offset Header next))
+
+(claim align-up (Pi ((x U64) (align U64)) U64))
+(def align-up
+  (fn ((x U64) (align U64))
+    (u64-mul
+      (u64-div (u64-add x (u64-sub align (u64 1))) align)
+      align)))
+
+(claim aligned-up U64)
+(def aligned-up
+  (align-up (u64 4105) (u64 4096)))
+
+(claim page-count (Pi ((bytes U64)) U64))
+(def page-count
+  (fn ((bytes U64))
+    (u64-div (u64-add bytes (u64 4095)) (u64 4096))))
+
+(claim page-count-5000 U64)
+(def page-count-5000
+  (page-count (u64 5000)))
+
+(claim heap-base Addr)
+(def heap-base (addr 4096))
+
+(claim heap-next Addr)
+(def heap-next
+  (addr-add heap-base (u64 64)))
+
+(claim heap-span U64)
+(def heap-span
+  (addr-diff heap-next heap-base))
+
+(claim heap-ptr (Ptr U64))
+(def heap-ptr
+  (ptr-from-addr U64 heap-base))
+
+(claim heap-ptr-next (Ptr U64))
+(def heap-ptr-next
+  (ptr-add U64 heap-ptr (u64 8)))
+
+(claim heap-ptr-addr Addr)
+(def heap-ptr-addr
+  (ptr-to-addr U64 heap-ptr-next))
+
+(claim heap-ptr-step (Ptr U64))
+(def heap-ptr-step
+  (ptr-step U64 heap-ptr (u64 1)))
+
+(claim heap-ptr-step-addr Addr)
+(def heap-ptr-step-addr
+  (ptr-to-addr U64 heap-ptr-step))
+
+(claim header-base (Ptr Header))
+(def header-base
+  (ptr-from-addr Header (addr 8192)))
+
+(claim header-magic-ptr (Ptr U64))
+(def header-magic-ptr
+  (ptr-field Header magic header-base))
+
+(claim header-next-ptr (Ptr Addr))
+(def header-next-ptr
+  (ptr-field Header next header-base))
+
+(claim header-next-ptr-addr Addr)
+(def header-next-ptr-addr
+  (ptr-to-addr Addr header-next-ptr))
+
+(claim header-step (Ptr Header))
+(def header-step
+  (ptr-step Header header-base (u64 2)))
+
+(claim header-step-addr Addr)
+(def header-step-addr
+  (ptr-to-addr Header header-step))
+
+(claim bump-addr (Pi ((base Addr) (bytes U64)) Addr))
+(def bump-addr
+  (fn ((base Addr) (bytes U64))
+    (addr-add base bytes)))
+
+(claim bump-ptr (Pi ((base (Ptr U64)) (bytes U64)) (Ptr U64)))
+(def bump-ptr
+  (fn ((base (Ptr U64)) (bytes U64))
+    (ptr-add U64 base bytes)))
+
+(claim step-ptr (Pi ((base (Ptr U64)) (count U64)) (Ptr U64)))
+(def step-ptr
+  (fn ((base (Ptr U64)) (count U64))
+    (ptr-step U64 base count)))
+
+(claim step-header (Pi ((base (Ptr Header)) (count U64)) (Ptr Header)))
+(def step-header
+  (fn ((base (Ptr Header)) (count U64))
+    (ptr-step Header base count)))

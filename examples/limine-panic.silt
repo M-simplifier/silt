@@ -1,0 +1,128 @@
+; Limine panic entry fragment.
+; Check or emit with examples/limine-serial.silt before this file.
+
+(data PanicSmoke ())
+(data PanicOom ())
+(data PanicInvariant ())
+(data KernelPanicked ((Cause 0 Type)))
+
+(claim panic-smoke-message SerialMsg11)
+(def panic-smoke-message
+  (layout-values SerialMsg11
+    (u64 83)
+    (u64 73)
+    (u64 76)
+    (u64 84)
+    (u64 95)
+    (u64 80)
+    (u64 65)
+    (u64 78)
+    (u64 73)
+    (u64 67)
+    (u64 10)))
+
+(claim panic-oom-message SerialMsg15)
+(def panic-oom-message
+  (layout-values SerialMsg15
+    (u64 83)
+    (u64 73)
+    (u64 76)
+    (u64 84)
+    (u64 95)
+    (u64 80)
+    (u64 65)
+    (u64 78)
+    (u64 73)
+    (u64 67)
+    (u64 95)
+    (u64 79)
+    (u64 79)
+    (u64 77)
+    (u64 10)))
+
+(claim panic-invariant-message SerialMsg15)
+(def panic-invariant-message
+  (layout-values SerialMsg15
+    (u64 83)
+    (u64 73)
+    (u64 76)
+    (u64 84)
+    (u64 95)
+    (u64 80)
+    (u64 65)
+    (u64 78)
+    (u64 73)
+    (u64 67)
+    (u64 95)
+    (u64 73)
+    (u64 78)
+    (u64 86)
+    (u64 10)))
+
+(claim serial-write-panic-smoke (Eff SerialReady SerialReady Unit))
+(def serial-write-panic-smoke
+  (serial-write-msg11 panic-smoke-message))
+
+(claim serial-write-panic-oom (Eff SerialReady SerialReady Unit))
+(def serial-write-panic-oom
+  (serial-write-msg15 panic-oom-message))
+
+(claim serial-write-panic-invariant (Eff SerialReady SerialReady Unit))
+(def serial-write-panic-invariant
+  (serial-write-msg15 panic-invariant-message))
+
+(claim serial-write-panic (Eff SerialReady SerialReady Unit))
+(def serial-write-panic
+  (serial-write-panic-smoke))
+
+(claim kernel-panic-smoke (Eff SerialReady (KernelPanicked PanicSmoke) Unit))
+(def kernel-panic-smoke
+  (io-seq SerialReady SerialReady (KernelPanicked PanicSmoke)
+    serial-write-panic
+    (qemu-debug-exit SerialReady (KernelPanicked PanicSmoke) (u64 17))))
+
+(claim kernel-panic-oom (Eff SerialReady (KernelPanicked PanicOom) Unit))
+(def kernel-panic-oom
+  (io-seq SerialReady SerialReady (KernelPanicked PanicOom)
+    serial-write-panic-oom
+    (qemu-debug-exit SerialReady (KernelPanicked PanicOom) (u64 18))))
+
+(claim kernel-panic-invariant (Eff SerialReady (KernelPanicked PanicInvariant) Unit))
+(def kernel-panic-invariant
+  (io-seq SerialReady SerialReady (KernelPanicked PanicInvariant)
+    serial-write-panic-invariant
+    (qemu-debug-exit SerialReady (KernelPanicked PanicInvariant) (u64 19))))
+
+(claim panic-entry (Eff BootIO (KernelPanicked PanicSmoke) Unit))
+(def panic-entry
+  (io-seq BootIO SerialReady (KernelPanicked PanicSmoke)
+    serial-init
+    kernel-panic-smoke))
+(export panic-entry silt_limine_panic_entry)
+(section panic-entry .text.silt.boot)
+(calling-convention panic-entry sysv-abi)
+(entry panic-entry)
+(abi-contract panic-entry
+  ((entry)
+   (symbol silt_limine_panic_entry)
+   (section .text.silt.boot)
+   (calling-convention sysv-abi)
+   (freestanding)))
+(target-contract x86_64-limine-elf
+  ((format elf64)
+   (arch x86_64)
+   (abi sysv)
+   (entry panic-entry)
+   (symbol silt_limine_panic_entry)
+   (section .text.silt.boot)
+   (calling-convention sysv-abi)
+   (entry-address 18446744071562067968)
+   (red-zone disabled)
+   (freestanding)))
+(boot-contract limine-x86_64
+  ((protocol limine)
+   (target x86_64-limine-elf)
+   (entry panic-entry)
+   (kernel-path /boot/silt-limine.elf)
+   (config-path /boot/limine.conf)
+   (freestanding)))

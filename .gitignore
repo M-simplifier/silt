@@ -1,0 +1,50 @@
+# Public-history default: keep the repository closed unless a path is
+# explicitly allowed below. This prevents accidental publication of non-public
+# coordination notes, docs, build products, or future scratch files.
+*
+
+# Public-safe project metadata and build entrypoints.
+!/.gitignore
+!/LICENSE
+!/silt.cabal
+!/cabal.project
+
+# Public-safe technical implementation surfaces.
+!/app/
+!/app/**
+!/src/
+!/src/**
+!/test/
+!/test/**
+!/examples/
+!/examples/**
+!/scripts/
+!/scripts/**
+!/support/
+!/support/**
+
+# Explicit quarantine: not part of the initial public-safe history.
+README.md
+docs/
+
+# Generated/local outputs.
+dist-newstyle/
+out/
+cabal.project.local
+*.hi
+*.o
+*.dyn_hi
+*.dyn_o
+*.prof
+*.aux
+*.hp
+*.eventlog
+
+# Local environment and editor files.
+.env
+.env.*
+.direnv/
+.vscode/
+.idea/
+*.swp
+*~

@@ -1,0 +1,31 @@
+; Parametric and recursive algebraic data examples for stage0.
+
+(data Option ((A 0 Type))
+  (None)
+  (Some A))
+
+(claim unwrap-or (Pi ((A 0 Type) (fallback A) (opt (Option A))) A))
+(def unwrap-or
+  (fn ((A 0 Type) (fallback A) (opt (Option A)))
+    (match opt
+      ((None) fallback)
+      ((Some value) value))))
+
+(claim picked Nat)
+(def picked
+  (unwrap-or Nat (S Z) (Some Nat Z)))
+
+(data List ((A 0 Type))
+  (Nil)
+  (Cons A (List A)))
+
+(claim head-or (Pi ((A 0 Type) (fallback A) (xs (List A))) A))
+(def head-or
+  (fn ((A 0 Type) (fallback A) (xs (List A)))
+    (match xs
+      ((Nil) fallback)
+      ((Cons head tail) head))))
+
+(claim picked-head Nat)
+(def picked-head
+  (head-or Nat (S Z) (Cons Nat Z (Nil Nat))))

@@ -1,0 +1,68 @@
+; Limine success entry fragment.
+; Check or emit with examples/limine-serial.silt before this file.
+
+(data KernelDone ())
+
+(claim limine-ok-message SerialMsg20)
+(def limine-ok-message
+  (layout-values SerialMsg20
+    (u64 83)
+    (u64 73)
+    (u64 76)
+    (u64 84)
+    (u64 95)
+    (u64 76)
+    (u64 73)
+    (u64 77)
+    (u64 73)
+    (u64 78)
+    (u64 69)
+    (u64 95)
+    (u64 81)
+    (u64 69)
+    (u64 77)
+    (u64 85)
+    (u64 95)
+    (u64 79)
+    (u64 75)
+    (u64 10)))
+
+(claim serial-write-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-ok
+  (serial-write-msg20 limine-ok-message))
+
+(claim limine-entry (Eff BootIO KernelDone Unit))
+(def limine-entry
+  (io-seq BootIO SerialReady KernelDone
+    serial-init
+    (io-seq SerialReady SerialReady KernelDone
+      serial-write-ok
+      (qemu-debug-exit SerialReady KernelDone (u64 16)))))
+(export limine-entry silt_limine_entry)
+(section limine-entry .text.silt.boot)
+(calling-convention limine-entry sysv-abi)
+(entry limine-entry)
+(abi-contract limine-entry
+  ((entry)
+   (symbol silt_limine_entry)
+   (section .text.silt.boot)
+   (calling-convention sysv-abi)
+   (freestanding)))
+(target-contract x86_64-limine-elf
+  ((format elf64)
+   (arch x86_64)
+   (abi sysv)
+   (entry limine-entry)
+   (symbol silt_limine_entry)
+   (section .text.silt.boot)
+   (calling-convention sysv-abi)
+   (entry-address 18446744071562067968)
+   (red-zone disabled)
+   (freestanding)))
+(boot-contract limine-x86_64
+  ((protocol limine)
+   (target x86_64-limine-elf)
+   (entry limine-entry)
+   (kernel-path /boot/silt-limine.elf)
+   (config-path /boot/limine.conf)
+   (freestanding)))

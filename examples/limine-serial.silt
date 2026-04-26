@@ -1,0 +1,294 @@
+; Shared Limine serial/debug-exit surface.
+; Entry artifacts pass this file before their entry-specific source.
+
+(data BootIO ())
+(data SerialReady ())
+
+(layout SerialMsg11 88 8
+  ((b0 U64 0)
+   (b1 U64 8)
+   (b2 U64 16)
+   (b3 U64 24)
+   (b4 U64 32)
+   (b5 U64 40)
+   (b6 U64 48)
+   (b7 U64 56)
+   (b8 U64 64)
+   (b9 U64 72)
+   (b10 U64 80)))
+
+(layout SerialMsg15 120 8
+  ((b0 U64 0)
+   (b1 U64 8)
+   (b2 U64 16)
+   (b3 U64 24)
+   (b4 U64 32)
+   (b5 U64 40)
+   (b6 U64 48)
+   (b7 U64 56)
+   (b8 U64 64)
+   (b9 U64 72)
+   (b10 U64 80)
+   (b11 U64 88)
+   (b12 U64 96)
+   (b13 U64 104)
+   (b14 U64 112)))
+
+(layout SerialMsg20 160 8
+  ((b0 U64 0)
+   (b1 U64 8)
+   (b2 U64 16)
+   (b3 U64 24)
+   (b4 U64 32)
+   (b5 U64 40)
+   (b6 U64 48)
+   (b7 U64 56)
+   (b8 U64 64)
+   (b9 U64 72)
+   (b10 U64 80)
+   (b11 U64 88)
+   (b12 U64 96)
+   (b13 U64 104)
+   (b14 U64 112)
+   (b15 U64 120)
+   (b16 U64 128)
+   (b17 U64 136)
+   (b18 U64 144)
+   (b19 U64 152)))
+
+(claim io-seq
+  (Pi ((pre 0 Type)
+       (mid 0 Type)
+       (post 0 Type)
+       (first 1 (Eff pre mid Unit))
+       (second 1 (Eff mid post Unit)))
+      (Eff pre post Unit)))
+(def io-seq
+  (fn ((pre 0 Type)
+       (mid 0 Type)
+       (post 0 Type)
+       (first 1 (Eff pre mid Unit))
+       (second 1 (Eff mid post Unit)))
+    (bind pre mid post Unit Unit first
+      (fn ((done 1 Unit))
+        (let ((ignored 0 done))
+          second)))))
+
+(claim serial-seq
+  (Pi ((first 1 (Eff SerialReady SerialReady Unit))
+       (second 1 (Eff SerialReady SerialReady Unit)))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-seq
+  (fn ((first 1 (Eff SerialReady SerialReady Unit))
+       (second 1 (Eff SerialReady SerialReady Unit)))
+    (io-seq SerialReady SerialReady SerialReady first second)))
+
+(claim serial-out
+  (Pi ((pre 0 Type)
+       (post 0 Type)
+       (offset U64)
+       (value U64))
+      (Eff pre post Unit)))
+(def serial-out
+  (fn ((pre 0 Type)
+       (post 0 Type)
+       (offset U64)
+       (value U64))
+    (x86-out8 pre post (u64-add (u64 1016) offset) value)))
+
+(claim serial-line-status (Eff SerialReady SerialReady U64))
+(def serial-line-status
+  (x86-in8 SerialReady (u64-add (u64 1016) (u64 5))))
+
+(claim serial-ready (Pi ((status U64)) Bool))
+(def serial-ready
+  (fn ((status U64))
+    (u64-eq (u64-and status (u64 32)) (u64 32))))
+
+(claim serial-write-byte (Pi ((value U64)) (Eff SerialReady SerialReady Unit)))
+(def serial-write-byte
+  (fn ((value U64))
+    (bind SerialReady SerialReady SerialReady U64 Unit serial-line-status
+      (fn ((status 1 U64))
+        (match (serial-ready status)
+          ((True) (serial-out SerialReady SerialReady (u64 0) value))
+          ((False) (pure SerialReady Unit tt)))))))
+
+(claim serial-write-2
+  (Pi ((b0 U64) (b1 U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-2
+  (fn ((b0 U64) (b1 U64))
+    (serial-seq
+      (serial-write-byte b0)
+      (serial-write-byte b1))))
+
+(claim serial-write-3
+  (Pi ((b0 U64) (b1 U64) (b2 U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-3
+  (fn ((b0 U64) (b1 U64) (b2 U64))
+    (serial-seq
+      (serial-write-2 b0 b1)
+      (serial-write-byte b2))))
+
+(claim serial-write-4
+  (Pi ((b0 U64) (b1 U64) (b2 U64) (b3 U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-4
+  (fn ((b0 U64) (b1 U64) (b2 U64) (b3 U64))
+    (serial-seq
+      (serial-write-2 b0 b1)
+      (serial-write-2 b2 b3))))
+
+(claim serial-write-8
+  (Pi ((b0 U64) (b1 U64) (b2 U64) (b3 U64)
+       (b4 U64) (b5 U64) (b6 U64) (b7 U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-8
+  (fn ((b0 U64) (b1 U64) (b2 U64) (b3 U64)
+       (b4 U64) (b5 U64) (b6 U64) (b7 U64))
+    (serial-seq
+      (serial-write-4 b0 b1 b2 b3)
+      (serial-write-4 b4 b5 b6 b7))))
+
+(claim serial-write-11
+  (Pi ((b0 U64) (b1 U64) (b2 U64) (b3 U64)
+       (b4 U64) (b5 U64) (b6 U64) (b7 U64)
+       (b8 U64) (b9 U64) (b10 U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-11
+  (fn ((b0 U64) (b1 U64) (b2 U64) (b3 U64)
+       (b4 U64) (b5 U64) (b6 U64) (b7 U64)
+       (b8 U64) (b9 U64) (b10 U64))
+    (serial-seq
+      (serial-write-8 b0 b1 b2 b3 b4 b5 b6 b7)
+      (serial-write-3 b8 b9 b10))))
+
+(claim serial-write-12
+  (Pi ((b0 U64) (b1 U64) (b2 U64) (b3 U64)
+       (b4 U64) (b5 U64) (b6 U64) (b7 U64)
+       (b8 U64) (b9 U64) (b10 U64) (b11 U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-12
+  (fn ((b0 U64) (b1 U64) (b2 U64) (b3 U64)
+       (b4 U64) (b5 U64) (b6 U64) (b7 U64)
+       (b8 U64) (b9 U64) (b10 U64) (b11 U64))
+    (serial-seq
+      (serial-write-8 b0 b1 b2 b3 b4 b5 b6 b7)
+      (serial-write-4 b8 b9 b10 b11))))
+
+(claim serial-write-20
+  (Pi ((b0 U64) (b1 U64) (b2 U64) (b3 U64)
+       (b4 U64) (b5 U64) (b6 U64) (b7 U64)
+       (b8 U64) (b9 U64) (b10 U64) (b11 U64)
+       (b12 U64) (b13 U64) (b14 U64) (b15 U64)
+       (b16 U64) (b17 U64) (b18 U64) (b19 U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-20
+  (fn ((b0 U64) (b1 U64) (b2 U64) (b3 U64)
+       (b4 U64) (b5 U64) (b6 U64) (b7 U64)
+       (b8 U64) (b9 U64) (b10 U64) (b11 U64)
+       (b12 U64) (b13 U64) (b14 U64) (b15 U64)
+       (b16 U64) (b17 U64) (b18 U64) (b19 U64))
+    (serial-seq
+      (serial-write-8 b0 b1 b2 b3 b4 b5 b6 b7)
+      (serial-write-12 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19))))
+
+(claim serial-write-msg11
+  (Pi ((msg SerialMsg11))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-msg11
+  (fn ((msg SerialMsg11))
+    (serial-write-11
+      (field SerialMsg11 b0 msg)
+      (field SerialMsg11 b1 msg)
+      (field SerialMsg11 b2 msg)
+      (field SerialMsg11 b3 msg)
+      (field SerialMsg11 b4 msg)
+      (field SerialMsg11 b5 msg)
+      (field SerialMsg11 b6 msg)
+      (field SerialMsg11 b7 msg)
+      (field SerialMsg11 b8 msg)
+      (field SerialMsg11 b9 msg)
+      (field SerialMsg11 b10 msg))))
+
+(claim serial-write-msg15
+  (Pi ((msg SerialMsg15))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-msg15
+  (fn ((msg SerialMsg15))
+    (serial-seq
+      (serial-write-8
+        (field SerialMsg15 b0 msg)
+        (field SerialMsg15 b1 msg)
+        (field SerialMsg15 b2 msg)
+        (field SerialMsg15 b3 msg)
+        (field SerialMsg15 b4 msg)
+        (field SerialMsg15 b5 msg)
+        (field SerialMsg15 b6 msg)
+        (field SerialMsg15 b7 msg))
+      (serial-seq
+        (serial-write-4
+          (field SerialMsg15 b8 msg)
+          (field SerialMsg15 b9 msg)
+          (field SerialMsg15 b10 msg)
+          (field SerialMsg15 b11 msg))
+        (serial-write-3
+          (field SerialMsg15 b12 msg)
+          (field SerialMsg15 b13 msg)
+          (field SerialMsg15 b14 msg))))))
+
+(claim serial-write-msg20
+  (Pi ((msg SerialMsg20))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-msg20
+  (fn ((msg SerialMsg20))
+    (serial-write-20
+      (field SerialMsg20 b0 msg)
+      (field SerialMsg20 b1 msg)
+      (field SerialMsg20 b2 msg)
+      (field SerialMsg20 b3 msg)
+      (field SerialMsg20 b4 msg)
+      (field SerialMsg20 b5 msg)
+      (field SerialMsg20 b6 msg)
+      (field SerialMsg20 b7 msg)
+      (field SerialMsg20 b8 msg)
+      (field SerialMsg20 b9 msg)
+      (field SerialMsg20 b10 msg)
+      (field SerialMsg20 b11 msg)
+      (field SerialMsg20 b12 msg)
+      (field SerialMsg20 b13 msg)
+      (field SerialMsg20 b14 msg)
+      (field SerialMsg20 b15 msg)
+      (field SerialMsg20 b16 msg)
+      (field SerialMsg20 b17 msg)
+      (field SerialMsg20 b18 msg)
+      (field SerialMsg20 b19 msg))))
+
+(claim serial-init (Eff BootIO SerialReady Unit))
+(def serial-init
+  (io-seq BootIO BootIO SerialReady
+    (serial-out BootIO BootIO (u64 1) (u64 0))
+    (io-seq BootIO BootIO SerialReady
+      (serial-out BootIO BootIO (u64 3) (u64 128))
+      (io-seq BootIO BootIO SerialReady
+        (serial-out BootIO BootIO (u64 0) (u64 3))
+        (io-seq BootIO BootIO SerialReady
+          (serial-out BootIO BootIO (u64 1) (u64 0))
+          (io-seq BootIO BootIO SerialReady
+            (serial-out BootIO BootIO (u64 3) (u64 3))
+            (io-seq BootIO BootIO SerialReady
+              (serial-out BootIO BootIO (u64 2) (u64 199))
+              (serial-out BootIO SerialReady (u64 4) (u64 11)))))))))
+
+(claim qemu-debug-exit
+  (Pi ((pre 0 Type)
+       (post 0 Type)
+       (code U64))
+      (Eff pre post Unit)))
+(def qemu-debug-exit
+  (fn ((pre 0 Type)
+       (post 0 Type)
+       (code U64))
+    (x86-out8 pre post (u64 244) code)))

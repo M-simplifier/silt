@@ -1,0 +1,147 @@
+; Freestanding backend seed: no hosted headers, no libc assumptions, and plain
+; capability-indexed typed pointer writes over a nominal aggregate layout.
+
+(layout Header 16 8
+  ((magic U64 0)
+   (next Addr 8)))
+
+(extern platform-header-magic (Pi ((hdr Header)) U64) platform_header_magic)
+(extern platform-header-zero (Pi ((ptr (Ptr Header))) Unit) platform_header_zero)
+(calling-convention platform-header-magic sysv-abi)
+(abi-contract platform-header-magic
+  ((symbol platform_header_magic)
+   (calling-convention sysv-abi)
+   (freestanding)))
+
+(data BootHeap0 ())
+(data BootHeap1 ())
+
+(claim boot-header Header)
+(def boot-header
+  (layout Header
+    ((magic (u64 305419896))
+     (next (addr 0)))))
+
+(claim boot-header-at (Pi ((next-addr Addr)) Header))
+(def boot-header-at
+  (fn ((next-addr Addr))
+    (with-field Header next boot-header next-addr)))
+
+(claim boot-header-remap (Pi ((magic U64) (next-addr Addr)) Header))
+(def boot-header-remap
+  (fn ((magic U64) (next-addr Addr))
+    (with-fields Header boot-header
+      ((magic magic)
+       (next next-addr)))))
+
+(claim boot-header-next Addr)
+(def boot-header-next
+  (let-layout Header ((next next)) boot-header next))
+
+(claim init-header (Pi ((base (Ptr Header))) (Eff Heap Unit)))
+(def init-header
+  (fn ((base (Ptr Header)))
+    (store Header base (boot-header-at (addr 0)))))
+
+(claim init-header-token (Pi ((base (Ptr Header))) (Eff BootHeap0 BootHeap1 Unit)))
+(def init-header-token
+  (fn ((base (Ptr Header)))
+    (store BootHeap0 BootHeap1 Header base (boot-header-at (addr 0)))))
+
+(claim read-magic (Pi ((base (Ptr Header))) (Eff Heap U64)))
+(def read-magic
+  (fn ((base (Ptr Header)))
+    (load-field Header magic base)))
+
+(claim read-next-via-layout (Pi ((base (Ptr Header))) (Eff Heap Addr)))
+(def read-next-via-layout
+  (fn ((base (Ptr Header)))
+    (let-load-layout Header ((magic 0 ignored) (next next)) base
+      (pure Heap Addr next))))
+
+(claim read-next-via-layout-token (Pi ((base (Ptr Header))) (Eff BootHeap1 Addr)))
+(def read-next-via-layout-token
+  (fn ((base (Ptr Header)))
+    (let-load-layout BootHeap1 Header ((magic 0 ignored) (next next)) base
+      (pure BootHeap1 Addr next))))
+
+(claim inspect-header-platform (Pi ((base (Ptr Header))) (Eff Heap U64)))
+(def inspect-header-platform
+  (fn ((base (Ptr Header)))
+    (bind Heap Header U64
+      (load Header base)
+      (fn ((hdr 1 Header))
+        (pure Heap U64 (platform-header-magic hdr))))))
+
+(claim boot-entry (Pi ((base (Ptr Header))) (Eff Heap U64)))
+(def boot-entry
+  (fn ((base (Ptr Header)))
+    (inspect-header-platform base)))
+(export boot-entry silt_boot_entry)
+(section boot-entry .text.silt.boot)
+(calling-convention boot-entry sysv-abi)
+(entry boot-entry)
+(abi-contract boot-entry
+  ((entry)
+   (symbol silt_boot_entry)
+   (section .text.silt.boot)
+   (calling-convention sysv-abi)
+   (freestanding)))
+(target-contract x86_64-sysv-elf
+  ((format elf64)
+   (arch x86_64)
+   (abi sysv)
+   (entry boot-entry)
+   (symbol silt_boot_entry)
+   (section .text.silt.boot)
+   (calling-convention sysv-abi)
+   (entry-address 1048576)
+   (red-zone disabled)
+   (freestanding)))
+
+(claim call-platform-zero (Pi ((base (Ptr Header))) Unit))
+(def call-platform-zero
+  (fn ((base (Ptr Header)))
+    (platform-header-zero base)))
+
+(claim reset-next (Pi ((base (Ptr Header)) (next-addr Addr)) (Eff Heap Unit)))
+(def reset-next
+  (fn ((base (Ptr Header)) (next-addr Addr))
+    (store-field Header next base next-addr)))
+
+(claim reset-next-token (Pi ((base (Ptr Header)) (next-addr Addr)) (Eff BootHeap0 BootHeap1 Unit)))
+(def reset-next-token
+  (fn ((base (Ptr Header)) (next-addr Addr))
+    (store-field BootHeap0 BootHeap1 Header next base next-addr)))
+
+(claim reset-header-fields (Pi ((base (Ptr Header)) (magic U64) (next-addr Addr)) (Eff Heap Unit)))
+(def reset-header-fields
+  (fn ((base (Ptr Header)) (magic U64) (next-addr Addr))
+    (store-fields Header base
+      ((magic magic)
+       (next next-addr)))))
+
+(claim reset-header-fields-token (Pi ((base (Ptr Header)) (magic U64) (next-addr Addr)) (Eff BootHeap1 Unit)))
+(def reset-header-fields-token
+  (fn ((base (Ptr Header)) (magic U64) (next-addr Addr))
+    (store-fields BootHeap1 Header base
+      ((magic magic)
+       (next next-addr)))))
+
+(claim init-and-read-token (Pi ((base (Ptr Header))) (Eff BootHeap0 BootHeap1 U64)))
+(def init-and-read-token
+  (fn ((base (Ptr Header)))
+    (bind BootHeap0 BootHeap1 BootHeap1 Unit U64
+      (init-header-token base)
+      (fn ((done 1 Unit))
+        (let ((ignored 0 done))
+          (load-field BootHeap1 Header magic base))))))
+
+(claim init-and-read (Pi ((base (Ptr Header))) (Eff Heap U64)))
+(def init-and-read
+  (fn ((base (Ptr Header)))
+    (bind Heap Unit U64
+      (init-header base)
+      (fn ((done 1 Unit))
+        (let ((ignored 0 done))
+          (read-magic base))))))

@@ -1,0 +1,10 @@
+; Simple stage0 dependent examples.
+
+(claim id (Pi ((A Type) (x A)) A))
+(def id (fn ((A Type) (x A)) x))
+
+(claim const (Pi ((A Type) (B Type) (x A) (y B)) A))
+(def const (fn ((A Type) (B Type) (x A) (y B)) x))
+
+(claim use-id (Pi ((A Type) (x A)) A))
+(def use-id (fn ((A Type) (x A)) (id A x)))

@@ -1,0 +1,15 @@
+; Hosted interop seed: external first-order functions imported into generated C.
+
+(extern host-add3 (Pi ((x U64)) U64) host_add3)
+
+(claim call-host-add3 (Pi ((x U64)) U64))
+(def call-host-add3
+  (fn ((x U64))
+    (host-add3 x)))
+
+(extern host-bump (Pi ((base Addr) (bytes U64)) Addr) host_bump)
+
+(claim call-host-bump (Pi ((base Addr) (bytes U64)) Addr))
+(def call-host-bump
+  (fn ((base Addr) (bytes U64))
+    (host-bump base bytes)))

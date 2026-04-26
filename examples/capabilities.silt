@@ -1,0 +1,741 @@
+; Capability and ownership examples for stage0: linear value-level tokens
+; carried through explicit memory capability transitions, then packaged by a
+; small repo-local ownership abstraction.
+
+(data Owned ((Tok 0 Type) (A 0 Type))
+  (Hold Tok A))
+
+(data Lease0 ()
+  (lease0))
+
+(data Lease1 ()
+  (lease1))
+
+(data Lease2 ()
+  (lease2))
+
+(data WordSlot0 ())
+(data WordSlot1 ())
+(data WordSlot2 ())
+
+(layout Header 16 8
+  ((magic U64 0)
+   (next Addr 8)))
+
+(data HeaderLease0 ()
+  (header-lease0))
+
+(data HeaderLease1 ()
+  (header-lease1))
+
+(data HeaderLease2 ()
+  (header-lease2))
+
+(data HeaderRegion0 ())
+(data HeaderRegion1 ())
+(data HeaderRegion2 ())
+
+(claim rotate-lease (Pi ((lease 1 Lease0)) Lease1))
+(def rotate-lease
+  (fn ((lease 1 Lease0))
+    (let ((spent 0 lease))
+      lease1)))
+
+(claim rotated-lease Lease1)
+(def rotated-lease
+  (rotate-lease lease0))
+
+(claim own (Pi ((Tok 0 Type) (A 0 Type) (tok 1 Tok) (value 1 A)) (Owned Tok A)))
+(def own
+  (fn ((Tok 0 Type) (A 0 Type) (tok 1 Tok) (value 1 A))
+    (Hold Tok A tok value)))
+
+(claim with-owned
+  (Pi ((Tok 0 Type) (A 0 Type) (B 0 Type)
+       (owned 1 (Owned Tok A))
+       (k 1 (Pi ((tok 1 Tok) (value 1 A)) B)))
+      B))
+(def with-owned
+  (fn ((Tok 0 Type) (A 0 Type) (B 0 Type)
+       (owned 1 (Owned Tok A))
+       (k 1 (Pi ((tok 1 Tok) (value 1 A)) B)))
+    (match owned
+      ((Hold (tok 1) (value 1))
+       (k tok value)))))
+
+(data OwnedPtr ((Tok 0 Type) (A 0 Type))
+  (OwnedAt Tok (Ptr A)))
+
+(data Observed ((Tok 0 Type) (A 0 Type) (V 0 Type))
+  (ObservedAt Tok (Ptr A) V))
+
+(data OwnedCap ((Tok 0 Type) (Cap 0 Type) (A 0 Type))
+  (OwnedCapAt Tok (Ptr A)))
+
+(data ObservedCap ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (V 0 Type))
+  (ObservedCapAt Tok (Ptr A) V))
+
+(data OwnedCapStep ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type))
+  (OwnedCapStepAt TokOut (Ptr A)))
+
+(claim own-ptr (Pi ((Tok 0 Type) (A 0 Type) (tok 1 Tok) (ptr (Ptr A))) (OwnedPtr Tok A)))
+(def own-ptr
+  (fn ((Tok 0 Type) (A 0 Type) (tok 1 Tok) (ptr (Ptr A)))
+    (OwnedAt Tok A tok ptr)))
+
+(claim with-owned-ptr
+  (Pi ((Tok 0 Type) (A 0 Type) (B 0 Type)
+       (owned 1 (OwnedPtr Tok A))
+       (k 1 (Pi ((tok 1 Tok) (ptr (Ptr A))) B)))
+      B))
+(def with-owned-ptr
+  (fn ((Tok 0 Type) (A 0 Type) (B 0 Type)
+       (owned 1 (OwnedPtr Tok A))
+       (k 1 (Pi ((tok 1 Tok) (ptr (Ptr A))) B)))
+    (match owned
+      ((OwnedAt (tok 1) ptr)
+       (k tok ptr)))))
+
+(claim observe
+  (Pi ((Tok 0 Type) (A 0 Type) (V 0 Type)
+       (tok 1 Tok)
+       (ptr (Ptr A))
+       (value 1 V))
+      (Observed Tok A V)))
+(def observe
+  (fn ((Tok 0 Type) (A 0 Type) (V 0 Type)
+       (tok 1 Tok)
+       (ptr (Ptr A))
+       (value 1 V))
+    (ObservedAt Tok A V tok ptr value)))
+
+(claim with-observed
+  (Pi ((Tok 0 Type) (A 0 Type) (V 0 Type) (B 0 Type)
+       (observed 1 (Observed Tok A V))
+       (k 1 (Pi ((tok 1 Tok) (ptr (Ptr A)) (value 1 V)) B)))
+      B))
+(def with-observed
+  (fn ((Tok 0 Type) (A 0 Type) (V 0 Type) (B 0 Type)
+       (observed 1 (Observed Tok A V))
+       (k 1 (Pi ((tok 1 Tok) (ptr (Ptr A)) (value 1 V)) B)))
+    (match observed
+      ((ObservedAt (tok 1) ptr (value 1))
+       (k tok ptr value)))))
+
+(claim own-cap
+  (Pi ((Tok 0 Type) (Cap 0 Type) (A 0 Type)
+       (tok 1 Tok)
+       (ptr (Ptr A)))
+      (OwnedCap Tok Cap A)))
+(def own-cap
+  (fn ((Tok 0 Type) (Cap 0 Type) (A 0 Type)
+       (tok 1 Tok)
+       (ptr (Ptr A)))
+    (OwnedCapAt Tok Cap A tok ptr)))
+
+(claim with-owned-cap
+  (Pi ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (B 0 Type)
+       (owned 1 (OwnedCap Tok Cap A))
+       (k 1 (Pi ((tok 1 Tok) (ptr (Ptr A))) B)))
+      B))
+(def with-owned-cap
+  (fn ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (B 0 Type)
+       (owned 1 (OwnedCap Tok Cap A))
+       (k 1 (Pi ((tok 1 Tok) (ptr (Ptr A))) B)))
+    (match owned
+      ((OwnedCapAt (tok 1) ptr)
+       (k tok ptr)))))
+
+(claim observe-cap
+  (Pi ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (V 0 Type)
+       (tok 1 Tok)
+       (ptr (Ptr A))
+       (value 1 V))
+      (ObservedCap Tok Cap A V)))
+(def observe-cap
+  (fn ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (V 0 Type)
+       (tok 1 Tok)
+       (ptr (Ptr A))
+       (value 1 V))
+    (ObservedCapAt Tok Cap A V tok ptr value)))
+
+(claim with-observed-cap
+  (Pi ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (V 0 Type) (B 0 Type)
+       (observed 1 (ObservedCap Tok Cap A V))
+       (k 1 (Pi ((tok 1 Tok) (ptr (Ptr A)) (value 1 V)) B)))
+      B))
+(def with-observed-cap
+  (fn ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (V 0 Type) (B 0 Type)
+       (observed 1 (ObservedCap Tok Cap A V))
+       (k 1 (Pi ((tok 1 Tok) (ptr (Ptr A)) (value 1 V)) B)))
+    (match observed
+      ((ObservedCapAt (tok 1) ptr (value 1))
+       (k tok ptr value)))))
+
+(claim own-cap-step
+  (Pi ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (tok 1 TokOut)
+       (ptr (Ptr A)))
+      (OwnedCapStep TokIn TokOut Pre Post A)))
+(def own-cap-step
+  (fn ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (tok 1 TokOut)
+       (ptr (Ptr A)))
+    (OwnedCapStepAt TokIn TokOut Pre Post A tok ptr)))
+
+(claim with-owned-cap-step
+  (Pi ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type) (B 0 Type)
+       (step 1 (OwnedCapStep TokIn TokOut Pre Post A))
+       (k 1 (Pi ((tok 1 TokOut) (ptr (Ptr A))) B)))
+      B))
+(def with-owned-cap-step
+  (fn ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type) (B 0 Type)
+       (step 1 (OwnedCapStep TokIn TokOut Pre Post A))
+       (k 1 (Pi ((tok 1 TokOut) (ptr (Ptr A))) B)))
+    (match step
+      ((OwnedCapStepAt (tok 1) ptr)
+       (k tok ptr)))))
+
+(claim settle-cap-step
+  (Pi ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (step 1 (OwnedCapStep TokIn TokOut Pre Post A)))
+      (OwnedCap TokOut Post A)))
+(def settle-cap-step
+  (fn ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (step 1 (OwnedCapStep TokIn TokOut Pre Post A)))
+    (with-owned-cap-step TokIn TokOut Pre Post A (OwnedCap TokOut Post A) step
+      (fn ((tok 1 TokOut) (ptr (Ptr A)))
+        (own-cap TokOut Post A tok ptr)))))
+
+(claim forget-cap-step
+  (Pi ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (step 1 (OwnedCapStep TokIn TokOut Pre Post A)))
+      (OwnedPtr TokOut A)))
+(def forget-cap-step
+  (fn ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (step 1 (OwnedCapStep TokIn TokOut Pre Post A)))
+    (with-owned-cap-step TokIn TokOut Pre Post A (OwnedPtr TokOut A) step
+      (fn ((tok 1 TokOut) (ptr (Ptr A)))
+        (own-ptr TokOut A tok ptr)))))
+
+(claim store-owned-cap-step
+  (Pi ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (owned 1 (OwnedCap TokIn Pre A))
+       (tok-out 1 TokOut)
+       (value 1 A))
+      (Eff Pre Post (OwnedCapStep TokIn TokOut Pre Post A))))
+(def store-owned-cap-step
+  (fn ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (owned 1 (OwnedCap TokIn Pre A))
+       (tok-out 1 TokOut)
+       (value 1 A))
+    (with-owned-cap TokIn Pre A (Eff Pre Post (OwnedCapStep TokIn TokOut Pre Post A)) owned
+      (fn ((tok-in 1 TokIn) (ptr (Ptr A)))
+        (bind Pre Post Post Unit (OwnedCapStep TokIn TokOut Pre Post A)
+          (store Pre Post A ptr value)
+          (fn ((done 1 Unit))
+            (let ((ignored 0 done)
+                  (spent 0 tok-in))
+              (pure Post (OwnedCapStep TokIn TokOut Pre Post A)
+                (own-cap-step TokIn TokOut Pre Post A tok-out ptr)))))))))
+
+(claim read-after-cap-step
+  (Pi ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (step 1 (OwnedCapStep TokIn TokOut Pre Post A)))
+      (Eff Post Post (ObservedCap TokOut Post A A))))
+(def read-after-cap-step
+  (fn ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (step 1 (OwnedCapStep TokIn TokOut Pre Post A)))
+    (with-owned-cap-step TokIn TokOut Pre Post A (Eff Post Post (ObservedCap TokOut Post A A)) step
+      (fn ((tok 1 TokOut) (ptr (Ptr A)))
+        (bind Post Post Post A (ObservedCap TokOut Post A A)
+          (load Post A ptr)
+          (fn ((value 1 A))
+            (pure Post (ObservedCap TokOut Post A A)
+              (observe-cap TokOut Post A A tok ptr value))))))))
+
+(claim rewrite-owned-cap-step
+  (Pi ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (owned 1 (OwnedCap TokIn Pre A))
+       (tok-out 1 TokOut)
+       (step 1 (Pi ((old 1 A)) A)))
+      (Eff Pre Post (OwnedCapStep TokIn TokOut Pre Post A))))
+(def rewrite-owned-cap-step
+  (fn ((TokIn 0 Type) (TokOut 0 Type) (Pre 0 Type) (Post 0 Type) (A 0 Type)
+       (owned 1 (OwnedCap TokIn Pre A))
+       (tok-out 1 TokOut)
+       (step 1 (Pi ((old 1 A)) A)))
+    (with-owned-cap TokIn Pre A (Eff Pre Post (OwnedCapStep TokIn TokOut Pre Post A)) owned
+      (fn ((tok-in 1 TokIn) (ptr (Ptr A)))
+        (bind Pre Pre Post A (OwnedCapStep TokIn TokOut Pre Post A)
+          (load Pre A ptr)
+          (fn ((old 1 A))
+            (bind Pre Post Post Unit (OwnedCapStep TokIn TokOut Pre Post A)
+              (store Pre Post A ptr (step old))
+              (fn ((done 1 Unit))
+                (let ((ignored 0 done)
+                      (spent 0 tok-in))
+                  (pure Post (OwnedCapStep TokIn TokOut Pre Post A)
+                    (own-cap-step TokIn TokOut Pre Post A tok-out ptr)))))))))))
+
+(claim forget-owned-cap
+  (Pi ((Tok 0 Type) (Cap 0 Type) (A 0 Type)
+       (owned 1 (OwnedCap Tok Cap A)))
+      (OwnedPtr Tok A)))
+(def forget-owned-cap
+  (fn ((Tok 0 Type) (Cap 0 Type) (A 0 Type)
+       (owned 1 (OwnedCap Tok Cap A)))
+    (with-owned-cap Tok Cap A (OwnedPtr Tok A) owned
+      (fn ((tok 1 Tok) (ptr (Ptr A)))
+        (own-ptr Tok A tok ptr)))))
+
+(claim forget-observed-cap
+  (Pi ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (V 0 Type)
+       (observed 1 (ObservedCap Tok Cap A V)))
+      (Observed Tok A V)))
+(def forget-observed-cap
+  (fn ((Tok 0 Type) (Cap 0 Type) (A 0 Type) (V 0 Type)
+       (observed 1 (ObservedCap Tok Cap A V)))
+    (with-observed-cap Tok Cap A V (Observed Tok A V) observed
+      (fn ((tok 1 Tok) (ptr (Ptr A)) (value 1 V))
+        (observe Tok A V tok ptr value)))))
+
+(claim wrap-lease (Pi ((lease 1 Lease0)) (Owned Lease1 Lease1)))
+(def wrap-lease
+  (fn ((lease 1 Lease0))
+    (let ((spent 0 lease))
+      (own Lease1 Lease1 lease1 lease1))))
+
+(claim unpack-owned-lease (Pi ((owned 1 (Owned Lease1 Lease1))) Lease1))
+(def unpack-owned-lease
+  (fn ((owned 1 (Owned Lease1 Lease1)))
+    (with-owned Lease1 Lease1 Lease1 owned
+      (fn ((tok 1 Lease1) (value 1 Lease1))
+        (let ((spent 0 tok))
+          value)))))
+
+(claim unpacked-owned-lease Lease1)
+(def unpacked-owned-lease
+  (unpack-owned-lease (wrap-lease lease0)))
+
+(claim word-base (Ptr U64))
+(def word-base
+  (ptr-from-addr U64 (addr 4096)))
+
+(claim header-base (Ptr Header))
+(def header-base
+  (ptr-from-addr Header (addr 8192)))
+
+(claim retag-owned-word-handle (Pi ((owned 1 (OwnedPtr Lease0 U64))) (OwnedPtr Lease1 U64)))
+(def retag-owned-word-handle
+  (fn ((owned 1 (OwnedPtr Lease0 U64)))
+    (with-owned-ptr Lease0 U64 (OwnedPtr Lease1 U64) owned
+      (fn ((lease 1 Lease0) (ptr (Ptr U64)))
+        (let ((spent 0 lease))
+          (own-ptr Lease1 U64 lease1 ptr))))))
+
+(claim retagged-word-handle (OwnedPtr Lease1 U64))
+(def retagged-word-handle
+  (retag-owned-word-handle (own-ptr Lease0 U64 lease0 word-base)))
+
+(claim recover-word-handle (Pi ((observed 1 (Observed Lease1 U64 U64))) (OwnedPtr Lease1 U64)))
+(def recover-word-handle
+  (fn ((observed 1 (Observed Lease1 U64 U64)))
+    (with-observed Lease1 U64 U64 (OwnedPtr Lease1 U64) observed
+      (fn ((lease 1 Lease1) (ptr (Ptr U64)) (value 1 U64))
+        (let ((ignored 0 value))
+          (own-ptr Lease1 U64 lease ptr))))))
+
+(claim restored-word-handle (OwnedPtr Lease1 U64))
+(def restored-word-handle
+  (recover-word-handle (observe Lease1 U64 U64 lease1 word-base (u64 91))))
+
+(claim word-cap-handle (OwnedCap Lease1 WordSlot1 U64))
+(def word-cap-handle
+  (own-cap Lease1 WordSlot1 U64 lease1 word-base))
+
+(claim word-cap-start (OwnedCap Lease0 WordSlot0 U64))
+(def word-cap-start
+  (own-cap Lease0 WordSlot0 U64 lease0 word-base))
+
+(claim word-cap-step (OwnedCapStep Lease0 Lease1 WordSlot0 WordSlot1 U64))
+(def word-cap-step
+  (own-cap-step Lease0 Lease1 WordSlot0 WordSlot1 U64 lease1 word-base))
+
+(claim settled-word-cap-step (OwnedCap Lease1 WordSlot1 U64))
+(def settled-word-cap-step
+  (settle-cap-step Lease0 Lease1 WordSlot0 WordSlot1 U64 word-cap-step))
+
+(claim forgot-word-cap-step (OwnedPtr Lease1 U64))
+(def forgot-word-cap-step
+  (forget-cap-step Lease0 Lease1 WordSlot0 WordSlot1 U64 word-cap-step))
+
+(claim forgot-word-cap-handle (OwnedPtr Lease1 U64))
+(def forgot-word-cap-handle
+  (forget-owned-cap Lease1 WordSlot1 U64 word-cap-handle))
+
+(claim word-cap-observed (ObservedCap Lease1 WordSlot1 U64 U64))
+(def word-cap-observed
+  (observe-cap Lease1 WordSlot1 U64 U64 lease1 word-base (u64 33)))
+
+(claim forgot-word-cap-observed (Observed Lease1 U64 U64))
+(def forgot-word-cap-observed
+  (forget-observed-cap Lease1 WordSlot1 U64 U64 word-cap-observed))
+
+(claim observed-word-value (Pi ((observed 1 (Observed Lease1 U64 U64))) U64))
+(def observed-word-value
+  (fn ((observed 1 (Observed Lease1 U64 U64)))
+    (with-observed Lease1 U64 U64 U64 observed
+      (fn ((lease 1 Lease1) (ptr (Ptr U64)) (value 1 U64))
+        (let ((spent 0 lease)
+              (ignored 0 ptr))
+          value)))))
+
+(claim observed-sample-value U64)
+(def observed-sample-value
+  (observed-word-value (observe Lease1 U64 U64 lease1 word-base (u64 77))))
+
+(claim seed-owned-word (Pi ((lease 1 Lease0) (ptr (Ptr U64)) (value U64)) (Eff WordSlot0 WordSlot1 (Owned Lease1 Unit))))
+(def seed-owned-word
+  (fn ((lease 1 Lease0) (ptr (Ptr U64)) (value U64))
+    (bind WordSlot0 WordSlot1 WordSlot1 Unit (Owned Lease1 Unit)
+      (store WordSlot0 WordSlot1 U64 ptr value)
+      (fn ((done 1 Unit))
+        (let ((ignored 0 done)
+              (spent 0 lease))
+          (pure WordSlot1 (Owned Lease1 Unit) (own Lease1 Unit lease1 tt)))))))
+
+(claim read-owned-word (Pi ((lease 1 Lease1) (ptr (Ptr U64))) (Eff WordSlot1 WordSlot1 (Owned Lease1 U64))))
+(def read-owned-word
+  (fn ((lease 1 Lease1) (ptr (Ptr U64)))
+    (bind WordSlot1 WordSlot1 WordSlot1 U64 (Owned Lease1 U64)
+      (load WordSlot1 U64 ptr)
+      (fn ((value 1 U64))
+        (let ((spent 0 lease))
+          (pure WordSlot1 (Owned Lease1 U64) (own Lease1 U64 lease1 value)))))))
+
+(claim seed-owned-word-handle (Pi ((owned 1 (OwnedPtr Lease0 U64)) (value U64)) (Eff WordSlot0 WordSlot1 (OwnedPtr Lease1 U64))))
+(def seed-owned-word-handle
+  (fn ((owned 1 (OwnedPtr Lease0 U64)) (value U64))
+    (with-owned-ptr Lease0 U64 (Eff WordSlot0 WordSlot1 (OwnedPtr Lease1 U64)) owned
+      (fn ((lease 1 Lease0) (ptr (Ptr U64)))
+        (bind WordSlot0 WordSlot1 WordSlot1 Unit (OwnedPtr Lease1 U64)
+          (store WordSlot0 WordSlot1 U64 ptr value)
+          (fn ((done 1 Unit))
+            (let ((ignored 0 done)
+                  (spent 0 lease))
+              (pure WordSlot1 (OwnedPtr Lease1 U64) (own-ptr Lease1 U64 lease1 ptr)))))))))
+
+(claim read-owned-word-handle (Pi ((owned 1 (OwnedPtr Lease1 U64))) (Eff WordSlot1 WordSlot1 (Observed Lease1 U64 U64))))
+(def read-owned-word-handle
+  (fn ((owned 1 (OwnedPtr Lease1 U64)))
+    (with-owned-ptr Lease1 U64 (Eff WordSlot1 WordSlot1 (Observed Lease1 U64 U64)) owned
+      (fn ((lease 1 Lease1) (ptr (Ptr U64)))
+        (bind WordSlot1 WordSlot1 WordSlot1 U64 (Observed Lease1 U64 U64)
+          (load WordSlot1 U64 ptr)
+          (fn ((value 1 U64))
+            (pure WordSlot1 (Observed Lease1 U64 U64) (observe Lease1 U64 U64 lease ptr value))))))))
+
+(claim read-owned-word-cap (Pi ((owned 1 (OwnedCap Lease1 WordSlot1 U64))) (Eff WordSlot1 WordSlot1 (ObservedCap Lease1 WordSlot1 U64 U64))))
+(def read-owned-word-cap
+  (fn ((owned 1 (OwnedCap Lease1 WordSlot1 U64)))
+    (with-owned-cap Lease1 WordSlot1 U64 (Eff WordSlot1 WordSlot1 (ObservedCap Lease1 WordSlot1 U64 U64)) owned
+      (fn ((lease 1 Lease1) (ptr (Ptr U64)))
+        (bind WordSlot1 WordSlot1 WordSlot1 U64 (ObservedCap Lease1 WordSlot1 U64 U64)
+          (load WordSlot1 U64 ptr)
+          (fn ((value 1 U64))
+            (pure WordSlot1 (ObservedCap Lease1 WordSlot1 U64 U64) (observe-cap Lease1 WordSlot1 U64 U64 lease ptr value))))))))
+
+(claim write-owned-word-cap-step
+  (Pi ((owned 1 (OwnedCap Lease0 WordSlot0 U64))
+       (value U64))
+      (Eff WordSlot0 WordSlot1 (OwnedCapStep Lease0 Lease1 WordSlot0 WordSlot1 U64))))
+(def write-owned-word-cap-step
+  (fn ((owned 1 (OwnedCap Lease0 WordSlot0 U64))
+       (value U64))
+    (store-owned-cap-step Lease0 Lease1 WordSlot0 WordSlot1 U64 owned lease1 value)))
+
+(claim read-after-word-cap-step
+  (Pi ((step 1 (OwnedCapStep Lease0 Lease1 WordSlot0 WordSlot1 U64)))
+      (Eff WordSlot1 WordSlot1 (ObservedCap Lease1 WordSlot1 U64 U64))))
+(def read-after-word-cap-step
+  (fn ((step 1 (OwnedCapStep Lease0 Lease1 WordSlot0 WordSlot1 U64)))
+    (read-after-cap-step Lease0 Lease1 WordSlot0 WordSlot1 U64 step)))
+
+(claim increment-word-value (Pi ((old 1 U64)) U64))
+(def increment-word-value
+  (fn ((old 1 U64))
+    (u64-add old (u64 1))))
+
+(claim incremented-sample-word U64)
+(def incremented-sample-word
+  (increment-word-value (u64 7)))
+
+(claim rewrite-owned-word-handle
+  (Pi ((owned 1 (OwnedPtr Lease1 U64))
+       (step 1 (Pi ((old 1 U64)) U64)))
+      (Eff WordSlot1 WordSlot1 (OwnedPtr Lease1 U64))))
+(def rewrite-owned-word-handle
+  (fn ((owned 1 (OwnedPtr Lease1 U64))
+       (step 1 (Pi ((old 1 U64)) U64)))
+    (bind WordSlot1 WordSlot1 WordSlot1 (Observed Lease1 U64 U64) (OwnedPtr Lease1 U64)
+      (read-owned-word-handle owned)
+      (fn ((observed 1 (Observed Lease1 U64 U64)))
+        (with-observed Lease1 U64 U64 (Eff WordSlot1 WordSlot1 (OwnedPtr Lease1 U64)) observed
+          (fn ((lease 1 Lease1) (ptr (Ptr U64)) (old 1 U64))
+            (bind WordSlot1 WordSlot1 WordSlot1 Unit (OwnedPtr Lease1 U64)
+              (store WordSlot1 WordSlot1 U64 ptr (step old))
+              (fn ((done 1 Unit))
+                (let ((ignored 0 done))
+                  (pure WordSlot1 (OwnedPtr Lease1 U64) (own-ptr Lease1 U64 lease ptr)))))))))))
+
+(claim rewrite-owned-word-cap
+  (Pi ((owned 1 (OwnedCap Lease1 WordSlot1 U64))
+       (step 1 (Pi ((old 1 U64)) U64)))
+      (Eff WordSlot1 WordSlot1 (OwnedCap Lease1 WordSlot1 U64))))
+(def rewrite-owned-word-cap
+  (fn ((owned 1 (OwnedCap Lease1 WordSlot1 U64))
+       (step 1 (Pi ((old 1 U64)) U64)))
+    (bind WordSlot1 WordSlot1 WordSlot1 (ObservedCap Lease1 WordSlot1 U64 U64) (OwnedCap Lease1 WordSlot1 U64)
+      (read-owned-word-cap owned)
+      (fn ((observed 1 (ObservedCap Lease1 WordSlot1 U64 U64)))
+        (with-observed-cap Lease1 WordSlot1 U64 U64 (Eff WordSlot1 WordSlot1 (OwnedCap Lease1 WordSlot1 U64)) observed
+          (fn ((lease 1 Lease1) (ptr (Ptr U64)) (old 1 U64))
+            (bind WordSlot1 WordSlot1 WordSlot1 Unit (OwnedCap Lease1 WordSlot1 U64)
+              (store WordSlot1 WordSlot1 U64 ptr (step old))
+              (fn ((done 1 Unit))
+                (let ((ignored 0 done))
+                  (pure WordSlot1 (OwnedCap Lease1 WordSlot1 U64) (own-cap Lease1 WordSlot1 U64 lease ptr)))))))))))
+
+(claim rewrite-owned-word-cap-step
+  (Pi ((owned 1 (OwnedCap Lease1 WordSlot1 U64))
+       (step 1 (Pi ((old 1 U64)) U64)))
+      (Eff WordSlot1 WordSlot2 (OwnedCapStep Lease1 Lease2 WordSlot1 WordSlot2 U64))))
+(def rewrite-owned-word-cap-step
+  (fn ((owned 1 (OwnedCap Lease1 WordSlot1 U64))
+       (step 1 (Pi ((old 1 U64)) U64)))
+    (rewrite-owned-cap-step Lease1 Lease2 WordSlot1 WordSlot2 U64 owned lease2 step)))
+
+(claim increment-owned-word-handle (Pi ((owned 1 (OwnedPtr Lease1 U64))) (Eff WordSlot1 WordSlot1 (OwnedPtr Lease1 U64))))
+(def increment-owned-word-handle
+  (fn ((owned 1 (OwnedPtr Lease1 U64)))
+    (rewrite-owned-word-handle owned increment-word-value)))
+
+(claim write-owned-header-next (Pi ((lease 1 HeaderLease0) (hdr (Ptr Header)) (next-addr Addr)) (Eff HeaderRegion0 HeaderRegion1 (Owned HeaderLease1 Unit))))
+(def write-owned-header-next
+  (fn ((lease 1 HeaderLease0) (hdr (Ptr Header)) (next-addr Addr))
+    (bind HeaderRegion0 HeaderRegion1 HeaderRegion1 Unit (Owned HeaderLease1 Unit)
+      (store-field HeaderRegion0 HeaderRegion1 Header next hdr next-addr)
+      (fn ((done 1 Unit))
+        (let ((ignored 0 done)
+              (spent 0 lease))
+          (pure HeaderRegion1 (Owned HeaderLease1 Unit) (own HeaderLease1 Unit header-lease1 tt)))))))
+
+(claim read-owned-header-next (Pi ((lease 1 HeaderLease1) (hdr (Ptr Header))) (Eff HeaderRegion1 HeaderRegion1 (Owned HeaderLease1 Addr))))
+(def read-owned-header-next
+  (fn ((lease 1 HeaderLease1) (hdr (Ptr Header)))
+    (bind HeaderRegion1 HeaderRegion1 HeaderRegion1 Addr (Owned HeaderLease1 Addr)
+      (load-field HeaderRegion1 Header next hdr)
+      (fn ((value 1 Addr))
+        (let ((spent 0 lease))
+          (pure HeaderRegion1 (Owned HeaderLease1 Addr) (own HeaderLease1 Addr header-lease1 value)))))))
+
+(claim read-owned-header-next-handle (Pi ((owned 1 (OwnedPtr HeaderLease1 Header))) (Eff HeaderRegion1 HeaderRegion1 (Observed HeaderLease1 Header Addr))))
+(def read-owned-header-next-handle
+  (fn ((owned 1 (OwnedPtr HeaderLease1 Header)))
+    (with-owned-ptr HeaderLease1 Header (Eff HeaderRegion1 HeaderRegion1 (Observed HeaderLease1 Header Addr)) owned
+      (fn ((lease 1 HeaderLease1) (hdr (Ptr Header)))
+        (bind HeaderRegion1 HeaderRegion1 HeaderRegion1 Addr (Observed HeaderLease1 Header Addr)
+          (load-field HeaderRegion1 Header next hdr)
+          (fn ((value 1 Addr))
+            (pure HeaderRegion1 (Observed HeaderLease1 Header Addr) (observe HeaderLease1 Header Addr lease hdr value))))))))
+
+(claim header-cap-handle (OwnedCap HeaderLease1 HeaderRegion1 Header))
+(def header-cap-handle
+  (own-cap HeaderLease1 HeaderRegion1 Header header-lease1 header-base))
+
+(claim header-cap-start (OwnedCap HeaderLease0 HeaderRegion0 Header))
+(def header-cap-start
+  (own-cap HeaderLease0 HeaderRegion0 Header header-lease0 header-base))
+
+(claim header-cap-step (OwnedCapStep HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header))
+(def header-cap-step
+  (own-cap-step HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header header-lease1 header-base))
+
+(claim settled-header-cap-step (OwnedCap HeaderLease1 HeaderRegion1 Header))
+(def settled-header-cap-step
+  (settle-cap-step HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header header-cap-step))
+
+(claim forgot-header-cap-step (OwnedPtr HeaderLease1 Header))
+(def forgot-header-cap-step
+  (forget-cap-step HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header header-cap-step))
+
+(claim forgot-header-cap-handle (OwnedPtr HeaderLease1 Header))
+(def forgot-header-cap-handle
+  (forget-owned-cap HeaderLease1 HeaderRegion1 Header header-cap-handle))
+
+(claim read-owned-header-next-cap (Pi ((owned 1 (OwnedCap HeaderLease1 HeaderRegion1 Header))) (Eff HeaderRegion1 HeaderRegion1 (ObservedCap HeaderLease1 HeaderRegion1 Header Addr))))
+(def read-owned-header-next-cap
+  (fn ((owned 1 (OwnedCap HeaderLease1 HeaderRegion1 Header)))
+    (with-owned-cap HeaderLease1 HeaderRegion1 Header (Eff HeaderRegion1 HeaderRegion1 (ObservedCap HeaderLease1 HeaderRegion1 Header Addr)) owned
+      (fn ((lease 1 HeaderLease1) (hdr (Ptr Header)))
+        (bind HeaderRegion1 HeaderRegion1 HeaderRegion1 Addr (ObservedCap HeaderLease1 HeaderRegion1 Header Addr)
+          (load-field HeaderRegion1 Header next hdr)
+          (fn ((value 1 Addr))
+            (pure HeaderRegion1 (ObservedCap HeaderLease1 HeaderRegion1 Header Addr) (observe-cap HeaderLease1 HeaderRegion1 Header Addr lease hdr value))))))))
+
+(claim write-owned-header-next-cap-step
+  (Pi ((owned 1 (OwnedCap HeaderLease0 HeaderRegion0 Header))
+       (next-addr Addr))
+      (Eff HeaderRegion0 HeaderRegion1 (OwnedCapStep HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header))))
+(def write-owned-header-next-cap-step
+  (fn ((owned 1 (OwnedCap HeaderLease0 HeaderRegion0 Header))
+       (next-addr Addr))
+    (with-owned-cap HeaderLease0 HeaderRegion0 Header (Eff HeaderRegion0 HeaderRegion1 (OwnedCapStep HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header)) owned
+      (fn ((lease 1 HeaderLease0) (hdr (Ptr Header)))
+        (bind HeaderRegion0 HeaderRegion1 HeaderRegion1 Unit (OwnedCapStep HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header)
+          (store-field HeaderRegion0 HeaderRegion1 Header next hdr next-addr)
+          (fn ((done 1 Unit))
+            (let ((ignored 0 done)
+                  (spent 0 lease))
+              (pure HeaderRegion1 (OwnedCapStep HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header)
+                (own-cap-step HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header header-lease1 hdr)))))))))
+
+(claim read-after-header-cap-step
+  (Pi ((step 1 (OwnedCapStep HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header)))
+      (Eff HeaderRegion1 HeaderRegion1 (ObservedCap HeaderLease1 HeaderRegion1 Header Addr))))
+(def read-after-header-cap-step
+  (fn ((step 1 (OwnedCapStep HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header)))
+    (read-owned-header-next-cap
+      (settle-cap-step HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header step))))
+
+(claim write-owned-header-cap-step-by-value
+  (Pi ((owned 1 (OwnedCap HeaderLease0 HeaderRegion0 Header))
+       (header 1 Header))
+      (Eff HeaderRegion0 HeaderRegion1 (OwnedCapStep HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header))))
+(def write-owned-header-cap-step-by-value
+  (fn ((owned 1 (OwnedCap HeaderLease0 HeaderRegion0 Header))
+       (header 1 Header))
+    (store-owned-cap-step HeaderLease0 HeaderLease1 HeaderRegion0 HeaderRegion1 Header owned header-lease1 header)))
+
+(claim replace-header-next-value (Pi ((next-addr Addr) (old 1 Header)) Header))
+(def replace-header-next-value
+  (fn ((next-addr Addr) (old 1 Header))
+    (with-field Header next old next-addr)))
+
+(claim header-step-sample Header)
+(def header-step-sample
+  (layout Header
+    ((magic (u64 64))
+     (next (addr 4096)))))
+
+(claim replaced-header-next-sample Addr)
+(def replaced-header-next-sample
+  (field Header next
+    (replace-header-next-value (addr 12288) header-step-sample)))
+
+(claim rewrite-owned-header-next-cap-value-step
+  (Pi ((owned 1 (OwnedCap HeaderLease1 HeaderRegion1 Header))
+       (next-addr Addr))
+      (Eff HeaderRegion1 HeaderRegion2 (OwnedCapStep HeaderLease1 HeaderLease2 HeaderRegion1 HeaderRegion2 Header))))
+(def rewrite-owned-header-next-cap-value-step
+  (fn ((owned 1 (OwnedCap HeaderLease1 HeaderRegion1 Header))
+       (next-addr Addr))
+    (rewrite-owned-cap-step HeaderLease1 HeaderLease2 HeaderRegion1 HeaderRegion2 Header
+      owned
+      header-lease2
+      (replace-header-next-value next-addr))))
+
+(claim write-owned-header-next-handle (Pi ((owned 1 (OwnedPtr HeaderLease0 Header)) (next-addr Addr)) (Eff HeaderRegion0 HeaderRegion1 (OwnedPtr HeaderLease1 Header))))
+(def write-owned-header-next-handle
+  (fn ((owned 1 (OwnedPtr HeaderLease0 Header)) (next-addr Addr))
+    (with-owned-ptr HeaderLease0 Header (Eff HeaderRegion0 HeaderRegion1 (OwnedPtr HeaderLease1 Header)) owned
+      (fn ((lease 1 HeaderLease0) (hdr (Ptr Header)))
+        (bind HeaderRegion0 HeaderRegion1 HeaderRegion1 Unit (OwnedPtr HeaderLease1 Header)
+          (store-field HeaderRegion0 HeaderRegion1 Header next hdr next-addr)
+          (fn ((done 1 Unit))
+            (let ((ignored 0 done)
+                  (spent 0 lease))
+              (pure HeaderRegion1 (OwnedPtr HeaderLease1 Header) (own-ptr HeaderLease1 Header header-lease1 hdr)))))))))
+
+(claim rewrite-observed-header-next (Pi ((observed 1 (Observed HeaderLease1 Header Addr)) (next-addr Addr)) (Eff HeaderRegion1 HeaderRegion1 (OwnedPtr HeaderLease1 Header))))
+(def rewrite-observed-header-next
+  (fn ((observed 1 (Observed HeaderLease1 Header Addr)) (next-addr Addr))
+    (with-observed HeaderLease1 Header Addr (Eff HeaderRegion1 HeaderRegion1 (OwnedPtr HeaderLease1 Header)) observed
+      (fn ((lease 1 HeaderLease1) (hdr (Ptr Header)) (old-next 1 Addr))
+        (let ((ignored-old 0 old-next))
+          (bind HeaderRegion1 HeaderRegion1 HeaderRegion1 Unit (OwnedPtr HeaderLease1 Header)
+            (store-field HeaderRegion1 HeaderRegion1 Header next hdr next-addr)
+            (fn ((done 1 Unit))
+              (let ((ignored 0 done))
+                (pure HeaderRegion1 (OwnedPtr HeaderLease1 Header) (own-ptr HeaderLease1 Header lease hdr))))))))))
+
+(claim advance-header-next-value (Pi ((old-next 1 Addr)) Addr))
+(def advance-header-next-value
+  (fn ((old-next 1 Addr))
+    (addr-add old-next (u64 4096))))
+
+(claim advanced-sample-next Addr)
+(def advanced-sample-next
+  (advance-header-next-value (addr 4096)))
+
+(claim rewrite-owned-header-next-handle
+  (Pi ((owned 1 (OwnedPtr HeaderLease1 Header))
+       (step 1 (Pi ((old-next 1 Addr)) Addr)))
+      (Eff HeaderRegion1 HeaderRegion1 (OwnedPtr HeaderLease1 Header))))
+(def rewrite-owned-header-next-handle
+  (fn ((owned 1 (OwnedPtr HeaderLease1 Header))
+       (step 1 (Pi ((old-next 1 Addr)) Addr)))
+    (bind HeaderRegion1 HeaderRegion1 HeaderRegion1 (Observed HeaderLease1 Header Addr) (OwnedPtr HeaderLease1 Header)
+      (read-owned-header-next-handle owned)
+      (fn ((observed 1 (Observed HeaderLease1 Header Addr)))
+        (with-observed HeaderLease1 Header Addr (Eff HeaderRegion1 HeaderRegion1 (OwnedPtr HeaderLease1 Header)) observed
+          (fn ((lease 1 HeaderLease1) (hdr (Ptr Header)) (old-next 1 Addr))
+            (bind HeaderRegion1 HeaderRegion1 HeaderRegion1 Unit (OwnedPtr HeaderLease1 Header)
+              (store-field HeaderRegion1 HeaderRegion1 Header next hdr (step old-next))
+              (fn ((done 1 Unit))
+                (let ((ignored 0 done))
+                  (pure HeaderRegion1 (OwnedPtr HeaderLease1 Header) (own-ptr HeaderLease1 Header lease hdr)))))))))))
+
+(claim rewrite-owned-header-next-cap
+  (Pi ((owned 1 (OwnedCap HeaderLease1 HeaderRegion1 Header))
+       (step 1 (Pi ((old-next 1 Addr)) Addr)))
+      (Eff HeaderRegion1 HeaderRegion1 (OwnedCap HeaderLease1 HeaderRegion1 Header))))
+(def rewrite-owned-header-next-cap
+  (fn ((owned 1 (OwnedCap HeaderLease1 HeaderRegion1 Header))
+       (step 1 (Pi ((old-next 1 Addr)) Addr)))
+    (bind HeaderRegion1 HeaderRegion1 HeaderRegion1 (ObservedCap HeaderLease1 HeaderRegion1 Header Addr) (OwnedCap HeaderLease1 HeaderRegion1 Header)
+      (read-owned-header-next-cap owned)
+      (fn ((observed 1 (ObservedCap HeaderLease1 HeaderRegion1 Header Addr)))
+        (with-observed-cap HeaderLease1 HeaderRegion1 Header Addr (Eff HeaderRegion1 HeaderRegion1 (OwnedCap HeaderLease1 HeaderRegion1 Header)) observed
+          (fn ((lease 1 HeaderLease1) (hdr (Ptr Header)) (old-next 1 Addr))
+            (bind HeaderRegion1 HeaderRegion1 HeaderRegion1 Unit (OwnedCap HeaderLease1 HeaderRegion1 Header)
+              (store-field HeaderRegion1 HeaderRegion1 Header next hdr (step old-next))
+              (fn ((done 1 Unit))
+                (let ((ignored 0 done))
+                  (pure HeaderRegion1 (OwnedCap HeaderLease1 HeaderRegion1 Header) (own-cap HeaderLease1 HeaderRegion1 Header lease hdr)))))))))))
+
+(claim rewrite-owned-header-next-cap-step
+  (Pi ((owned 1 (OwnedCap HeaderLease1 HeaderRegion1 Header))
+       (step 1 (Pi ((old-next 1 Addr)) Addr)))
+      (Eff HeaderRegion1 HeaderRegion2 (OwnedCapStep HeaderLease1 HeaderLease2 HeaderRegion1 HeaderRegion2 Header))))
+(def rewrite-owned-header-next-cap-step
+  (fn ((owned 1 (OwnedCap HeaderLease1 HeaderRegion1 Header))
+       (step 1 (Pi ((old-next 1 Addr)) Addr)))
+    (bind HeaderRegion1 HeaderRegion1 HeaderRegion2 (ObservedCap HeaderLease1 HeaderRegion1 Header Addr) (OwnedCapStep HeaderLease1 HeaderLease2 HeaderRegion1 HeaderRegion2 Header)
+      (read-owned-header-next-cap owned)
+      (fn ((observed 1 (ObservedCap HeaderLease1 HeaderRegion1 Header Addr)))
+        (with-observed-cap HeaderLease1 HeaderRegion1 Header Addr (Eff HeaderRegion1 HeaderRegion2 (OwnedCapStep HeaderLease1 HeaderLease2 HeaderRegion1 HeaderRegion2 Header)) observed
+          (fn ((lease 1 HeaderLease1) (hdr (Ptr Header)) (old-next 1 Addr))
+            (bind HeaderRegion1 HeaderRegion2 HeaderRegion2 Unit (OwnedCapStep HeaderLease1 HeaderLease2 HeaderRegion1 HeaderRegion2 Header)
+              (store-field HeaderRegion1 HeaderRegion2 Header next hdr (step old-next))
+              (fn ((done 1 Unit))
+                (let ((ignored 0 done)
+                      (spent 0 lease))
+                  (pure HeaderRegion2 (OwnedCapStep HeaderLease1 HeaderLease2 HeaderRegion1 HeaderRegion2 Header)
+                    (own-cap-step HeaderLease1 HeaderLease2 HeaderRegion1 HeaderRegion2 Header header-lease2 hdr)))))))))))
+
+(claim advance-owned-header-next-handle (Pi ((owned 1 (OwnedPtr HeaderLease1 Header))) (Eff HeaderRegion1 HeaderRegion1 (OwnedPtr HeaderLease1 Header))))
+(def advance-owned-header-next-handle
+  (fn ((owned 1 (OwnedPtr HeaderLease1 Header)))
+    (rewrite-owned-header-next-handle owned advance-header-next-value)))

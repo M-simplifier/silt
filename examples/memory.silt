@@ -1,0 +1,142 @@
+; Hosted memory-effect seeds for stage0: capability-indexed load/store with
+; Heap shorthand, plus field-aware aggregate layouts and field-directed helpers.
+
+(layout Header 16 8
+  ((magic U64 0)
+   (next Addr 8)))
+
+(data HeapCell0 ())
+(data HeapCell1 ())
+(data HeaderClean ())
+(data HeaderDirty ())
+
+(claim read-word (Pi ((ptr (Ptr U64))) (Eff Heap U64)))
+(def read-word
+  (fn ((ptr (Ptr U64)))
+    (load U64 ptr)))
+
+(claim write-word (Pi ((ptr (Ptr U64)) (value U64)) (Eff Heap Unit)))
+(def write-word
+  (fn ((ptr (Ptr U64)) (value U64))
+    (store U64 ptr value)))
+
+(claim seed-word-token (Pi ((ptr (Ptr U64)) (value U64)) (Eff HeapCell0 HeapCell1 Unit)))
+(def seed-word-token
+  (fn ((ptr (Ptr U64)) (value U64))
+    (store HeapCell0 HeapCell1 U64 ptr value)))
+
+(claim seed-and-read-token (Pi ((ptr (Ptr U64)) (value U64)) (Eff HeapCell0 HeapCell1 U64)))
+(def seed-and-read-token
+  (fn ((ptr (Ptr U64)) (value U64))
+    (bind HeapCell0 HeapCell1 HeapCell1 Unit U64
+      (store HeapCell0 HeapCell1 U64 ptr value)
+      (fn ((done 1 Unit))
+        (let ((ignored 0 done))
+          (load HeapCell1 U64 ptr))))))
+
+(claim increment-word (Pi ((ptr (Ptr U64))) (Eff Heap U64)))
+(def increment-word
+  (fn ((ptr (Ptr U64)))
+    (bind Heap U64 U64
+      (load U64 ptr)
+      (fn ((x 1 U64))
+        (bind Heap Unit U64
+          (store U64 ptr (u64-add x (u64 1)))
+          (fn ((done 1 Unit))
+            (let ((ignored 0 done))
+              (load U64 ptr))))))))
+
+(claim bump-and-read (Pi ((base (Ptr U64))) (Eff Heap U64)))
+(def bump-and-read
+  (fn ((base (Ptr U64)))
+    (load U64 (ptr-step U64 base (u64 1)))))
+
+(claim read-next (Pi ((ptr (Ptr Addr))) (Eff Heap Addr)))
+(def read-next
+  (fn ((ptr (Ptr Addr)))
+    (load Addr ptr)))
+
+(claim write-next (Pi ((ptr (Ptr Addr)) (value Addr)) (Eff Heap Unit)))
+(def write-next
+  (fn ((ptr (Ptr Addr)) (value Addr))
+    (store Addr ptr value)))
+
+(claim header-magic-ptr (Pi ((hdr (Ptr Header))) (Ptr U64)))
+(def header-magic-ptr
+  (fn ((hdr (Ptr Header)))
+    (ptr-field Header magic hdr)))
+
+(claim header-next-ptr (Pi ((hdr (Ptr Header))) (Ptr Addr)))
+(def header-next-ptr
+  (fn ((hdr (Ptr Header)))
+    (ptr-field Header next hdr)))
+
+(claim read-header-magic (Pi ((hdr (Ptr Header))) (Eff Heap U64)))
+(def read-header-magic
+  (fn ((hdr (Ptr Header)))
+    (load-field Header magic hdr)))
+
+(claim read-header-next (Pi ((hdr (Ptr Header))) (Eff Heap Addr)))
+(def read-header-next
+  (fn ((hdr (Ptr Header)))
+    (load-field Header next hdr)))
+
+(claim read-header-next-via-layout (Pi ((hdr (Ptr Header))) (Eff Heap Addr)))
+(def read-header-next-via-layout
+  (fn ((hdr (Ptr Header)))
+    (let-load-layout Header ((magic 0 ignored) (next next)) hdr
+      (pure Heap Addr next))))
+
+(claim write-header-next (Pi ((hdr (Ptr Header)) (value Addr)) (Eff Heap Unit)))
+(def write-header-next
+  (fn ((hdr (Ptr Header)) (value Addr))
+    (store-field Header next hdr value)))
+
+(claim write-header-next-token (Pi ((hdr (Ptr Header)) (value Addr)) (Eff HeaderClean HeaderDirty Unit)))
+(def write-header-next-token
+  (fn ((hdr (Ptr Header)) (value Addr))
+    (store-field HeaderClean HeaderDirty Header next hdr value)))
+
+(claim read-header-next-token (Pi ((hdr (Ptr Header))) (Eff HeaderDirty Addr)))
+(def read-header-next-token
+  (fn ((hdr (Ptr Header)))
+    (load-field HeaderDirty Header next hdr)))
+
+(claim read-header-next-via-layout-token (Pi ((hdr (Ptr Header))) (Eff HeaderDirty Addr)))
+(def read-header-next-via-layout-token
+  (fn ((hdr (Ptr Header)))
+    (let-load-layout HeaderDirty Header ((magic 0 ignored) (next next)) hdr
+      (pure HeaderDirty Addr next))))
+
+(claim write-header-fields (Pi ((hdr (Ptr Header)) (magic U64) (next-addr Addr)) (Eff Heap Unit)))
+(def write-header-fields
+  (fn ((hdr (Ptr Header)) (magic U64) (next-addr Addr))
+    (store-fields Header hdr
+      ((magic magic)
+       (next next-addr)))))
+
+(claim write-header-fields-token (Pi ((hdr (Ptr Header)) (magic U64) (next-addr Addr)) (Eff HeaderDirty Unit)))
+(def write-header-fields-token
+  (fn ((hdr (Ptr Header)) (magic U64) (next-addr Addr))
+    (store-fields HeaderDirty Header hdr
+      ((magic magic)
+       (next next-addr)))))
+
+(claim override-header-next (Pi ((hdr (Ptr Header))) (Eff Heap Unit)))
+(def override-header-next
+  (fn ((hdr (Ptr Header)))
+    (store-fields Header hdr
+      ((next (addr 8192))
+       (next (addr 12288))))))
+
+(claim header-next-offset U64)
+(def header-next-offset
+  (field-offset Header next))
+
+(claim copy-header (Pi ((src (Ptr Header)) (dst (Ptr Header))) (Eff Heap Unit)))
+(def copy-header
+  (fn ((src (Ptr Header)) (dst (Ptr Header)))
+    (bind Heap Header Unit
+      (load Header src)
+      (fn ((hdr 1 Header))
+        (store Header dst hdr)))))

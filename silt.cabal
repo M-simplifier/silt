@@ -1,0 +1,43 @@
+cabal-version:      3.0
+name:               silt
+version:            0.1.0.0
+build-type:         Simple
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Silt contributors
+maintainer:         Silt contributors
+category:           Language
+synopsis:           Stage0 bootstrap for the SILT research language
+description:
+  Stage0 bootstrap checker for a next-generation pure functional systems
+  programming language with an S-expression surface and a quantitative
+  dependent core direction.
+
+common common-options
+  default-language: GHC2021
+  ghc-options:      -Wall
+  build-depends:
+      base >=4.18 && <5
+    , containers
+
+executable silt
+  import:           common-options
+  hs-source-dirs:   app, src
+  main-is:          Main.hs
+  other-modules:
+      Silt.CLI
+      Silt.Codegen.C
+      Silt.Elab
+      Silt.Parse
+      Silt.Syntax
+
+test-suite silt-test
+  import:           common-options
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test, src
+  main-is:          Spec.hs
+  other-modules:
+      Silt.Codegen.C
+      Silt.Elab
+      Silt.Parse
+      Silt.Syntax
