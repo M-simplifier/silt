@@ -47,6 +47,8 @@ data Decl
   | BootContract Name [BootContractClause]
   | LayoutDecl Name Word64 Word64 [LayoutFieldDecl]
   | StaticBytes Name [Word64]
+  | StaticCell Name Surface
+  | StaticValue Name Surface Name Surface
   | DataDecl Name [Binder Surface] [ConstructorDecl]
   deriving (Eq, Show)
 
@@ -153,6 +155,8 @@ data Term
   | TU64 Word64
   | TAddr Word64
   | TStaticBytesPtr Name
+  | TStaticCellPtr Name
+  | TStaticValuePtr Name
   | TPi Name Quantity Term Term
   | TLam Name Quantity Term
   | TMatch Term [CaseTerm]
@@ -205,6 +209,18 @@ prettyDecl decl =
         ++ " ("
         ++ unwords ["(u8 " ++ show value ++ ")" | value <- values]
         ++ "))"
+    StaticCell name ty ->
+      "(static-cell " ++ name ++ " " ++ prettySurface ty ++ ")"
+    StaticValue name ty sectionName value ->
+      "(static-value "
+        ++ name
+        ++ " "
+        ++ prettySurface ty
+        ++ " "
+        ++ sectionName
+        ++ " "
+        ++ prettySurface value
+        ++ ")"
     DataDecl name params ctors ->
       "(data "
         ++ name
@@ -364,6 +380,8 @@ prettyTerm term =
     TU64 value -> "(u64 " ++ show value ++ ")"
     TAddr value -> "(addr " ++ show value ++ ")"
     TStaticBytesPtr name -> "(static-bytes-ptr " ++ name ++ ")"
+    TStaticCellPtr name -> "(static-cell-ptr " ++ name ++ ")"
+    TStaticValuePtr name -> "(static-value-ptr " ++ name ++ ")"
     TPi name quantity domain codomain ->
       "(Pi ((" ++ name ++ prettyQuantityAtom quantity ++ " " ++ prettyTerm domain ++ ")) " ++ prettyTerm codomain ++ ")"
     TLam name quantity body ->

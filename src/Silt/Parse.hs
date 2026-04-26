@@ -115,6 +115,10 @@ sexprToDecl sexpr =
       LayoutDecl name <$> parseNatural size <*> parseNatural align <*> traverse sexprToLayoutFieldDecl fields
     List [Atom "static-bytes", Atom name, List values] ->
       StaticBytes name <$> traverse sexprToStaticByte values
+    List [Atom "static-cell", Atom name, ty] ->
+      StaticCell name <$> sexprToSurface ty
+    List [Atom "static-value", Atom name, ty, Atom sectionName, value] ->
+      StaticValue name <$> sexprToSurface ty <*> pure sectionName <*> sexprToSurface value
     List [Atom "extern", Atom name, ty] ->
       (\ty' -> Extern name ty' Nothing) <$> sexprToSurface ty
     List [Atom "extern", Atom name, ty, Atom symbol] ->
@@ -138,7 +142,7 @@ sexprToDecl sexpr =
     List [Atom "def", Atom name, expr] ->
       Define name <$> sexprToSurface expr
     _ ->
-      Left ("expected top-level (data ...), (layout ...), (static-bytes ...), (extern ...), (export ...), (section ...), (calling-convention ...), (entry ...), (abi-contract ...), (target-contract ...), (boot-contract ...), (claim ...), or (def ...), found " ++ show sexpr)
+      Left ("expected top-level (data ...), (layout ...), (static-bytes ...), (static-cell ...), (static-value ...), (extern ...), (export ...), (section ...), (calling-convention ...), (entry ...), (abi-contract ...), (target-contract ...), (boot-contract ...), (claim ...), or (def ...), found " ++ show sexpr)
 
 sexprToAbiContractClause :: SExpr -> Either String AbiContractClause
 sexprToAbiContractClause sexpr =

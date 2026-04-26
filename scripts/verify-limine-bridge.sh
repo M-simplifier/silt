@@ -55,6 +55,31 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_ok_bytes[20] __attribute_
   exit 1
 fi
 
+if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static silt_layout_BootState silt_value_limine_boot_manifest __attribute__((used, section(".data.silt"), aligned(8))) = {{1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 66u, 0u, 0u, 0u, 0u, 0u, 0u, 0u}};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed boot manifest as initialized data" >&2
+  exit 1
+fi
+
+if ! grep -Fq '(*((silt_layout_BootState*)(((uintptr_t)&silt_cell_limine_boot_state[0])))) = BootState_0;' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store BootState through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_BootState state_1 = (*((silt_layout_BootState*)(((uintptr_t)&silt_cell_limine_boot_state[0]))));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load BootState back through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_BootState manifest_2 = (*((silt_layout_BootState*)(((uintptr_t)&silt_value_limine_boot_manifest))));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the initialized boot manifest" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'silt_static_limine_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the success message pointer from static bytes" >&2
   exit 1
@@ -202,6 +227,21 @@ fi
 
 if ! objdump -h "$TMPDIR/silt-limine.elf" | awk '$2 == ".rodata" { found = 1 } END { exit found ? 0 : 1 }'; then
   echo "Limine kernel artifact is missing a rodata section for static bytes" >&2
+  exit 1
+fi
+
+if ! objdump -h "$TMPDIR/silt-limine.elf" | awk '$2 == ".bss" { found = 1 } END { exit found ? 0 : 1 }'; then
+  echo "Limine kernel artifact is missing a bss section for static cells" >&2
+  exit 1
+fi
+
+if ! nm "$TMPDIR/silt-limine.elf" | grep -Fq 'silt_cell_limine_boot_state'; then
+  echo "Limine kernel artifact is missing the boot-state static cell symbol" >&2
+  exit 1
+fi
+
+if ! nm "$TMPDIR/silt-limine.elf" | grep -Fq 'silt_value_limine_boot_manifest'; then
+  echo "Limine kernel artifact is missing the initialized boot manifest symbol" >&2
   exit 1
 fi
 

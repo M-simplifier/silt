@@ -28,6 +28,8 @@ data CheckedDecl
   | CheckedBootContract Name [BootContractClause]
   | CheckedLayout Name Word64 Word64 [CheckedLayoutField]
   | CheckedStaticBytes Name [Word64]
+  | CheckedStaticCell Name Term
+  | CheckedStaticValue Name Term Name Term
   | CheckedData Name Term [CheckedConstructor]
   deriving (Eq, Show)
 
@@ -100,6 +102,8 @@ data Value
   | VU64 Word64
   | VAddr Word64
   | VStaticBytesPtr Name
+  | VStaticCellPtr Name
+  | VStaticValuePtr Name
   | VLayout Name [LayoutFieldInit Value]
   | VPrim Name [Value]
 
@@ -263,6 +267,10 @@ processDecl globals decl =
       processLayoutDecl globals name size align fields
     StaticBytes name values ->
       processStaticBytesDecl globals name values
+    StaticCell name tySurface ->
+      processStaticCellDecl globals name tySurface
+    StaticValue name tySurface sectionName valueSurface ->
+      processStaticValueDecl globals name tySurface sectionName valueSurface
     Define name exprSurface -> do
       entry <- lookupGlobal globals name
       unless (globalDefinition entry == Nothing && globalExternSymbol entry == Nothing) $
@@ -410,6 +418,116 @@ processStaticBytesDecl globals name values = do
     )
   where
     lenName = staticBytesLengthName name
+
+processStaticCellDecl :: Globals -> Name -> Surface -> Either String (Globals, CheckedDecl)
+processStaticCellDecl globals name tySurface = do
+  ensureFresh globals name
+  (tyTerm, tyTy) <- infer globals [] [] tySurface
+  _ <- expectUniverse 0 tyTy
+  let tyValue = eval globals [] tyTerm
+  case runtimeTypeLayoutValue globals tyValue of
+    Nothing ->
+      Left ("static-cell " ++ name ++ " type must have a runtime-backed representation")
+    Just _ -> Right ()
+  let ptrTy = TApp (TGlobal "Ptr") tyTerm
+  let ptrEntry =
+        GlobalEntry
+          { globalTypeTerm = ptrTy
+          , globalTypeValue = eval globals [] ptrTy
+          , globalDefinition = Just (TStaticCellPtr name)
+          , globalValue = Just (VStaticCellPtr name)
+          , globalExternSymbol = Nothing
+          , globalExportSymbol = Nothing
+          , globalSectionName = Nothing
+          , globalCallingConvention = Nothing
+          , globalEntryPoint = False
+          }
+  pure
+    ( insertGlobal name ptrEntry globals
+    , CheckedStaticCell name tyTerm
+    )
+
+processStaticValueDecl :: Globals -> Name -> Surface -> Name -> Surface -> Either String (Globals, CheckedDecl)
+processStaticValueDecl globals name tySurface sectionName valueSurface = do
+  ensureFresh globals name
+  validateCSectionName ("static-value section for " ++ name) sectionName
+  (tyTerm, tyTy) <- infer globals [] [] tySurface
+  _ <- expectUniverse 0 tyTy
+  let tyValue = eval globals [] tyTerm
+  case runtimeTypeLayoutValue globals tyValue of
+    Nothing ->
+      Left ("static-value " ++ name ++ " type must have a runtime-backed representation")
+    Just _ -> Right ()
+  valueTerm <- check globals [] [] valueSurface tyValue
+  let valueNF = quote 0 (eval globals [] valueTerm)
+  validateStaticValueTerm globals name tyTerm valueNF
+  let ptrTy = TApp (TGlobal "Ptr") tyTerm
+  let ptrEntry =
+        GlobalEntry
+          { globalTypeTerm = ptrTy
+          , globalTypeValue = eval globals [] ptrTy
+          , globalDefinition = Just (TStaticValuePtr name)
+          , globalValue = Just (VStaticValuePtr name)
+          , globalExternSymbol = Nothing
+          , globalExportSymbol = Nothing
+          , globalSectionName = Nothing
+          , globalCallingConvention = Nothing
+          , globalEntryPoint = False
+          }
+  pure
+    ( insertGlobal name ptrEntry globals
+    , CheckedStaticValue name tyTerm sectionName valueNF
+    )
+
+validateStaticValueTerm :: Globals -> Name -> Term -> Term -> Either String ()
+validateStaticValueTerm globals name ty value =
+  case ty of
+    TGlobal "Unit" ->
+      requireStaticValue (value == TGlobal "tt")
+    TGlobal "Bool" ->
+      requireStaticValue (value == TGlobal "True" || value == TGlobal "False")
+    TGlobal "U8" ->
+      requireStaticValue $
+        case value of
+          TU8 _ -> True
+          _ -> False
+    TGlobal "U64" ->
+      requireStaticValue $
+        case value of
+          TU64 _ -> True
+          _ -> False
+    TGlobal "Addr" ->
+      requireStaticValue $
+        case value of
+          TAddr _ -> True
+          _ -> False
+    TApp (TGlobal "Ptr") _ ->
+      requireStaticValue (isStaticPtrValue value)
+    TGlobal layoutName
+      | Just layoutInfo <- lookupLayoutInfoMaybe globals layoutName ->
+          case value of
+            TLayout valueLayout fields
+              | valueLayout == layoutName && map (\(LayoutFieldInit fieldName _) -> fieldName) fields == layoutFieldOrder layoutInfo ->
+                  mapM_ (validateLayoutField layoutName layoutInfo) fields
+              | otherwise -> unsupported
+            _ -> unsupported
+      | otherwise -> unsupported
+    _ -> unsupported
+  where
+    requireStaticValue ok =
+      if ok then Right () else unsupported
+    validateLayoutField layoutName layoutInfo (LayoutFieldInit fieldName fieldValue) =
+      case Map.lookup fieldName (layoutFields layoutInfo) of
+        Nothing -> Left ("internal error: static-value " ++ name ++ " field metadata missing for " ++ layoutName ++ "." ++ fieldName)
+        Just fieldInfo -> validateStaticValueTerm globals name (layoutFieldTypeTerm fieldInfo) fieldValue
+    unsupported =
+      Left ("static-value " ++ name ++ " initializer must be a compile-time static value for " ++ prettyTerm ty)
+
+isStaticPtrValue :: Term -> Bool
+isStaticPtrValue value =
+  case unfoldApps value of
+    (TGlobal "ptr-from-addr", [_ty, TAddr _]) -> True
+    _ -> False
 
 buildConstructor ::
      Globals
@@ -1642,6 +1760,8 @@ countRuntimeUses globals target term =
         TU64 _ -> 0
         TAddr _ -> 0
         TStaticBytesPtr _ -> 0
+        TStaticCellPtr _ -> 0
+        TStaticValuePtr _ -> 0
         TLayout _ fields ->
           sum [countRuntimeUses globals target value | LayoutFieldInit _ value <- fields]
         TLayoutField _ _ base ->
@@ -1694,6 +1814,8 @@ countVarUses target term =
     TU64 _ -> 0
     TAddr _ -> 0
     TStaticBytesPtr _ -> 0
+    TStaticCellPtr _ -> 0
+    TStaticValuePtr _ -> 0
     TLayout _ fields ->
       sum [countVarUses target value | LayoutFieldInit _ value <- fields]
     TLayoutField _ _ base ->
@@ -1755,6 +1877,10 @@ eval globals env term =
       VAddr value
     TStaticBytesPtr name ->
       VStaticBytesPtr name
+    TStaticCellPtr name ->
+      VStaticCellPtr name
+    TStaticValuePtr name ->
+      VStaticValuePtr name
     TLayout name fields ->
       VLayout name [LayoutFieldInit fieldName (eval globals env value) | LayoutFieldInit fieldName value <- fields]
     TLayoutField layoutName fieldName base ->
@@ -1949,6 +2075,8 @@ quote depth value =
     VU64 word -> TU64 word
     VAddr word -> TAddr word
     VStaticBytesPtr name -> TStaticBytesPtr name
+    VStaticCellPtr name -> TStaticCellPtr name
+    VStaticValuePtr name -> TStaticValuePtr name
     VLayout name fields ->
       TLayout name [LayoutFieldInit fieldName (quote depth fieldValue) | LayoutFieldInit fieldName fieldValue <- fields]
     VPi name quantity domain closure ->
@@ -2427,6 +2555,8 @@ shift cutoff delta term =
     TU64 value -> TU64 value
     TAddr value -> TAddr value
     TStaticBytesPtr name -> TStaticBytesPtr name
+    TStaticCellPtr name -> TStaticCellPtr name
+    TStaticValuePtr name -> TStaticValuePtr name
     TLayout name fields ->
       TLayout name [LayoutFieldInit fieldName (shift cutoff delta value) | LayoutFieldInit fieldName value <- fields]
     TLayoutField layoutName fieldName base ->
@@ -2457,6 +2587,8 @@ subst index replacement term =
     TU64 value -> TU64 value
     TAddr value -> TAddr value
     TStaticBytesPtr name -> TStaticBytesPtr name
+    TStaticCellPtr name -> TStaticCellPtr name
+    TStaticValuePtr name -> TStaticValuePtr name
     TLayout name fields ->
       TLayout name [LayoutFieldInit fieldName (subst index replacement value) | LayoutFieldInit fieldName value <- fields]
     TLayoutField layoutName fieldName base ->
@@ -2520,6 +2652,10 @@ renderCheckedDecl checked =
         ++ "\n"
         ++ staticBytesLengthName name
         ++ " : U64"
+    CheckedStaticCell name ty ->
+      name ++ " : (Ptr " ++ prettyTerm ty ++ ")\nstatic-cell"
+    CheckedStaticValue name ty sectionName _value ->
+      name ++ " : (Ptr " ++ prettyTerm ty ++ ")\nstatic-value section=" ++ sectionName
     CheckedData name ty ctors ->
       unlines
         ( (name ++ " : " ++ prettyTerm ty)

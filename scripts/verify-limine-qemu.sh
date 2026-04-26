@@ -121,4 +121,16 @@ if ! grep -Fq "SILT_LIMINE_QEMU_OK" "$SERIAL_LOG"; then
   exit 1
 fi
 
+if ! grep -Fq "SILT_STATE_OK!" "$SERIAL_LOG"; then
+  echo "QEMU serial log did not contain the Silt boot-state marker" >&2
+  sed -n '1,120p' "$SERIAL_LOG" >&2
+  exit 1
+fi
+
+if ! grep -Fq "SILT_IMAGE_OK!" "$SERIAL_LOG"; then
+  echo "QEMU serial log did not contain the Silt boot-image marker" >&2
+  sed -n '1,120p' "$SERIAL_LOG" >&2
+  exit 1
+fi
+
 echo "Limine QEMU smoke passed: entry reached and debug-exit marker observed"

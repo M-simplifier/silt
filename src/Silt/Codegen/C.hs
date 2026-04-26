@@ -6,6 +6,7 @@ module Silt.Codegen.C
   ) where
 
 import Data.Char (isAlphaNum)
+import Data.Bits ((.&.), shiftR)
 import Data.List (intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -94,6 +95,22 @@ data StaticBytesSpec = StaticBytesSpec
   }
   deriving (Eq, Show)
 
+data StaticCellSpec = StaticCellSpec
+  { staticCellInternalName :: Name
+  , staticCellSize :: Word64
+  , staticCellAlign :: Word64
+  }
+  deriving (Eq, Show)
+
+data StaticValueSpec = StaticValueSpec
+  { staticValueInternalName :: Name
+  , staticValueCTypeName :: String
+  , staticValueSectionName :: Name
+  , staticValueAlign :: Word64
+  , staticValueInitializer :: String
+  }
+  deriving (Eq, Show)
+
 data CodegenEnv = CodegenEnv
   { codegenExterns :: [ExternSpec]
   , codegenExports :: [ExportSpec]
@@ -102,6 +119,8 @@ data CodegenEnv = CodegenEnv
   , codegenEntries :: [EntrySpec]
   , codegenLayouts :: [LayoutSpec]
   , codegenStaticBytes :: [StaticBytesSpec]
+  , codegenStaticValues :: [StaticValueSpec]
+  , codegenStaticCells :: [StaticCellSpec]
   }
   deriving (Eq, Show)
 
@@ -133,9 +152,11 @@ emitDefinitionWith mode program name = do
   (ty, nf) <- normalizeDefinitionTerm program name
   let usedExterns = filterUsedExterns codegenEnv [ty, nf]
   let usedStaticBytes = filterUsedStaticBytes codegenEnv [ty, nf]
+  let usedStaticValues = filterUsedStaticValues codegenEnv [ty, nf]
+  let usedStaticCells = filterUsedStaticCells codegenEnv [ty, nf]
   prototypes <- traverse (renderExternPrototype codegenEnv) usedExterns
   lines' <- renderDefinitionLines codegenEnv name ty nf
-  pure (renderTranslationUnit mode (codegenLayouts codegenEnv) usedStaticBytes prototypes [lines'])
+  pure (renderTranslationUnit mode (codegenLayouts codegenEnv) usedStaticBytes usedStaticValues usedStaticCells prototypes [lines'])
 
 emitDefinitionsWith :: CodegenMode -> Program -> [Name] -> Either String String
 emitDefinitionsWith mode program names = do
@@ -150,6 +171,8 @@ emitDefinitionsWith mode program names = do
       names
   let usedExterns = filterUsedExterns codegenEnv [term | (_, ty, nf) <- defs, term <- [ty, nf]]
   let usedStaticBytes = filterUsedStaticBytes codegenEnv [term | (_, ty, nf) <- defs, term <- [ty, nf]]
+  let usedStaticValues = filterUsedStaticValues codegenEnv [term | (_, ty, nf) <- defs, term <- [ty, nf]]
+  let usedStaticCells = filterUsedStaticCells codegenEnv [term | (_, ty, nf) <- defs, term <- [ty, nf]]
   prototypes <- traverse (renderExternPrototype codegenEnv) usedExterns
   lines' <-
     mapM
@@ -157,7 +180,7 @@ emitDefinitionsWith mode program names = do
           renderDefinitionLines codegenEnv name ty nf
       )
       defs
-  pure (renderTranslationUnit mode (codegenLayouts codegenEnv) usedStaticBytes prototypes lines')
+  pure (renderTranslationUnit mode (codegenLayouts codegenEnv) usedStaticBytes usedStaticValues usedStaticCells prototypes lines')
 
 renderDefinitionLines :: CodegenEnv -> Name -> Term -> Term -> Either String [String]
 renderDefinitionLines codegenEnv name ty nf = do
@@ -185,8 +208,8 @@ renderDefinitionLines codegenEnv name ty nf = do
             ++ ["}"]
         )
 
-renderTranslationUnit :: CodegenMode -> [LayoutSpec] -> [StaticBytesSpec] -> [String] -> [[String]] -> String
-renderTranslationUnit mode layouts staticBytes prototypes definitions =
+renderTranslationUnit :: CodegenMode -> [LayoutSpec] -> [StaticBytesSpec] -> [StaticValueSpec] -> [StaticCellSpec] -> [String] -> [[String]] -> String
+renderTranslationUnit mode layouts staticBytes staticValues staticCells prototypes definitions =
   unlines
     ( preludeLines mode
         ++ intercalate [""] blocks
@@ -194,7 +217,9 @@ renderTranslationUnit mode layouts staticBytes prototypes definitions =
   where
     layoutLines = concatMap renderLayoutTypedef layouts
     staticBytesLines = concatMap renderStaticBytesDecl staticBytes
-    blocks = filter (not . null) [layoutLines, staticBytesLines, prototypes] ++ definitions
+    staticValueLines = concatMap renderStaticValueDecl staticValues
+    staticCellLines = concatMap renderStaticCellDecl staticCells
+    blocks = filter (not . null) [layoutLines, staticBytesLines, staticValueLines, staticCellLines, prototypes] ++ definitions
 
 buildSignatureEnv :: CodegenEnv -> [(PiBinder, LamBinder)] -> Either String ([(CType, String)], [RuntimeBinding])
 buildSignatureEnv codegenEnv =
@@ -250,6 +275,20 @@ compileExpr codegenEnv fresh env expected term =
           Just spec -> Right spec
           Nothing -> Left ("unknown static-bytes object for C backend: " ++ name)
       Right (fresh, [], "((uintptr_t)&" ++ staticBytesSymbol name ++ "[0])")
+    TStaticCellPtr name -> do
+      expectType expected CPtr "static-cell pointer"
+      _ <-
+        case lookupStaticCellSpec codegenEnv name of
+          Just spec -> Right spec
+          Nothing -> Left ("unknown static-cell object for C backend: " ++ name)
+      Right (fresh, [], "((uintptr_t)&" ++ staticCellSymbol name ++ "[0])")
+    TStaticValuePtr name -> do
+      expectType expected CPtr "static-value pointer"
+      _ <-
+        case lookupStaticValueSpec codegenEnv name of
+          Just spec -> Right spec
+          Nothing -> Left ("unknown static-value object for C backend: " ++ name)
+      Right (fresh, [], "((uintptr_t)&" ++ staticValueSymbol name ++ ")")
     TLayout layoutName fields ->
       compileLayoutLiteral codegenEnv fresh env expected layoutName fields
     TLayoutField layoutName fieldName base ->
@@ -880,17 +919,168 @@ staticBytesSpecs checked =
   | CheckedStaticBytes name values <- checked
   ]
 
+staticCellSpecs :: [LayoutSpec] -> [CheckedDecl] -> [StaticCellSpec]
+staticCellSpecs layouts checked =
+  [ let (size, align) = staticRuntimeLayout layouts ty
+     in StaticCellSpec name size align
+  | CheckedStaticCell name ty <- checked
+  ]
+
+staticValueSpecs :: [LayoutSpec] -> [CheckedDecl] -> [StaticValueSpec]
+staticValueSpecs layouts checked =
+  [ let (_, align) = staticRuntimeLayout layouts ty
+     in StaticValueSpec
+          name
+          (staticCTypeName layouts ty)
+          sectionName
+          align
+          (staticInitializer layouts ty value)
+  | CheckedStaticValue name ty sectionName value <- checked
+  ]
+
+staticRuntimeLayout :: [LayoutSpec] -> Term -> (Word64, Word64)
+staticRuntimeLayout layouts term =
+  case term of
+    TGlobal "Unit" -> (1, 1)
+    TGlobal "Bool" -> (1, 1)
+    TGlobal "Nat" -> (8, 8)
+    TGlobal "U8" -> (1, 1)
+    TGlobal "U64" -> (8, 8)
+    TGlobal "Addr" -> (8, 8)
+    TApp (TGlobal "Ptr") _ -> (8, 8)
+    TGlobal name ->
+      case Map.lookup name (Map.fromList [(layoutTypeName layout, layout) | layout <- layouts]) of
+        Just layout -> (layoutTypeSize layout, layoutTypeAlign layout)
+        Nothing -> error ("internal error: checked static object has unsupported runtime type " ++ prettyTerm term)
+    _ -> error ("internal error: checked static object has unsupported runtime type " ++ prettyTerm term)
+
+staticCTypeName :: [LayoutSpec] -> Term -> String
+staticCTypeName layouts term =
+  case term of
+    TGlobal "Unit" -> cTypeName CUnit
+    TGlobal "Bool" -> cTypeName CBool
+    TGlobal "Nat" -> cTypeName CNat
+    TGlobal "U8" -> cTypeName CU8
+    TGlobal "U64" -> cTypeName CU64
+    TGlobal "Addr" -> cTypeName CAddr
+    TApp (TGlobal "Ptr") _ -> cTypeName CPtr
+    TGlobal name ->
+      case Map.lookup name (Map.fromList [(layoutTypeName layout, layout) | layout <- layouts]) of
+        Just _ -> layoutTypeNameC name
+        Nothing -> error ("internal error: checked static-value has unsupported runtime type " ++ prettyTerm term)
+    _ -> error ("internal error: checked static-value has unsupported runtime type " ++ prettyTerm term)
+
+staticInitializer :: [LayoutSpec] -> Term -> Term -> String
+staticInitializer layouts ty value =
+  case ty of
+    TGlobal "Unit" ->
+      "0u"
+    TGlobal "Bool" ->
+      case value of
+        TGlobal "True" -> "1u"
+        TGlobal "False" -> "0u"
+        _ -> unsupported
+    TGlobal "U8" ->
+      case value of
+        TU8 word -> "((uint8_t)" ++ show word ++ "u)"
+        _ -> unsupported
+    TGlobal "U64" ->
+      case value of
+        TU64 word -> show word ++ "ULL"
+        _ -> unsupported
+    TGlobal "Addr" ->
+      case value of
+        TAddr word -> "((uintptr_t)" ++ show word ++ "ULL)"
+        _ -> unsupported
+    TApp (TGlobal "Ptr") _ ->
+      case staticPtrWord value of
+        Just word -> "((uintptr_t)" ++ show word ++ "ULL)"
+        Nothing -> unsupported
+    TGlobal _ ->
+      "{{" ++ commaSep [show byte ++ "u" | byte <- staticValueBytes layouts ty value] ++ "}}"
+    _ -> unsupported
+  where
+    unsupported = error ("internal error: checked static-value has unsupported initializer " ++ prettyTerm value)
+
+staticValueBytes :: [LayoutSpec] -> Term -> Term -> [Word64]
+staticValueBytes layouts ty value =
+  case ty of
+    TGlobal "Unit" -> [0]
+    TGlobal "Bool" ->
+      case value of
+        TGlobal "True" -> [1]
+        TGlobal "False" -> [0]
+        _ -> unsupported
+    TGlobal "Nat" ->
+      case value of
+        TU64 word -> wordBytes 8 word
+        _ -> unsupported
+    TGlobal "U8" ->
+      case value of
+        TU8 word -> [word .&. 255]
+        _ -> unsupported
+    TGlobal "U64" ->
+      case value of
+        TU64 word -> wordBytes 8 word
+        _ -> unsupported
+    TGlobal "Addr" ->
+      case value of
+        TAddr word -> wordBytes 8 word
+        _ -> unsupported
+    TApp (TGlobal "Ptr") _ ->
+      case staticPtrWord value of
+        Just word -> wordBytes 8 word
+        Nothing -> unsupported
+    TGlobal layoutName ->
+      case (lookupLayoutSpecByName layouts layoutName, value) of
+        (Just layout, TLayout valueLayout fields)
+          | valueLayout == layoutName ->
+              foldl (writeStaticLayoutField layouts layout) (replicate (fromIntegral (layoutTypeSize layout)) 0) fields
+        _ -> unsupported
+    _ -> unsupported
+  where
+    unsupported = error ("internal error: checked static-value has unsupported initializer " ++ prettyTerm value)
+
+writeStaticLayoutField :: [LayoutSpec] -> LayoutSpec -> [Word64] -> LayoutFieldInit Term -> [Word64]
+writeStaticLayoutField layouts layout bytes (LayoutFieldInit fieldName value) =
+  case [field | field <- layoutTypeFields layout, layoutFieldSpecName field == fieldName] of
+    [field] ->
+      let fieldBytes = staticValueBytes layouts (layoutFieldSpecType field) value
+          offset = fromIntegral (layoutFieldSpecOffset field)
+          fieldLen = length fieldBytes
+       in take offset bytes ++ fieldBytes ++ drop (offset + fieldLen) bytes
+    _ -> error ("internal error: checked static-value field metadata missing for " ++ layoutTypeName layout ++ "." ++ fieldName)
+
+wordBytes :: Int -> Word64 -> [Word64]
+wordBytes byteCount word =
+  [ (word `shiftR` (index * 8)) .&. 255
+  | index <- [0 .. byteCount - 1]
+  ]
+
+staticPtrWord :: Term -> Maybe Word64
+staticPtrWord value =
+  case collectApps value of
+    (TGlobal "ptr-from-addr", [_ty, TAddr word]) -> Just word
+    _ -> Nothing
+
+lookupLayoutSpecByName :: [LayoutSpec] -> Name -> Maybe LayoutSpec
+lookupLayoutSpecByName layouts target =
+  Map.lookup target (Map.fromList [(layoutTypeName layout, layout) | layout <- layouts])
+
 codegenSpecs :: [CheckedDecl] -> CodegenEnv
 codegenSpecs checked =
-  CodegenEnv
-    { codegenExterns = externSpecs checked
-    , codegenExports = exportSpecs checked
-    , codegenSections = sectionSpecs checked
-    , codegenCallingConventions = callingConventionSpecs checked
-    , codegenEntries = entrySpecs checked
-    , codegenLayouts = layoutSpecs checked
-    , codegenStaticBytes = staticBytesSpecs checked
-    }
+  let layouts = layoutSpecs checked
+   in CodegenEnv
+        { codegenExterns = externSpecs checked
+        , codegenExports = exportSpecs checked
+        , codegenSections = sectionSpecs checked
+        , codegenCallingConventions = callingConventionSpecs checked
+        , codegenEntries = entrySpecs checked
+        , codegenLayouts = layouts
+        , codegenStaticBytes = staticBytesSpecs checked
+        , codegenStaticValues = staticValueSpecs layouts checked
+        , codegenStaticCells = staticCellSpecs layouts checked
+        }
 
 lookupExternSpec :: [ExternSpec] -> Name -> Maybe ExternSpec
 lookupExternSpec externs target =
@@ -945,6 +1135,14 @@ lookupStaticBytesSpec :: CodegenEnv -> Name -> Maybe StaticBytesSpec
 lookupStaticBytesSpec codegenEnv target =
   Map.lookup target (Map.fromList [(staticBytesInternalName bytes, bytes) | bytes <- codegenStaticBytes codegenEnv])
 
+lookupStaticCellSpec :: CodegenEnv -> Name -> Maybe StaticCellSpec
+lookupStaticCellSpec codegenEnv target =
+  Map.lookup target (Map.fromList [(staticCellInternalName cell, cell) | cell <- codegenStaticCells codegenEnv])
+
+lookupStaticValueSpec :: CodegenEnv -> Name -> Maybe StaticValueSpec
+lookupStaticValueSpec codegenEnv target =
+  Map.lookup target (Map.fromList [(staticValueInternalName value, value) | value <- codegenStaticValues codegenEnv])
+
 filterUsedExterns :: CodegenEnv -> [Term] -> [ExternSpec]
 filterUsedExterns codegenEnv terms =
   [ extern
@@ -964,6 +1162,24 @@ filterUsedStaticBytes codegenEnv terms =
   where
     used = Set.unions (map termStaticBytes terms)
 
+filterUsedStaticCells :: CodegenEnv -> [Term] -> [StaticCellSpec]
+filterUsedStaticCells codegenEnv terms =
+  [ cell
+  | cell <- codegenStaticCells codegenEnv
+  , staticCellInternalName cell `Set.member` used
+  ]
+  where
+    used = Set.unions (map termStaticCells terms)
+
+filterUsedStaticValues :: CodegenEnv -> [Term] -> [StaticValueSpec]
+filterUsedStaticValues codegenEnv terms =
+  [ value
+  | value <- codegenStaticValues codegenEnv
+  , staticValueInternalName value `Set.member` used
+  ]
+  where
+    used = Set.unions (map termStaticValues terms)
+
 termGlobals :: Set.Set Name -> Term -> Set.Set Name
 termGlobals externNames term =
   case term of
@@ -977,6 +1193,8 @@ termGlobals externNames term =
     TU64 _ -> Set.empty
     TAddr _ -> Set.empty
     TStaticBytesPtr _ -> Set.empty
+    TStaticCellPtr _ -> Set.empty
+    TStaticValuePtr _ -> Set.empty
     TLayout _ fields ->
       Set.unions [termGlobals externNames value | LayoutFieldInit _ value <- fields]
     TLayoutField _ _ base ->
@@ -1002,6 +1220,8 @@ termStaticBytes term =
     TU64 _ -> Set.empty
     TAddr _ -> Set.empty
     TStaticBytesPtr name -> Set.singleton name
+    TStaticCellPtr _ -> Set.empty
+    TStaticValuePtr _ -> Set.empty
     TLayout _ fields ->
       Set.unions [termStaticBytes value | LayoutFieldInit _ value <- fields]
     TLayoutField _ _ base ->
@@ -1016,6 +1236,60 @@ termStaticBytes term =
       Set.unions (termStaticBytes scrutinee : [termStaticBytes body | CaseTerm _ _ body <- cases])
     TApp fn arg ->
       termStaticBytes fn `Set.union` termStaticBytes arg
+
+termStaticCells :: Term -> Set.Set Name
+termStaticCells term =
+  case term of
+    TVar _ -> Set.empty
+    TGlobal _ -> Set.empty
+    TUniverse _ -> Set.empty
+    TU8 _ -> Set.empty
+    TU64 _ -> Set.empty
+    TAddr _ -> Set.empty
+    TStaticBytesPtr _ -> Set.empty
+    TStaticCellPtr name -> Set.singleton name
+    TStaticValuePtr _ -> Set.empty
+    TLayout _ fields ->
+      Set.unions [termStaticCells value | LayoutFieldInit _ value <- fields]
+    TLayoutField _ _ base ->
+      termStaticCells base
+    TLayoutUpdate _ _ base value ->
+      termStaticCells base `Set.union` termStaticCells value
+    TPi _ _ domain codomain ->
+      termStaticCells domain `Set.union` termStaticCells codomain
+    TLam _ _ body ->
+      termStaticCells body
+    TMatch scrutinee cases ->
+      Set.unions (termStaticCells scrutinee : [termStaticCells body | CaseTerm _ _ body <- cases])
+    TApp fn arg ->
+      termStaticCells fn `Set.union` termStaticCells arg
+
+termStaticValues :: Term -> Set.Set Name
+termStaticValues term =
+  case term of
+    TVar _ -> Set.empty
+    TGlobal _ -> Set.empty
+    TUniverse _ -> Set.empty
+    TU8 _ -> Set.empty
+    TU64 _ -> Set.empty
+    TAddr _ -> Set.empty
+    TStaticBytesPtr _ -> Set.empty
+    TStaticCellPtr _ -> Set.empty
+    TStaticValuePtr name -> Set.singleton name
+    TLayout _ fields ->
+      Set.unions [termStaticValues value | LayoutFieldInit _ value <- fields]
+    TLayoutField _ _ base ->
+      termStaticValues base
+    TLayoutUpdate _ _ base value ->
+      termStaticValues base `Set.union` termStaticValues value
+    TPi _ _ domain codomain ->
+      termStaticValues domain `Set.union` termStaticValues codomain
+    TLam _ _ body ->
+      termStaticValues body
+    TMatch scrutinee cases ->
+      Set.unions (termStaticValues scrutinee : [termStaticValues body | CaseTerm _ _ body <- cases])
+    TApp fn arg ->
+      termStaticValues fn `Set.union` termStaticValues arg
 
 flattenPis :: Term -> [PiBinder]
 flattenPis =
@@ -1051,6 +1325,8 @@ countVarUses target term =
     TU64 _ -> 0
     TAddr _ -> 0
     TStaticBytesPtr _ -> 0
+    TStaticCellPtr _ -> 0
+    TStaticValuePtr _ -> 0
     TLayout _ fields ->
       sum [countVarUses target value | LayoutFieldInit _ value <- fields]
     TLayoutField _ _ base ->
@@ -1189,9 +1465,43 @@ renderStaticBytesDecl spec =
       ++ "};"
   ]
 
+renderStaticValueDecl :: StaticValueSpec -> [String]
+renderStaticValueDecl spec =
+  [ "static "
+      ++ staticValueCTypeName spec
+      ++ " "
+      ++ staticValueSymbol (staticValueInternalName spec)
+      ++ " __attribute__((used, section(\""
+      ++ staticValueSectionName spec
+      ++ "\"), aligned("
+      ++ show (staticValueAlign spec)
+      ++ "))) = "
+      ++ staticValueInitializer spec
+      ++ ";"
+  ]
+
+renderStaticCellDecl :: StaticCellSpec -> [String]
+renderStaticCellDecl spec =
+  [ "static uint8_t "
+      ++ staticCellSymbol (staticCellInternalName spec)
+      ++ "["
+      ++ show (staticCellSize spec)
+      ++ "] __attribute__((section(\".bss.silt\"), aligned("
+      ++ show (staticCellAlign spec)
+      ++ ")));"
+  ]
+
 staticBytesSymbol :: Name -> String
 staticBytesSymbol name =
   "silt_static_" ++ cName name
+
+staticCellSymbol :: Name -> String
+staticCellSymbol name =
+  "silt_cell_" ++ cName name
+
+staticValueSymbol :: Name -> String
+staticValueSymbol name =
+  "silt_value_" ++ cName name
 
 layoutTypeNameC :: Name -> String
 layoutTypeNameC name =
