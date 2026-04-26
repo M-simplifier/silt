@@ -9,6 +9,8 @@ import Silt.Codegen.C
   )
 import Silt.Elab (checkProgram, normalizeDefinition)
 import Silt.Parse (parseProgram)
+import Silt.Source (readProgramBundle)
+import Silt.Syntax (Program (..))
 import System.Exit (exitFailure)
 
 main :: IO ()
@@ -28,9 +30,13 @@ main = do
   ok13 <- expectCheck "freestanding source" freestandingSource
   ok13b <- expectCheck "capability source" capabilitySource
   ok13c <- expectCheckFile "capability example file" "examples/capabilities.silt"
-  ok13d <- expectCheckFiles "limine example source bundle" ["examples/limine-serial.silt", "examples/limine.silt"]
-  ok13e <- expectCheckFiles "limine panic example source bundle" ["examples/limine-serial.silt", "examples/limine-panic.silt"]
+  ok13d <- expectCheckFile "limine include example source" "examples/limine.silt"
+  ok13e <- expectCheckFile "limine panic include example source" "examples/limine-panic.silt"
   ok13f <- expectCheckFile "limine serial shared source" "examples/limine-serial.silt"
+  ok13g <- expectCheckFile "top-level include fixture" "test/fixtures/includes/main.silt"
+  ok13h <- expectSourceFailure "include rejects parent traversal" ["test/fixtures/includes/unsafe-parent.silt"] "include path cannot contain '..'"
+  ok13i <- expectSourceFailure "include rejects non-silt extension" ["test/fixtures/includes/bad-extension.silt"] "include path must end in .silt"
+  ok13j <- expectSourceFailure "include rejects cycles" ["test/fixtures/includes/cycle-a.silt"] "include cycle:"
   ok14 <- expectCheck "generic data" optionSource
   ok15 <- expectCheck "recursive generic data" recursiveDataSource
   ok16 <- expectFailure "missing claim" "(def nope Type)"
@@ -203,27 +209,27 @@ main = do
   ok165 <- expectFailure "target-contract symbol mismatch" badTargetContractSymbolSource
   ok166 <- expectFailure "target-contract unaligned entry address" badTargetContractAddressSource
   ok167 <- expectFailure "target-contract duplicate clause" badTargetContractDuplicateClauseSource
-  ok168 <- expectFreestandingCodegenFiles "limine freestanding entry signature" ["examples/limine-serial.silt", "examples/limine.silt"] "limine-entry" "__attribute__((used)) __attribute__((sysv_abi)) __attribute__((section(\".text.silt.boot\"))) uint8_t silt_limine_entry(void) {"
-  ok169 <- expectFreestandingCodegenFiles "limine serial marker from Silt" ["examples/limine-serial.silt", "examples/limine.silt"] "limine-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(83ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  ok168 <- expectFreestandingCodegenFiles "limine freestanding entry signature" ["examples/limine.silt"] "limine-entry" "__attribute__((used)) __attribute__((sysv_abi)) __attribute__((section(\".text.silt.boot\"))) uint8_t silt_limine_entry(void) {"
+  ok169 <- expectFreestandingCodegenFiles "limine serial marker from Silt" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(83ULL)), \"Nd\"((uint16_t)(1016ULL)));"
   ok169b <- expectFreestandingCodegen "x86 in8 primitive codegen" machineIoSource "read-status" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_0) : \"Nd\"((uint16_t)(1016ULL)));"
-  ok169c <- expectFreestandingCodegenFiles "limine serial readiness from Silt" ["examples/limine-serial.silt", "examples/limine.silt"] "limine-entry" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_0) : \"Nd\"((uint16_t)(1021ULL)));"
-  ok169d <- expectFreestandingCodegenFiles "limine panic marker from Silt" ["examples/limine-serial.silt", "examples/limine-panic.silt"] "panic-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(80ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  ok169c <- expectFreestandingCodegenFiles "limine serial readiness from Silt" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_0) : \"Nd\"((uint16_t)(1021ULL)));"
+  ok169d <- expectFreestandingCodegenFiles "limine panic marker from Silt" ["examples/limine-panic.silt"] "panic-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(80ULL)), \"Nd\"((uint16_t)(1016ULL)));"
   ok169e <- expectFailure "x86 out8 transition mismatch" badMachineIoTransitionSource
-  ok169f <- expectFailureFilesWithSuffix "limine panic cause mismatch" ["examples/limine-serial.silt", "examples/limine-panic.silt"] badPanicCauseMismatchSuffix
-  ok169g <- expectFreestandingCodegenFiles "limine panic oom cause codegen" ["examples/limine-serial.silt", "examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(18ULL)), \"Nd\"((uint16_t)(244ULL)));"
-  ok169h <- expectFreestandingCodegenFiles "limine panic invariant cause codegen" ["examples/limine-serial.silt", "examples/limine-panic.silt"] "kernel-panic-invariant" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(19ULL)), \"Nd\"((uint16_t)(244ULL)));"
-  ok169i <- expectFailureFilesWithSuffix "limine panic cause cross mismatch" ["examples/limine-serial.silt", "examples/limine-panic.silt"] badPanicCauseCrossMismatchSuffix
-  ok169j <- expectFreestandingCodegenFiles "limine panic oom marker codegen" ["examples/limine-serial.silt", "examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(79ULL)), \"Nd\"((uint16_t)(1016ULL)));"
-  ok169k <- expectFreestandingCodegenFiles "limine panic invariant marker codegen" ["examples/limine-serial.silt", "examples/limine-panic.silt"] "kernel-panic-invariant" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(86ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  ok169f <- expectFailureFilesWithSuffix "limine panic cause mismatch" ["examples/limine-panic.silt"] badPanicCauseMismatchSuffix
+  ok169g <- expectFreestandingCodegenFiles "limine panic oom cause codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(18ULL)), \"Nd\"((uint16_t)(244ULL)));"
+  ok169h <- expectFreestandingCodegenFiles "limine panic invariant cause codegen" ["examples/limine-panic.silt"] "kernel-panic-invariant" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(19ULL)), \"Nd\"((uint16_t)(244ULL)));"
+  ok169i <- expectFailureFilesWithSuffix "limine panic cause cross mismatch" ["examples/limine-panic.silt"] badPanicCauseCrossMismatchSuffix
+  ok169j <- expectFreestandingCodegenFiles "limine panic oom marker codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(79ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  ok169k <- expectFreestandingCodegenFiles "limine panic invariant marker codegen" ["examples/limine-panic.silt"] "kernel-panic-invariant" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(86ULL)), \"Nd\"((uint16_t)(1016ULL)));"
   ok169l <- expectFreestandingCodegenFiles "limine message writer signature" ["examples/limine-serial.silt"] "serial-write-msg20" "uint8_t serial_write_msg20(silt_layout_SerialMsg20 msg) {"
-  ok169m <- expectFailureFilesWithSuffix "limine message length mismatch" ["examples/limine-serial.silt", "examples/limine.silt"] badMessageLengthMismatchSuffix
-  ok169n <- expectFreestandingCodegenFiles "limine panic oom marker M codegen" ["examples/limine-serial.silt", "examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(77ULL)), \"Nd\"((uint16_t)(1016ULL)));"
-  ok169o <- expectNormalizedFiles "limine layout-values message normalization" ["examples/limine-serial.silt", "examples/limine.silt"] "limine-ok-message" "(layout SerialMsg20 ((b0 (u64 83)) (b1 (u64 73)) (b2 (u64 76)) (b3 (u64 84)) (b4 (u64 95)) (b5 (u64 76)) (b6 (u64 73)) (b7 (u64 77)) (b8 (u64 73)) (b9 (u64 78)) (b10 (u64 69)) (b11 (u64 95)) (b12 (u64 81)) (b13 (u64 69)) (b14 (u64 77)) (b15 (u64 85)) (b16 (u64 95)) (b17 (u64 79)) (b18 (u64 75)) (b19 (u64 10))))"
+  ok169m <- expectFailureFilesWithSuffix "limine message length mismatch" ["examples/limine.silt"] badMessageLengthMismatchSuffix
+  ok169n <- expectFreestandingCodegenFiles "limine panic oom marker M codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(77ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  ok169o <- expectNormalizedFiles "limine layout-values message normalization" ["examples/limine.silt"] "limine-ok-message" "(layout SerialMsg20 ((b0 (u64 83)) (b1 (u64 73)) (b2 (u64 76)) (b3 (u64 84)) (b4 (u64 95)) (b5 (u64 76)) (b6 (u64 73)) (b7 (u64 77)) (b8 (u64 73)) (b9 (u64 78)) (b10 (u64 69)) (b11 (u64 95)) (b12 (u64 81)) (b13 (u64 69)) (b14 (u64 77)) (b15 (u64 85)) (b16 (u64 95)) (b17 (u64 79)) (b18 (u64 75)) (b19 (u64 10))))"
   ok170 <- expectFailure "target-contract limine lower-half address" badTargetContractLimineAddressSource
   ok171 <- expectFailure "boot-contract unknown target" badBootContractUnknownTargetSource
   ok172 <- expectFailure "boot-contract target mismatch" badBootContractTargetMismatchSource
   ok173 <- expectFailure "boot-contract duplicate clause" badBootContractDuplicateClauseSource
-  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok14, ok15, ok16, ok17, ok18, ok19, ok20, ok21, ok22, ok23, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok40, ok41, ok42, ok43, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok68, ok69, ok70, ok70b, ok70c, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok170, ok171, ok172, ok173]
+  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok13g, ok13h, ok13i, ok13j, ok14, ok15, ok16, ok17, ok18, ok19, ok20, ok21, ok22, ok23, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok40, ok41, ok42, ok43, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok68, ok69, ok70, ok70b, ok70c, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok170, ok171, ok172, ok173]
     then putStrLn "silt-test: all checks passed"
     else exitFailure
 
@@ -239,13 +245,33 @@ expectCheck label source =
 
 expectCheckFile :: String -> FilePath -> IO Bool
 expectCheckFile label path = do
-  source <- readFile path
-  expectCheck label source
+  programResult <- readProgramBundle [path]
+  expectCheckProgram label programResult
 
-expectCheckFiles :: String -> [FilePath] -> IO Bool
-expectCheckFiles label paths = do
-  source <- readSourceFiles paths
-  expectCheck label source
+expectCheckProgram :: String -> Either String Program -> IO Bool
+expectCheckProgram label programResult =
+  case programResult >>= checkProgram of
+    Left err -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected success, got: " ++ err)
+      pure False
+    Right _ -> do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+
+expectSourceFailure :: String -> [FilePath] -> String -> IO Bool
+expectSourceFailure label paths expectedFragment = do
+  programResult <- readProgramBundle paths
+  case programResult of
+    Left err
+      | expectedFragment `isInfixOf` err -> do
+          putStrLn ("PASS [" ++ label ++ "]")
+          pure True
+      | otherwise -> do
+          putStrLn ("FAIL [" ++ label ++ "] expected fragment " ++ expectedFragment ++ ", got: " ++ err)
+          pure False
+    Right _ -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected source loading failure")
+      pure False
 
 expectFailure :: String -> String -> IO Bool
 expectFailure label source =
@@ -264,8 +290,26 @@ expectFailureFileWithSuffix label path suffix = do
 
 expectFailureFilesWithSuffix :: String -> [FilePath] -> String -> IO Bool
 expectFailureFilesWithSuffix label paths suffix = do
-  source <- readSourceFiles paths
-  expectFailure label (source ++ "\n" ++ suffix)
+  programResult <- readProgramBundle paths
+  case (programResult, parseProgram suffix) of
+    (Right (Program decls), Right (Program suffixDecls)) ->
+      expectFailureProgram label (Program (decls ++ suffixDecls))
+    (Left _, _) -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected base source success")
+      pure False
+    (_, Left err) -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected suffix parse success, got: " ++ err)
+      pure False
+
+expectFailureProgram :: String -> Program -> IO Bool
+expectFailureProgram label program =
+  case checkProgram program of
+    Left _ -> do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    Right _ -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected failure")
+      pure False
 
 expectNormalized :: String -> String -> String -> String -> IO Bool
 expectNormalized label source name expected =
@@ -290,13 +334,34 @@ expectNormalized label source name expected =
 
 expectNormalizedFile :: String -> FilePath -> String -> String -> IO Bool
 expectNormalizedFile label path name expected = do
-  source <- readFile path
-  expectNormalized label source name expected
+  programResult <- readProgramBundle [path]
+  expectNormalizedProgram label programResult name expected
 
 expectNormalizedFiles :: String -> [FilePath] -> String -> String -> IO Bool
 expectNormalizedFiles label paths name expected = do
-  source <- readSourceFiles paths
-  expectNormalized label source name expected
+  programResult <- readProgramBundle paths
+  expectNormalizedProgram label programResult name expected
+
+expectNormalizedProgram :: String -> Either String Program -> String -> String -> IO Bool
+expectNormalizedProgram label programResult name expected =
+  case programResult >>= \program -> normalizeDefinition program name of
+    Left err -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected normalization, got: " ++ err)
+      pure False
+    Right actual
+      | actual == expected -> do
+          putStrLn ("PASS [" ++ label ++ "]")
+          pure True
+      | otherwise -> do
+          putStrLn
+            ( "FAIL ["
+                ++ label
+                ++ "] expected "
+                ++ expected
+                ++ ", got "
+                ++ actual
+            )
+          pure False
 
 expectCodegen :: String -> String -> String -> String -> IO Bool
 expectCodegen label source name expectedFragment =
@@ -363,8 +428,25 @@ expectFreestandingCodegen label source name expectedFragment =
 
 expectFreestandingCodegenFiles :: String -> [FilePath] -> String -> String -> IO Bool
 expectFreestandingCodegenFiles label paths name expectedFragment = do
-  source <- readSourceFiles paths
-  expectFreestandingCodegen label source name expectedFragment
+  programResult <- readProgramBundle paths
+  case programResult >>= \program -> emitDefinitionFreestandingC program name of
+    Left err -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected freestanding codegen, got: " ++ err)
+      pure False
+    Right output
+      | expectedFragment `elem` lines output || expectedFragment `isInfixOf` output -> do
+          putStrLn ("PASS [" ++ label ++ "]")
+          pure True
+      | otherwise -> do
+          putStrLn
+            ( "FAIL ["
+                ++ label
+                ++ "] expected fragment "
+                ++ expectedFragment
+                ++ ", got "
+                ++ output
+            )
+          pure False
 
 expectFreestandingBundle :: String -> String -> [String] -> String -> IO Bool
 expectFreestandingBundle label source names expectedFragment =
@@ -386,10 +468,6 @@ expectFreestandingBundle label source names expectedFragment =
                 ++ output
             )
           pure False
-
-readSourceFiles :: [FilePath] -> IO String
-readSourceFiles paths =
-  concat <$> traverse (\path -> (++ "\n") <$> readFile path) paths
 
 identitySource :: String
 identitySource =

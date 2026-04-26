@@ -25,7 +25,7 @@ fi
 
 cabal build exe:silt
 SILT_BIN="$(cabal list-bin exe:silt)"
-PANIC_SOURCES=(examples/limine-serial.silt examples/limine-panic.silt)
+PANIC_SOURCES=(examples/limine-panic.silt)
 
 "$SILT_BIN" emit-freestanding-c-bundle "${PANIC_SOURCES[@]}" -- panic-entry > "$TMPDIR/panic.c"
 "$SILT_BIN" target-contracts "${PANIC_SOURCES[@]}" > "$TMPDIR/panic.target"

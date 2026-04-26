@@ -1,0 +1,3 @@
+; Include path must name a .silt file.
+
+(include shared.txt)

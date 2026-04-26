@@ -6,7 +6,8 @@ import Silt.Codegen.C
   , emitDefinitionsFreestandingC
   )
 import Silt.Elab (CheckedDecl (..), checkProgram, normalizeDefinition, renderCheckedDecl)
-import Silt.Parse (parseProgram, parseSExprs)
+import Silt.Parse (parseSExprs)
+import Silt.Source (readProgramBundle)
 import Silt.Syntax (Name, Program (..), prettyDecl)
 import System.Environment (getArgs)
 import System.Exit (die)
@@ -18,75 +19,68 @@ main = do
     ["version"] ->
       putStrLn "silt stage0 0.1.0.0"
     ["parse", path] -> do
-      input <- readFile path
-      case parseProgram input of
-        Left err -> die err
-        Right (Program decls) -> mapM_ (putStrLn . prettyDecl) decls
+      Program decls <- loadProgramBundle [path]
+      mapM_ (putStrLn . prettyDecl) decls
     ["sexpr", path] -> do
       input <- readFile path
       case parseSExprs input of
         Left err -> die err
         Right sexprs -> mapM_ print sexprs
     ("check" : paths) | not (null paths) && "--" `notElem` paths -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       checked <- either die pure (checkProgram program)
       mapM_ (putStrLn . renderCheckedDecl) checked
       putStrLn ("Checked " ++ show (length checked) ++ " declarations.")
     ("abi-contracts" : paths) | not (null paths) && "--" `notElem` paths -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       checked <- either die pure (checkProgram program)
       mapM_ (putStrLn . renderCheckedDecl) (filter isAbiContract checked)
     ("target-contracts" : paths) | not (null paths) && "--" `notElem` paths -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       checked <- either die pure (checkProgram program)
       mapM_ (putStrLn . renderCheckedDecl) (filter isTargetContract checked)
     ("boot-contracts" : paths) | not (null paths) && "--" `notElem` paths -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       checked <- either die pure (checkProgram program)
       mapM_ (putStrLn . renderCheckedDecl) (filter isBootContract checked)
     ["norm", path, name] -> do
-      input <- readFile path
-      program <- either die pure (parseProgram input)
+      program <- loadProgramBundle [path]
       output <- either die pure (normalizeDefinition program name)
       putStrLn output
     ("norm" : rest) | Just (paths, [name]) <- splitSourcesAndNames rest -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       output <- either die pure (normalizeDefinition program name)
       putStrLn output
     ["emit-c", path, name] -> do
-      input <- readFile path
-      program <- either die pure (parseProgram input)
+      program <- loadProgramBundle [path]
       output <- either die pure (emitDefinitionC program name)
       putStrLn output
     ("emit-c" : rest) | Just (paths, [name]) <- splitSourcesAndNames rest -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       output <- either die pure (emitDefinitionC program name)
       putStrLn output
     ["emit-freestanding-c", path, name] -> do
-      input <- readFile path
-      program <- either die pure (parseProgram input)
+      program <- loadProgramBundle [path]
       output <- either die pure (emitDefinitionFreestandingC program name)
       putStrLn output
     ("emit-freestanding-c" : rest) | Just (paths, [name]) <- splitSourcesAndNames rest -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       output <- either die pure (emitDefinitionFreestandingC program name)
       putStrLn output
     ("emit-c-bundle" : rest) | Just (paths, names) <- splitSourcesAndNames rest -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       output <- either die pure (emitDefinitionsC program names)
       putStrLn output
     ("emit-c-bundle" : path : names) | not (null names) -> do
-      input <- readFile path
-      program <- either die pure (parseProgram input)
+      program <- loadProgramBundle [path]
       output <- either die pure (emitDefinitionsC program names)
       putStrLn output
     ("emit-freestanding-c-bundle" : rest) | Just (paths, names) <- splitSourcesAndNames rest -> do
-      program <- readProgramBundle paths
+      program <- loadProgramBundle paths
       output <- either die pure (emitDefinitionsFreestandingC program names)
       putStrLn output
     ("emit-freestanding-c-bundle" : path : names) | not (null names) -> do
-      input <- readFile path
-      program <- either die pure (parseProgram input)
+      program <- loadProgramBundle [path]
       output <- either die pure (emitDefinitionsFreestandingC program names)
       putStrLn output
     _ ->
@@ -101,6 +95,7 @@ usage =
     , "  silt version"
     , "  silt sexpr FILE"
     , "  silt parse FILE"
+    , "  top-level (include relative-file.silt) is expanded for all commands except sexpr"
     , "  silt check FILE..."
     , "  silt abi-contracts FILE..."
     , "  silt target-contracts FILE..."
@@ -117,23 +112,9 @@ usage =
     , "  silt emit-freestanding-c-bundle FILE... -- NAME..."
     ]
 
-readProgramBundle :: [FilePath] -> IO Program
-readProgramBundle paths = do
-  programs <- traverse readProgramFile paths
-  pure (concatPrograms programs)
-
-readProgramFile :: FilePath -> IO Program
-readProgramFile path = do
-  input <- readFile path
-  either (die . prefixError path) pure (parseProgram input)
-
-prefixError :: FilePath -> String -> String
-prefixError path err =
-  path ++ ": " ++ err
-
-concatPrograms :: [Program] -> Program
-concatPrograms programs =
-  Program [decl | Program decls <- programs, decl <- decls]
+loadProgramBundle :: [FilePath] -> IO Program
+loadProgramBundle paths =
+  readProgramBundle paths >>= either die pure
 
 splitSourcesAndNames :: [String] -> Maybe ([FilePath], [Name])
 splitSourcesAndNames args =

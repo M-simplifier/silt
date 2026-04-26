@@ -25,7 +25,7 @@ fi
 
 cabal build exe:silt
 SILT_BIN="$(cabal list-bin exe:silt)"
-LIMINE_SOURCES=(examples/limine-serial.silt examples/limine.silt)
+LIMINE_SOURCES=(examples/limine.silt)
 
 "$SILT_BIN" emit-freestanding-c-bundle "${LIMINE_SOURCES[@]}" -- limine-entry > "$TMPDIR/limine.c"
 "$SILT_BIN" target-contracts "${LIMINE_SOURCES[@]}" > "$TMPDIR/limine.target"

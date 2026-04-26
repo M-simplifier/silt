@@ -1,0 +1,4 @@
+; Shared include fixture.
+
+(claim included-id (Pi ((A Type) (x A)) A))
+(def included-id (fn ((A Type) (x A)) x))

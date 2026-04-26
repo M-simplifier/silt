@@ -1,5 +1,6 @@
 module Silt.Parse
   ( parseProgram
+  , parseProgramFromSExprs
   , parseSExprs
   ) where
 
@@ -22,6 +23,10 @@ data Token
 parseProgram :: String -> Either String Program
 parseProgram input = do
   sexprs <- parseSExprs input
+  parseProgramFromSExprs sexprs
+
+parseProgramFromSExprs :: [SExpr] -> Either String Program
+parseProgramFromSExprs sexprs =
   Program <$> traverse sexprToDecl sexprs
 
 parseSExprs :: String -> Either String [SExpr]

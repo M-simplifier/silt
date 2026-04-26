@@ -1,0 +1,6 @@
+; Main include fixture.
+
+(include shared.silt)
+
+(claim included-nat Nat)
+(def included-nat (included-id Nat Z))

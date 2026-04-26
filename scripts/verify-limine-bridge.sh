@@ -10,8 +10,8 @@ cd "$ROOT"
 cabal build exe:silt
 SILT_BIN="$(cabal list-bin exe:silt)"
 SERIAL_SOURCES=(examples/limine-serial.silt)
-LIMINE_SOURCES=(examples/limine-serial.silt examples/limine.silt)
-PANIC_SOURCES=(examples/limine-serial.silt examples/limine-panic.silt)
+LIMINE_SOURCES=(examples/limine.silt)
+PANIC_SOURCES=(examples/limine-panic.silt)
 
 "$SILT_BIN" emit-freestanding-c-bundle "${SERIAL_SOURCES[@]}" -- serial-write-msg11 serial-write-msg15 serial-write-msg20 > "$TMPDIR/messages.c"
 "$SILT_BIN" emit-freestanding-c-bundle "${LIMINE_SOURCES[@]}" -- limine-entry > "$TMPDIR/limine.c"

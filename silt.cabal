@@ -19,6 +19,7 @@ common common-options
   build-depends:
       base >=4.18 && <5
     , containers
+    , filepath
 
 executable silt
   import:           common-options
@@ -29,6 +30,7 @@ executable silt
       Silt.Codegen.C
       Silt.Elab
       Silt.Parse
+      Silt.Source
       Silt.Syntax
 
 test-suite silt-test
@@ -40,4 +42,5 @@ test-suite silt-test
       Silt.Codegen.C
       Silt.Elab
       Silt.Parse
+      Silt.Source
       Silt.Syntax

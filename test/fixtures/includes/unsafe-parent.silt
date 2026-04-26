@@ -1,0 +1,3 @@
+; Include path must not escape through a parent directory.
+
+(include ../shared.silt)

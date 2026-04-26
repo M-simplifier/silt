@@ -1,5 +1,7 @@
 ; Limine success entry fragment.
-; Check or emit with examples/limine-serial.silt before this file.
+; Includes the shared serial/debug-exit surface directly.
+
+(include limine-serial.silt)
 
 (data KernelDone ())
 
