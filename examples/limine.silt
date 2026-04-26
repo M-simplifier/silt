@@ -85,6 +85,20 @@
 (def serial-write-hhdm-ok
   (serial-write-msg15 limine-hhdm-ok-message))
 
+(static-bytes limine-memmap-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 77) (u8 69) (u8 77) (u8 77) (u8 65) (u8 80)
+   (u8 95) (u8 81) (u8 69) (u8 77) (u8 85)
+   (u8 95) (u8 79) (u8 75) (u8 10)))
+
+(claim limine-memmap-ok-slice SerialSlice)
+(def limine-memmap-ok-slice
+  (layout-values SerialSlice limine-memmap-ok-bytes limine-memmap-ok-bytes-len))
+
+(claim serial-write-memmap-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-memmap-ok
+  (serial-write-slice20 limine-memmap-ok-slice))
+
 (claim limine-ok-message SerialMsg20)
 (def limine-ok-message
   (layout-values SerialMsg20
@@ -216,6 +230,39 @@
                     ((False) (pure SerialReady Unit tt))))
                 ((False) (pure SerialReady Unit tt))))))))))
 
+(claim limine-memmap-first-entry-roundtrip
+  (Pi ((response LimineMemmapResponse))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-memmap-first-entry-roundtrip
+  (fn ((response LimineMemmapResponse))
+    (let-layout LimineMemmapResponse ((entry-count entry-count) (entries entries-ptr)) response
+      (match (u64-eq entry-count (u64 0))
+        ((True) (pure SerialReady Unit tt))
+        ((False)
+          (bind SerialReady SerialReady SerialReady (Ptr LimineMemmapEntry) Unit
+            (load SerialReady (Ptr LimineMemmapEntry) entries-ptr)
+            (fn ((first-entry-ptr 1 (Ptr LimineMemmapEntry)))
+              (bind SerialReady SerialReady SerialReady LimineMemmapEntry Unit
+                (load SerialReady LimineMemmapEntry first-entry-ptr)
+                (fn ((first-entry 1 LimineMemmapEntry))
+                  (match (limine-memmap-entry-length-present first-entry)
+                    ((True) serial-write-memmap-ok)
+                    ((False) (pure SerialReady Unit tt))))))))))))
+
+(claim limine-memmap-roundtrip (Eff SerialReady SerialReady Unit))
+(def limine-memmap-roundtrip
+  (bind SerialReady SerialReady SerialReady LimineMemmapRequest Unit
+    (load SerialReady LimineMemmapRequest limine-memmap-request)
+    (fn ((request 1 LimineMemmapRequest))
+      (let-layout LimineMemmapRequest ((response response-ptr)) request
+        (match (limine-memmap-response-present response-ptr)
+          ((True)
+            (bind SerialReady SerialReady SerialReady LimineMemmapResponse Unit
+              (load SerialReady LimineMemmapResponse response-ptr)
+              (fn ((response 1 LimineMemmapResponse))
+                (limine-memmap-first-entry-roundtrip response))))
+          ((False) (pure SerialReady Unit tt)))))))
+
 (claim limine-entry (Eff BootIO KernelDone Unit))
 (def limine-entry
   (io-seq BootIO SerialReady KernelDone
@@ -225,8 +272,10 @@
       (io-seq SerialReady SerialReady KernelDone
         limine-hhdm-roundtrip
         (io-seq SerialReady SerialReady KernelDone
-          serial-write-ok
-          (qemu-debug-exit SerialReady KernelDone (u64 16)))))))
+          limine-memmap-roundtrip
+          (io-seq SerialReady SerialReady KernelDone
+            serial-write-ok
+            (qemu-debug-exit SerialReady KernelDone (u64 16))))))))
 (export limine-entry silt_limine_entry)
 (section limine-entry .text.silt.boot)
 (calling-convention limine-entry sysv-abi)

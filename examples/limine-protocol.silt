@@ -28,6 +28,24 @@
    (revision U64 32)
    (response (Ptr LimineHhdmResponse) 40)))
 
+(layout LimineMemmapEntry 24 8
+  ((base U64 0)
+   (length U64 8)
+   (kind U64 16)))
+
+(layout LimineMemmapResponse 24 8
+  ((revision U64 0)
+   (entry-count U64 8)
+   (entries (Ptr (Ptr LimineMemmapEntry)) 16)))
+
+(layout LimineMemmapRequest 48 8
+  ((id0 U64 0)
+   (id1 U64 8)
+   (id2 U64 16)
+   (id3 U64 24)
+   (revision U64 32)
+   (response (Ptr LimineMemmapResponse) 40)))
+
 (claim limine-requests-start-value LimineRequestsStartMarker)
 (def limine-requests-start-value
   (layout-values LimineRequestsStartMarker
@@ -67,6 +85,18 @@
 
 (static-value limine-hhdm-request LimineHhdmRequest .limine_requests limine-hhdm-request-value)
 
+(claim limine-memmap-request-value LimineMemmapRequest)
+(def limine-memmap-request-value
+  (layout-values LimineMemmapRequest
+    (u64 14389525486399949704)
+    (u64 757423339400917115)
+    (u64 7480265251536666735)
+    (u64 16358389823600082018)
+    (u64 0)
+    (ptr-from-addr LimineMemmapResponse (addr 0))))
+
+(static-value limine-memmap-request LimineMemmapRequest .limine_requests limine-memmap-request-value)
+
 (claim limine-base-revision-supported
   (Pi ((base LimineBaseRevision))
       Bool))
@@ -89,5 +119,32 @@
 (def limine-hhdm-offset-present
   (fn ((response LimineHhdmResponse))
     (match (u64-eq (field LimineHhdmResponse offset response) (u64 0))
+      ((True) False)
+      ((False) True))))
+
+(claim limine-memmap-response-present
+  (Pi ((response (Ptr LimineMemmapResponse)))
+      Bool))
+(def limine-memmap-response-present
+  (fn ((response (Ptr LimineMemmapResponse)))
+    (match (addr-eq (ptr-to-addr LimineMemmapResponse response) (addr 0))
+      ((True) False)
+      ((False) True))))
+
+(claim limine-memmap-count-present
+  (Pi ((response LimineMemmapResponse))
+      Bool))
+(def limine-memmap-count-present
+  (fn ((response LimineMemmapResponse))
+    (match (u64-eq (field LimineMemmapResponse entry-count response) (u64 0))
+      ((True) False)
+      ((False) True))))
+
+(claim limine-memmap-entry-length-present
+  (Pi ((entry LimineMemmapEntry))
+      Bool))
+(def limine-memmap-entry-length-present
+  (fn ((entry LimineMemmapEntry))
+    (match (u64-eq (field LimineMemmapEntry length entry) (u64 0))
       ((True) False)
       ((False) True))))

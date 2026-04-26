@@ -80,6 +80,11 @@ if ! grep -Fq 'silt_value_limine_hhdm_request __attribute__((used, section(".lim
   exit 1
 fi
 
+if ! grep -Fq 'silt_value_limine_memmap_request __attribute__((used, section(".limine_requests"), aligned(8)))' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the Memmap request section" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'silt_value_limine_requests_end __attribute__((used, section(".limine_requests_end"), aligned(8)))' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the request end marker section" >&2
   exit 1
@@ -107,6 +112,31 @@ fi
 
 if ! grep -Fq 'silt_layout_LimineHhdmResponse response_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load the HHDM response object" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_LimineMemmapRequest request_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the Memmap request object" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_LimineMemmapResponse response_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the Memmap response object" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'uintptr_t first_entry_ptr_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the Memmap entry pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_LimineMemmapEntry first_entry_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the first Memmap entry" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_memmap_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the Memmap marker pointer from static bytes" >&2
   exit 1
 fi
 
@@ -292,6 +322,11 @@ fi
 
 if ! nm "$TMPDIR/silt-limine.elf" | grep -Fq 'silt_value_limine_hhdm_request'; then
   echo "Limine kernel artifact is missing the HHDM request symbol" >&2
+  exit 1
+fi
+
+if ! nm "$TMPDIR/silt-limine.elf" | grep -Fq 'silt_value_limine_memmap_request'; then
+  echo "Limine kernel artifact is missing the Memmap request symbol" >&2
   exit 1
 fi
 
