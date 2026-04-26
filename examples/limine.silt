@@ -8,7 +8,15 @@
   ((phase U64 0)
    (code U64 8)))
 
+(layout BootInfo 40 8
+  ((hhdm-offset U64 0)
+   (memmap-count U64 8)
+   (first-base U64 16)
+   (first-length U64 24)
+   (first-kind U64 32)))
+
 (static-cell limine-boot-state BootState)
+(static-cell limine-boot-info BootInfo)
 
 (data KernelDone ())
 
@@ -84,6 +92,20 @@
 (claim serial-write-hhdm-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-hhdm-ok
   (serial-write-msg15 limine-hhdm-ok-message))
+
+(static-bytes limine-boot-info-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 66) (u8 79) (u8 79) (u8 84) (u8 95)
+   (u8 73) (u8 78) (u8 70) (u8 79) (u8 95)
+   (u8 79) (u8 75) (u8 33) (u8 33) (u8 10)))
+
+(claim limine-boot-info-ok-slice SerialSlice)
+(def limine-boot-info-ok-slice
+  (layout-values SerialSlice limine-boot-info-ok-bytes limine-boot-info-ok-bytes-len))
+
+(claim serial-write-boot-info-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-boot-info-ok
+  (serial-write-slice20 limine-boot-info-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -180,6 +202,55 @@
 (def boot-state-ready-accepted
   (boot-state-accepted boot-state-ready boot-state-ready))
 
+(claim boot-info-from-fields
+  (Pi ((hhdm-offset U64)
+       (memmap-count U64)
+       (first-base U64)
+       (first-length U64)
+       (first-kind U64))
+      BootInfo))
+(def boot-info-from-fields
+  (fn ((hhdm-offset U64)
+       (memmap-count U64)
+       (first-base U64)
+       (first-length U64)
+       (first-kind U64))
+    (layout-values BootInfo
+      hhdm-offset
+      memmap-count
+      first-base
+      first-length
+      first-kind)))
+
+(claim boot-info-sample BootInfo)
+(def boot-info-sample
+  (boot-info-from-fields
+    (u64 4096)
+    (u64 1)
+    (u64 0)
+    (u64 4096)
+    (u64 0)))
+
+(claim boot-info-ready
+  (Pi ((info BootInfo))
+      Bool))
+(def boot-info-ready
+  (fn ((info BootInfo))
+    (let-layout BootInfo ((hhdm-offset hhdm-offset) (memmap-count memmap-count) (first-length first-length)) info
+      (match (u64-eq hhdm-offset (u64 0))
+        ((True) False)
+        ((False)
+          (match (u64-eq memmap-count (u64 0))
+            ((True) False)
+            ((False)
+              (match (u64-eq first-length (u64 0))
+                ((True) False)
+                ((False) True)))))))))
+
+(claim boot-info-sample-ready Bool)
+(def boot-info-sample-ready
+  (boot-info-ready boot-info-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -263,6 +334,105 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-boot-info-store-and-report
+  (Pi ((hhdm-offset U64)
+       (memmap-count U64)
+       (first-base U64)
+       (first-length U64)
+       (first-kind U64))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-boot-info-store-and-report
+  (fn ((hhdm-offset U64)
+       (memmap-count U64)
+       (first-base U64)
+       (first-length U64)
+       (first-kind U64))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady BootInfo limine-boot-info
+        (boot-info-from-fields hhdm-offset memmap-count first-base first-length first-kind))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady BootInfo Unit
+            (load SerialReady BootInfo limine-boot-info)
+            (fn ((info 1 BootInfo))
+              (match (boot-info-ready info)
+                ((True) serial-write-boot-info-ok)
+                ((False) (pure SerialReady Unit tt))))))))))
+
+(claim limine-boot-info-from-entry
+  (Pi ((hhdm-offset U64) (memmap-count U64) (entry LimineMemmapEntry))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-boot-info-from-entry
+  (fn ((hhdm-offset U64) (memmap-count U64) (entry LimineMemmapEntry))
+    (let-layout LimineMemmapEntry ((base first-base) (length first-length) (kind first-kind)) entry
+      (match (u64-eq first-length (u64 0))
+        ((True) (pure SerialReady Unit tt))
+        ((False)
+          (limine-boot-info-store-and-report
+            hhdm-offset
+            memmap-count
+            first-base
+            first-length
+            first-kind))))))
+
+(claim limine-boot-info-from-memmap
+  (Pi ((hhdm-offset U64) (response LimineMemmapResponse))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-boot-info-from-memmap
+  (fn ((hhdm-offset U64) (response LimineMemmapResponse))
+    (let-layout LimineMemmapResponse ((entry-count entry-count) (entries entries-ptr)) response
+      (match (u64-eq entry-count (u64 0))
+        ((True) (pure SerialReady Unit tt))
+        ((False)
+          (bind SerialReady SerialReady SerialReady (Ptr LimineMemmapEntry) Unit
+            (load SerialReady (Ptr LimineMemmapEntry) entries-ptr)
+            (fn ((first-entry-ptr 1 (Ptr LimineMemmapEntry)))
+              (bind SerialReady SerialReady SerialReady LimineMemmapEntry Unit
+                (load SerialReady LimineMemmapEntry first-entry-ptr)
+                (fn ((first-entry 1 LimineMemmapEntry))
+                  (limine-boot-info-from-entry hhdm-offset entry-count first-entry))))))))))
+
+(claim limine-boot-info-with-hhdm-offset
+  (Pi ((hhdm-offset U64))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-boot-info-with-hhdm-offset
+  (fn ((hhdm-offset U64))
+    (bind SerialReady SerialReady SerialReady LimineMemmapRequest Unit
+      (load SerialReady LimineMemmapRequest limine-memmap-request)
+      (fn ((request 1 LimineMemmapRequest))
+        (let-layout LimineMemmapRequest ((response response-ptr)) request
+          (match (limine-memmap-response-present response-ptr)
+            ((True)
+              (bind SerialReady SerialReady SerialReady LimineMemmapResponse Unit
+                (load SerialReady LimineMemmapResponse response-ptr)
+                (fn ((response 1 LimineMemmapResponse))
+                  (limine-boot-info-from-memmap hhdm-offset response))))
+            ((False) (pure SerialReady Unit tt))))))))
+
+(claim limine-boot-info-from-hhdm
+  (Pi ((response LimineHhdmResponse))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-boot-info-from-hhdm
+  (fn ((response LimineHhdmResponse))
+    (let-layout LimineHhdmResponse ((offset hhdm-offset)) response
+      (match (u64-eq hhdm-offset (u64 0))
+        ((True) (pure SerialReady Unit tt))
+        ((False) (limine-boot-info-with-hhdm-offset hhdm-offset))))))
+
+(claim limine-boot-info-roundtrip (Eff SerialReady SerialReady Unit))
+(def limine-boot-info-roundtrip
+  (bind SerialReady SerialReady SerialReady LimineHhdmRequest Unit
+    (load SerialReady LimineHhdmRequest limine-hhdm-request)
+    (fn ((request 1 LimineHhdmRequest))
+      (let-layout LimineHhdmRequest ((response response-ptr)) request
+        (match (limine-hhdm-response-present response-ptr)
+          ((True)
+            (bind SerialReady SerialReady SerialReady LimineHhdmResponse Unit
+              (load SerialReady LimineHhdmResponse response-ptr)
+              (fn ((response 1 LimineHhdmResponse))
+                (limine-boot-info-from-hhdm response))))
+          ((False) (pure SerialReady Unit tt)))))))
+
 (claim limine-entry (Eff BootIO KernelDone Unit))
 (def limine-entry
   (io-seq BootIO SerialReady KernelDone
@@ -274,8 +444,10 @@
         (io-seq SerialReady SerialReady KernelDone
           limine-memmap-roundtrip
           (io-seq SerialReady SerialReady KernelDone
-            serial-write-ok
-            (qemu-debug-exit SerialReady KernelDone (u64 16))))))))
+            limine-boot-info-roundtrip
+            (io-seq SerialReady SerialReady KernelDone
+              serial-write-ok
+              (qemu-debug-exit SerialReady KernelDone (u64 16)))))))))
 (export limine-entry silt_limine_entry)
 (section limine-entry .text.silt.boot)
 (calling-convention limine-entry sysv-abi)
