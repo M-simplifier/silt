@@ -70,6 +70,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_kernel_span_ok_bytes[20] 
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_kernel_pages_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 75u, 80u, 65u, 71u, 69u, 83u, 95u, 79u, 75u, 33u, 33u, 33u, 33u, 33u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the kernel-pages marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
   exit 1
@@ -82,6 +87,11 @@ fi
 
 if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_span[40] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed kernel-span static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_page_count[8] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed kernel page-count static cell in bss" >&2
   exit 1
 fi
 
@@ -150,6 +160,16 @@ if ! grep -Fq 'silt_layout_KernelBootSpan span_' "$TMPDIR/limine.c"; then
   exit 1
 fi
 
+if ! grep -Fq '(*((uint64_t*)(((uintptr_t)&silt_cell_limine_kernel_page_count[0])))) =' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store the kernel page count through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'uint64_t page_count_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the kernel page count back through the static cell pointer" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'silt_layout_LimineHhdmRequest request_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load the HHDM request object" >&2
   exit 1
@@ -197,6 +217,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_kernel_span_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the kernel-span marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_kernel_pages_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the kernel-pages marker pointer from static bytes" >&2
   exit 1
 fi
 

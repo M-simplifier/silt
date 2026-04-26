@@ -25,6 +25,7 @@
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
+(static-cell limine-kernel-page-count U64)
 
 (data KernelDone ())
 
@@ -142,6 +143,20 @@
 (claim serial-write-kernel-span-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-kernel-span-ok
   (serial-write-slice20 limine-kernel-span-ok-slice))
+
+(static-bytes limine-kernel-pages-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 75) (u8 80) (u8 65) (u8 71) (u8 69)
+   (u8 83) (u8 95) (u8 79) (u8 75) (u8 33)
+   (u8 33) (u8 33) (u8 33) (u8 33) (u8 10)))
+
+(claim limine-kernel-pages-ok-slice SerialSlice)
+(def limine-kernel-pages-ok-slice
+  (layout-values SerialSlice limine-kernel-pages-ok-bytes limine-kernel-pages-ok-bytes-len))
+
+(claim serial-write-kernel-pages-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-kernel-pages-ok
+  (serial-write-slice20 limine-kernel-pages-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -423,6 +438,27 @@
       ((True) (u64-lt (kernel-span-direct-base span) (kernel-span-direct-end span)))
       ((False) False))))
 
+(claim kernel-span-physical-size
+  (Pi ((span KernelBootSpan))
+      U64))
+(def kernel-span-physical-size
+  (fn ((span KernelBootSpan))
+    (u64-sub (kernel-span-physical-end span) (kernel-span-physical-base span))))
+
+(claim kernel-span-page-count
+  (Pi ((span KernelBootSpan))
+      U64))
+(def kernel-span-page-count
+  (fn ((span KernelBootSpan))
+    (u64-div (u64-add (kernel-span-physical-size span) (u64 4095)) (u64 4096))))
+
+(claim kernel-span-has-pages
+  (Pi ((span KernelBootSpan))
+      Bool))
+(def kernel-span-has-pages
+  (fn ((span KernelBootSpan))
+    (u64-lt (u64 0) (kernel-span-page-count span))))
+
 (claim kernel-span-sample KernelBootSpan)
 (def kernel-span-sample
   (kernel-span-from-boot-info boot-info-sample))
@@ -430,6 +466,14 @@
 (claim kernel-span-sample-ready Bool)
 (def kernel-span-sample-ready
   (kernel-span-ready kernel-span-sample))
+
+(claim kernel-span-sample-page-count U64)
+(def kernel-span-sample-page-count
+  (kernel-span-page-count kernel-span-sample))
+
+(claim kernel-span-sample-has-pages Bool)
+(def kernel-span-sample-has-pages
+  (kernel-span-has-pages kernel-span-sample))
 
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
@@ -514,6 +558,37 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-page-count-store-and-report
+  (Pi ((span KernelBootSpan))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-page-count-store-and-report
+  (fn ((span KernelBootSpan))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady U64 limine-kernel-page-count
+        (kernel-span-page-count span))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady U64 Unit
+            (load SerialReady U64 limine-kernel-page-count)
+            (fn ((page-count 1 U64))
+              (match (u64-lt (u64 0) page-count)
+                ((True) serial-write-kernel-pages-ok)
+                ((False) (pure SerialReady Unit tt))))))))))
+
+(claim limine-kernel-span-consume-and-report
+  (Pi ((span KernelBootSpan))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-span-consume-and-report
+  (fn ((span KernelBootSpan))
+    (match (kernel-span-ready span)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          (io-seq SerialReady SerialReady SerialReady
+            serial-write-boot-span-ok
+            serial-write-kernel-span-ok)
+          (limine-kernel-page-count-store-and-report span)))
+      ((False) (pure SerialReady Unit tt)))))
+
 (claim limine-kernel-span-store-and-report
   (Pi ((info BootInfo))
       (Eff SerialReady SerialReady Unit)))
@@ -529,12 +604,7 @@
               (bind SerialReady SerialReady SerialReady KernelBootSpan Unit
                 (load SerialReady KernelBootSpan limine-kernel-span)
                 (fn ((span 1 KernelBootSpan))
-                  (match (kernel-span-ready span)
-                    ((True)
-                      (io-seq SerialReady SerialReady SerialReady
-                        serial-write-boot-span-ok
-                        serial-write-kernel-span-ok))
-                    ((False) (pure SerialReady Unit tt)))))))))
+                  (limine-kernel-span-consume-and-report span)))))))
       ((False) (pure SerialReady Unit tt)))))
 
 (claim limine-boot-info-span-report (Eff SerialReady SerialReady Unit))
