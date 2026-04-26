@@ -65,6 +65,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_boot_span_ok_bytes[20] __
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_kernel_span_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 75u, 69u, 82u, 78u, 69u, 76u, 95u, 83u, 80u, 65u, 78u, 95u, 79u, 75u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the kernel-span marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
   exit 1
@@ -72,6 +77,11 @@ fi
 
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_info[40] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-info static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_span[40] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed kernel-span static cell in bss" >&2
   exit 1
 fi
 
@@ -130,6 +140,16 @@ if ! grep -Fq 'silt_layout_BootInfo info_' "$TMPDIR/limine.c"; then
   exit 1
 fi
 
+if ! grep -Fq '(*((silt_layout_KernelBootSpan*)(((uintptr_t)&silt_cell_limine_kernel_span[0])))) = KernelBootSpan_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store KernelBootSpan through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_KernelBootSpan span_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load KernelBootSpan back through the static cell pointer" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'silt_layout_LimineHhdmRequest request_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load the HHDM request object" >&2
   exit 1
@@ -172,6 +192,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_boot_span_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the boot-span marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_kernel_span_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the kernel-span marker pointer from static bytes" >&2
   exit 1
 fi
 
