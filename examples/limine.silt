@@ -2,6 +2,7 @@
 ; Includes the shared serial/debug-exit surface directly.
 
 (include limine-serial.silt)
+(include limine-protocol.silt)
 
 (layout BootState 16 8
   ((phase U64 0)
@@ -60,6 +61,29 @@
 (claim serial-write-state-and-image-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-state-and-image-ok
   (serial-seq serial-write-state-ok serial-write-image-ok))
+
+(claim limine-hhdm-ok-message SerialMsg15)
+(def limine-hhdm-ok-message
+  (layout-values SerialMsg15
+    (u64 83)
+    (u64 73)
+    (u64 76)
+    (u64 84)
+    (u64 95)
+    (u64 72)
+    (u64 72)
+    (u64 68)
+    (u64 77)
+    (u64 95)
+    (u64 79)
+    (u64 75)
+    (u64 33)
+    (u64 33)
+    (u64 10)))
+
+(claim serial-write-hhdm-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-hhdm-ok
+  (serial-write-msg15 limine-hhdm-ok-message))
 
 (claim limine-ok-message SerialMsg20)
 (def limine-ok-message
@@ -156,6 +180,42 @@
               ((True) serial-write-state-and-image-ok)
               ((False) (pure SerialReady Unit tt)))))))))
 
+(claim limine-request-markers-anchor (Eff SerialReady SerialReady Unit))
+(def limine-request-markers-anchor
+  (bind SerialReady SerialReady SerialReady LimineRequestsStartMarker Unit
+    (load SerialReady LimineRequestsStartMarker limine-requests-start)
+    (fn ((start 1 LimineRequestsStartMarker))
+      (let ((ignored-start 0 start))
+        (bind SerialReady SerialReady SerialReady LimineRequestsEndMarker Unit
+          (load SerialReady LimineRequestsEndMarker limine-requests-end)
+          (fn ((end 1 LimineRequestsEndMarker))
+            (let ((ignored-end 0 end))
+              (pure SerialReady Unit tt))))))))
+
+(claim limine-hhdm-roundtrip (Eff SerialReady SerialReady Unit))
+(def limine-hhdm-roundtrip
+  (io-seq SerialReady SerialReady SerialReady
+    limine-request-markers-anchor
+    (bind SerialReady SerialReady SerialReady LimineBaseRevision Unit
+      (load SerialReady LimineBaseRevision limine-base-revision)
+      (fn ((base 1 LimineBaseRevision))
+        (bind SerialReady SerialReady SerialReady LimineHhdmRequest Unit
+          (load SerialReady LimineHhdmRequest limine-hhdm-request)
+          (fn ((request 1 LimineHhdmRequest))
+            (let-layout LimineHhdmRequest ((response response-ptr)) request
+              (match (limine-base-revision-supported base)
+                ((True)
+                  (match (limine-hhdm-response-present response-ptr)
+                    ((True)
+                      (bind SerialReady SerialReady SerialReady LimineHhdmResponse Unit
+                        (load SerialReady LimineHhdmResponse response-ptr)
+                        (fn ((response 1 LimineHhdmResponse))
+                          (match (limine-hhdm-offset-present response)
+                            ((True) serial-write-hhdm-ok)
+                            ((False) (pure SerialReady Unit tt))))))
+                    ((False) (pure SerialReady Unit tt))))
+                ((False) (pure SerialReady Unit tt))))))))))
+
 (claim limine-entry (Eff BootIO KernelDone Unit))
 (def limine-entry
   (io-seq BootIO SerialReady KernelDone
@@ -163,8 +223,10 @@
     (io-seq SerialReady SerialReady KernelDone
       boot-state-roundtrip
       (io-seq SerialReady SerialReady KernelDone
-        serial-write-ok
-        (qemu-debug-exit SerialReady KernelDone (u64 16))))))
+        limine-hhdm-roundtrip
+        (io-seq SerialReady SerialReady KernelDone
+          serial-write-ok
+          (qemu-debug-exit SerialReady KernelDone (u64 16)))))))
 (export limine-entry silt_limine_entry)
 (section limine-entry .text.silt.boot)
 (calling-convention limine-entry sysv-abi)

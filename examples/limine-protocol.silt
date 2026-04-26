@@ -1,0 +1,93 @@
+; Minimal checked Limine request/response layouts for the current x86_64 path.
+; This models only request delimiters, base revision, and HHDM.
+
+(layout LimineRequestsStartMarker 32 8
+  ((m0 U64 0)
+   (m1 U64 8)
+   (m2 U64 16)
+   (m3 U64 24)))
+
+(layout LimineRequestsEndMarker 16 8
+  ((m0 U64 0)
+   (m1 U64 8)))
+
+(layout LimineBaseRevision 24 8
+  ((magic0 U64 0)
+   (magic1 U64 8)
+   (revision U64 16)))
+
+(layout LimineHhdmResponse 16 8
+  ((revision U64 0)
+   (offset U64 8)))
+
+(layout LimineHhdmRequest 48 8
+  ((id0 U64 0)
+   (id1 U64 8)
+   (id2 U64 16)
+   (id3 U64 24)
+   (revision U64 32)
+   (response (Ptr LimineHhdmResponse) 40)))
+
+(claim limine-requests-start-value LimineRequestsStartMarker)
+(def limine-requests-start-value
+  (layout-values LimineRequestsStartMarker
+    (u64 17778228581330571694)
+    (u64 18066500419537648079)
+    (u64 8672928822407193366)
+    (u64 1737987079877605849)))
+
+(static-value limine-requests-start LimineRequestsStartMarker .limine_requests_start limine-requests-start-value)
+
+(claim limine-requests-end-value LimineRequestsEndMarker)
+(def limine-requests-end-value
+  (layout-values LimineRequestsEndMarker
+    (u64 12520253611641474307)
+    (u64 10768793488028224610)))
+
+(static-value limine-requests-end LimineRequestsEndMarker .limine_requests_end limine-requests-end-value)
+
+(claim limine-base-revision-value LimineBaseRevision)
+(def limine-base-revision-value
+  (layout-values LimineBaseRevision
+    (u64 17966595237268006600)
+    (u64 7672788277485857756)
+    (u64 3)))
+
+(static-value limine-base-revision LimineBaseRevision .limine_requests limine-base-revision-value)
+
+(claim limine-hhdm-request-value LimineHhdmRequest)
+(def limine-hhdm-request-value
+  (layout-values LimineHhdmRequest
+    (u64 14389525486399949704)
+    (u64 757423339400917115)
+    (u64 5250337122116876370)
+    (u64 7176572410665641035)
+    (u64 0)
+    (ptr-from-addr LimineHhdmResponse (addr 0))))
+
+(static-value limine-hhdm-request LimineHhdmRequest .limine_requests limine-hhdm-request-value)
+
+(claim limine-base-revision-supported
+  (Pi ((base LimineBaseRevision))
+      Bool))
+(def limine-base-revision-supported
+  (fn ((base LimineBaseRevision))
+    (u64-eq (field LimineBaseRevision revision base) (u64 0))))
+
+(claim limine-hhdm-response-present
+  (Pi ((response (Ptr LimineHhdmResponse)))
+      Bool))
+(def limine-hhdm-response-present
+  (fn ((response (Ptr LimineHhdmResponse)))
+    (match (addr-eq (ptr-to-addr LimineHhdmResponse response) (addr 0))
+      ((True) False)
+      ((False) True))))
+
+(claim limine-hhdm-offset-present
+  (Pi ((response LimineHhdmResponse))
+      Bool))
+(def limine-hhdm-offset-present
+  (fn ((response LimineHhdmResponse))
+    (match (u64-eq (field LimineHhdmResponse offset response) (u64 0))
+      ((True) False)
+      ((False) True))))

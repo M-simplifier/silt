@@ -65,6 +65,26 @@ if ! grep -Fq 'static silt_layout_BootState silt_value_limine_boot_manifest __at
   exit 1
 fi
 
+if ! grep -Fq 'silt_value_limine_requests_start __attribute__((used, section(".limine_requests_start"), aligned(8)))' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the request start marker section" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_value_limine_base_revision __attribute__((used, section(".limine_requests"), aligned(8)))' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the base revision request section" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_value_limine_hhdm_request __attribute__((used, section(".limine_requests"), aligned(8)))' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the HHDM request section" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_value_limine_requests_end __attribute__((used, section(".limine_requests_end"), aligned(8)))' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the request end marker section" >&2
+  exit 1
+fi
+
 if ! grep -Fq '(*((silt_layout_BootState*)(((uintptr_t)&silt_cell_limine_boot_state[0])))) = BootState_0;' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not store BootState through the static cell pointer" >&2
   exit 1
@@ -77,6 +97,16 @@ fi
 
 if ! grep -Fq 'silt_layout_BootState manifest_2 = (*((silt_layout_BootState*)(((uintptr_t)&silt_value_limine_boot_manifest))));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load the initialized boot manifest" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_LimineHhdmRequest request_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the HHDM request object" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_LimineHhdmResponse response_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the HHDM response object" >&2
   exit 1
 fi
 
@@ -235,6 +265,21 @@ if ! objdump -h "$TMPDIR/silt-limine.elf" | awk '$2 == ".bss" { found = 1 } END 
   exit 1
 fi
 
+if ! objdump -h "$TMPDIR/silt-limine.elf" | awk '$2 == ".limine_requests_start" { found = 1 } END { exit found ? 0 : 1 }'; then
+  echo "Limine kernel artifact is missing the request start marker section" >&2
+  exit 1
+fi
+
+if ! objdump -h "$TMPDIR/silt-limine.elf" | awk '$2 == ".limine_requests" { found = 1 } END { exit found ? 0 : 1 }'; then
+  echo "Limine kernel artifact is missing the request section" >&2
+  exit 1
+fi
+
+if ! objdump -h "$TMPDIR/silt-limine.elf" | awk '$2 == ".limine_requests_end" { found = 1 } END { exit found ? 0 : 1 }'; then
+  echo "Limine kernel artifact is missing the request end marker section" >&2
+  exit 1
+fi
+
 if ! nm "$TMPDIR/silt-limine.elf" | grep -Fq 'silt_cell_limine_boot_state'; then
   echo "Limine kernel artifact is missing the boot-state static cell symbol" >&2
   exit 1
@@ -242,6 +287,11 @@ fi
 
 if ! nm "$TMPDIR/silt-limine.elf" | grep -Fq 'silt_value_limine_boot_manifest'; then
   echo "Limine kernel artifact is missing the initialized boot manifest symbol" >&2
+  exit 1
+fi
+
+if ! nm "$TMPDIR/silt-limine.elf" | grep -Fq 'silt_value_limine_hhdm_request'; then
+  echo "Limine kernel artifact is missing the HHDM request symbol" >&2
   exit 1
 fi
 

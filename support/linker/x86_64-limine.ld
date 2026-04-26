@@ -25,6 +25,20 @@ SECTIONS
     *(.rodata .rodata.*)
   } :rodata
 
+  . = ALIGN(4096);
+
+  .limine_requests_start : ALIGN(8) {
+    KEEP(*(.limine_requests_start))
+  } :data
+
+  .limine_requests : ALIGN(8) {
+    KEEP(*(.limine_requests))
+  } :data
+
+  .limine_requests_end : ALIGN(8) {
+    KEEP(*(.limine_requests_end))
+  } :data
+
   .data : ALIGN(4096) {
     *(.data .data.*)
   } :data
