@@ -50,6 +50,16 @@ if ! grep -Fq 'boot-contract limine-x86_64 (protocol limine) (target x86_64-limi
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 76u, 73u, 77u, 73u, 78u, 69u, 95u, 81u, 69u, 77u, 85u, 95u, 79u, 75u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the success message as static rodata bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the success message pointer from static bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq '__asm__ volatile ("outb %0, %1" : : "a"((uint8_t)(80ULL)), "Nd"((uint16_t)(1016ULL)));' "$TMPDIR/panic.c"; then
   echo "generated panic entry does not emit the Silt panic marker" >&2
   exit 1
@@ -187,6 +197,11 @@ fi
 
 if ! objdump -h "$TMPDIR/silt-limine.elf" | awk -v section="$ENTRY_SECTION" -v addr="$ENTRY_ADDRESS_NM" '$2 == section && $4 == addr { found = 1 } END { exit found ? 0 : 1 }'; then
   echo "Limine kernel boot section is not placed at $ENTRY_ADDRESS_HEX" >&2
+  exit 1
+fi
+
+if ! objdump -h "$TMPDIR/silt-limine.elf" | awk '$2 == ".rodata" { found = 1 } END { exit found ? 0 : 1 }'; then
+  echo "Limine kernel artifact is missing a rodata section for static bytes" >&2
   exit 1
 fi
 

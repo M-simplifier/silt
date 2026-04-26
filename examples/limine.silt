@@ -29,9 +29,39 @@
     (u64 75)
     (u64 10)))
 
+(static-bytes limine-ok-bytes
+  ((u8 83)
+   (u8 73)
+   (u8 76)
+   (u8 84)
+   (u8 95)
+   (u8 76)
+   (u8 73)
+   (u8 77)
+   (u8 73)
+   (u8 78)
+   (u8 69)
+   (u8 95)
+   (u8 81)
+   (u8 69)
+   (u8 77)
+   (u8 85)
+   (u8 95)
+   (u8 79)
+   (u8 75)
+   (u8 10)))
+
+(claim limine-ok-slice SerialSlice)
+(def limine-ok-slice
+  (layout-values SerialSlice limine-ok-bytes limine-ok-bytes-len))
+
+(claim limine-ok-slice-len U64)
+(def limine-ok-slice-len
+  (field SerialSlice len limine-ok-slice))
+
 (claim serial-write-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-ok
-  (serial-write-msg20 limine-ok-message))
+  (serial-write-slice20 limine-ok-slice))
 
 (claim limine-entry (Eff BootIO KernelDone Unit))
 (def limine-entry

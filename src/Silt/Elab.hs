@@ -27,6 +27,7 @@ data CheckedDecl
   | CheckedTargetContract Name [TargetContractClause]
   | CheckedBootContract Name [BootContractClause]
   | CheckedLayout Name Word64 Word64 [CheckedLayoutField]
+  | CheckedStaticBytes Name [Word64]
   | CheckedData Name Term [CheckedConstructor]
   deriving (Eq, Show)
 
@@ -98,6 +99,7 @@ data Value
   | VU8 Word64
   | VU64 Word64
   | VAddr Word64
+  | VStaticBytesPtr Name
   | VLayout Name [LayoutFieldInit Value]
   | VPrim Name [Value]
 
@@ -259,6 +261,8 @@ processDecl globals decl =
         )
     LayoutDecl name size align fields ->
       processLayoutDecl globals name size align fields
+    StaticBytes name values ->
+      processStaticBytesDecl globals name values
     Define name exprSurface -> do
       entry <- lookupGlobal globals name
       unless (globalDefinition entry == Nothing && globalExternSymbol entry == Nothing) $
@@ -367,6 +371,45 @@ processLayoutDecl globals name size align fields = do
             }
         Nothing ->
           error ("internal error: checked layout field lost runtime representation for " ++ name ++ "." ++ fieldName)
+
+processStaticBytesDecl :: Globals -> Name -> [Word64] -> Either String (Globals, CheckedDecl)
+processStaticBytesDecl globals name values = do
+  ensureFresh globals name
+  ensureFresh globals lenName
+  unless (not (null values)) $
+    Left ("static-bytes " ++ name ++ " must contain at least one byte")
+  let ptrTy = TApp (TGlobal "Ptr") (TGlobal "U8")
+  let ptrEntry =
+        GlobalEntry
+          { globalTypeTerm = ptrTy
+          , globalTypeValue = eval globals [] ptrTy
+          , globalDefinition = Just (TStaticBytesPtr name)
+          , globalValue = Just (VStaticBytesPtr name)
+          , globalExternSymbol = Nothing
+          , globalExportSymbol = Nothing
+          , globalSectionName = Nothing
+          , globalCallingConvention = Nothing
+          , globalEntryPoint = False
+          }
+  let lenTerm = TU64 (fromIntegral (length values))
+  let lenEntry =
+        GlobalEntry
+          { globalTypeTerm = TGlobal "U64"
+          , globalTypeValue = u64TypeValue
+          , globalDefinition = Just lenTerm
+          , globalValue = Just (VU64 (fromIntegral (length values)))
+          , globalExternSymbol = Nothing
+          , globalExportSymbol = Nothing
+          , globalSectionName = Nothing
+          , globalCallingConvention = Nothing
+          , globalEntryPoint = False
+          }
+  pure
+    ( insertGlobal lenName lenEntry (insertGlobal name ptrEntry globals)
+    , CheckedStaticBytes name values
+    )
+  where
+    lenName = staticBytesLengthName name
 
 buildConstructor ::
      Globals
@@ -867,6 +910,10 @@ ensureFresh globals name =
   case lookupGlobalMaybe globals name of
     Nothing -> Right ()
     Just _ -> Left ("duplicate top-level name " ++ name)
+
+staticBytesLengthName :: Name -> Name
+staticBytesLengthName name =
+  name ++ "-len"
 
 insertGlobal :: Name -> GlobalEntry -> Globals -> Globals
 insertGlobal name entry globals =
@@ -1594,6 +1641,7 @@ countRuntimeUses globals target term =
         TU8 _ -> 0
         TU64 _ -> 0
         TAddr _ -> 0
+        TStaticBytesPtr _ -> 0
         TLayout _ fields ->
           sum [countRuntimeUses globals target value | LayoutFieldInit _ value <- fields]
         TLayoutField _ _ base ->
@@ -1645,6 +1693,7 @@ countVarUses target term =
     TU8 _ -> 0
     TU64 _ -> 0
     TAddr _ -> 0
+    TStaticBytesPtr _ -> 0
     TLayout _ fields ->
       sum [countVarUses target value | LayoutFieldInit _ value <- fields]
     TLayoutField _ _ base ->
@@ -1704,6 +1753,8 @@ eval globals env term =
       VU64 value
     TAddr value ->
       VAddr value
+    TStaticBytesPtr name ->
+      VStaticBytesPtr name
     TLayout name fields ->
       VLayout name [LayoutFieldInit fieldName (eval globals env value) | LayoutFieldInit fieldName value <- fields]
     TLayoutField layoutName fieldName base ->
@@ -1897,6 +1948,7 @@ quote depth value =
     VU8 word -> TU8 word
     VU64 word -> TU64 word
     VAddr word -> TAddr word
+    VStaticBytesPtr name -> TStaticBytesPtr name
     VLayout name fields ->
       TLayout name [LayoutFieldInit fieldName (quote depth fieldValue) | LayoutFieldInit fieldName fieldValue <- fields]
     VPi name quantity domain closure ->
@@ -2374,6 +2426,7 @@ shift cutoff delta term =
     TU8 value -> TU8 value
     TU64 value -> TU64 value
     TAddr value -> TAddr value
+    TStaticBytesPtr name -> TStaticBytesPtr name
     TLayout name fields ->
       TLayout name [LayoutFieldInit fieldName (shift cutoff delta value) | LayoutFieldInit fieldName value <- fields]
     TLayoutField layoutName fieldName base ->
@@ -2403,6 +2456,7 @@ subst index replacement term =
     TU8 value -> TU8 value
     TU64 value -> TU64 value
     TAddr value -> TAddr value
+    TStaticBytesPtr name -> TStaticBytesPtr name
     TLayout name fields ->
       TLayout name [LayoutFieldInit fieldName (subst index replacement value) | LayoutFieldInit fieldName value <- fields]
     TLayoutField layoutName fieldName base ->
@@ -2459,6 +2513,13 @@ renderCheckedDecl checked =
            | CheckedLayoutField fieldName fieldTy fieldOffset <- fields
            ]
         )
+    CheckedStaticBytes name values ->
+      name
+        ++ " : (Ptr U8)\nstatic-bytes len="
+        ++ show (length values)
+        ++ "\n"
+        ++ staticBytesLengthName name
+        ++ " : U64"
     CheckedData name ty ctors ->
       unlines
         ( (name ++ " : " ++ prettyTerm ty)

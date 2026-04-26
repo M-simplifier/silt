@@ -1,6 +1,6 @@
 ; Byte-level runtime representation seed.
 ; This is a low-level U8 / Ptr U8 / slice-header surface, not strings, arrays,
-; dynamic slices, or static byte storage.
+; or dynamic slices.
 
 (data ByteMem0 ())
 (data ByteMem1 ())
@@ -52,6 +52,28 @@
 (claim byte-slice-base-addr Addr)
 (def byte-slice-base-addr
   (ptr-to-addr U8 (field ByteSlice base byte-slice)))
+
+(static-bytes static-byte-sample
+  ((u8 83)
+   (u8 73)
+   (u8 76)
+   (u8 84)))
+
+(claim static-byte-sample-len-value U64)
+(def static-byte-sample-len-value
+  static-byte-sample-len)
+
+(claim static-byte-sample-slice ByteSlice)
+(def static-byte-sample-slice
+  (layout-values ByteSlice static-byte-sample static-byte-sample-len))
+
+(claim static-byte-sample-slice-len U64)
+(def static-byte-sample-slice-len
+  (field ByteSlice len static-byte-sample-slice))
+
+(claim static-byte-sample-first (Eff ByteMem0 ByteMem0 U8))
+(def static-byte-sample-first
+  (load ByteMem0 U8 static-byte-sample))
 
 (claim load-byte
   (Pi ((ptr (Ptr U8)))

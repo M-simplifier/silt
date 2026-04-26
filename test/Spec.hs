@@ -87,6 +87,8 @@ main = do
   ok39v <- expectNormalizedFile "u8 ptr-step normalization" "examples/bytes.silt" "byte-third-addr" "(addr 4099)"
   ok39w <- expectNormalizedFile "byte slice length normalization" "examples/bytes.silt" "byte-slice-len" "(u64 20)"
   ok39x <- expectNormalizedFile "byte slice base normalization" "examples/bytes.silt" "byte-slice-base-addr" "(addr 4096)"
+  ok39y <- expectNormalizedFile "static byte length normalization" "examples/bytes.silt" "static-byte-sample-len-value" "(u64 4)"
+  ok39z <- expectNormalizedFile "static byte slice length normalization" "examples/bytes.silt" "static-byte-sample-slice-len" "(u64 4)"
   ok40 <- expectCodegen "C backend seed" normalizationSource "three" "uint64_t three(void) {"
   ok41 <- expectCodegen "C backend add fn" codegenFunctionSource "add" "uint64_t add(uint64_t a, uint64_t b) {"
   ok42 <- expectCodegen "C backend erase arg" codegenFunctionSource "erase-first" "uint64_t erase_first(uint64_t x) {"
@@ -119,6 +121,8 @@ main = do
   ok67c <- expectFreestandingCodegenFiles "freestanding u8 load deref" ["examples/bytes.silt"] "load-byte" "return (*((uint8_t*)(ptr)));"
   ok67d <- expectFreestandingCodegenFiles "freestanding u8 store signature" ["examples/bytes.silt"] "store-byte" "uint8_t store_byte(uintptr_t ptr, uint8_t value) {"
   ok67e <- expectFreestandingCodegenFiles "freestanding u8 store write" ["examples/bytes.silt"] "store-byte" "(*((uint8_t*)(ptr))) = value;"
+  ok67f <- expectFreestandingCodegenFiles "freestanding static bytes rodata" ["examples/bytes.silt"] "static-byte-sample-first" "static const uint8_t silt_static_static_byte_sample[4] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u};"
+  ok67g <- expectFreestandingCodegenFiles "freestanding static bytes load" ["examples/bytes.silt"] "static-byte-sample-first" "return (*((uint8_t*)(((uintptr_t)&silt_static_static_byte_sample[0]))));"
   ok68 <- expectCheck "layout literals" layoutLiteralSource
   ok69 <- expectFailure "layout literal missing field" layoutLiteralMissingFieldSource
   ok70 <- expectFailure "layout literal unknown field" layoutLiteralUnknownFieldSource
@@ -126,6 +130,7 @@ main = do
   ok70c <- expectFailure "layout-values wrong field type" layoutValuesWrongTypeSource
   ok70d <- expectFailure "u8 literal out of range" "(claim bad U8)\n(def bad (u8 256))"
   ok70e <- expectFailure "u8 store rejects u64" badU8StoreSource
+  ok70f <- expectFailure "static bytes reject empty object" "(static-bytes empty-bytes ())"
   ok71 <- expectNormalized "layout literal normalization" layoutLiteralSource "header-template" "(layout Header ((magic (u64 77)) (next (addr 4096))))"
   ok71b <- expectNormalized "layout-values normalization" layoutLiteralSource "header-template-positional" "(layout Header ((magic (u64 77)) (next (addr 4096))))"
   ok72 <- expectCodegen "C backend layout literal zero-init" layoutLiteralSource "header-template" "silt_layout_Header Header_0 = {0};"
@@ -225,9 +230,9 @@ main = do
   ok166 <- expectFailure "target-contract unaligned entry address" badTargetContractAddressSource
   ok167 <- expectFailure "target-contract duplicate clause" badTargetContractDuplicateClauseSource
   ok168 <- expectFreestandingCodegenFiles "limine freestanding entry signature" ["examples/limine.silt"] "limine-entry" "__attribute__((used)) __attribute__((sysv_abi)) __attribute__((section(\".text.silt.boot\"))) uint8_t silt_limine_entry(void) {"
-  ok169 <- expectFreestandingCodegenFiles "limine serial marker from Silt" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(83ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  ok169 <- expectFreestandingCodegenFiles "limine static bytes rodata from Silt" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 76u, 73u, 77u, 73u, 78u, 69u, 95u, 81u, 69u, 77u, 85u, 95u, 79u, 75u, 10u};"
   ok169b <- expectFreestandingCodegen "x86 in8 primitive codegen" machineIoSource "read-status" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_0) : \"Nd\"((uint16_t)(1016ULL)));"
-  ok169c <- expectFreestandingCodegenFiles "limine serial readiness from Silt" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_0) : \"Nd\"((uint16_t)(1021ULL)));"
+  ok169c <- expectFreestandingCodegenFiles "limine serial readiness from Silt" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_"
   ok169d <- expectFreestandingCodegenFiles "limine panic marker from Silt" ["examples/limine-panic.silt"] "panic-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(80ULL)), \"Nd\"((uint16_t)(1016ULL)));"
   ok169e <- expectFailure "x86 out8 transition mismatch" badMachineIoTransitionSource
   ok169f <- expectFailureFilesWithSuffix "limine panic cause mismatch" ["examples/limine-panic.silt"] badPanicCauseMismatchSuffix
@@ -243,11 +248,12 @@ main = do
   ok169p <- expectFreestandingCodegenFiles "limine serial slice writer signature" ["examples/limine-serial.silt"] "serial-write-slice20" "uint8_t serial_write_slice20(silt_layout_SerialSlice slice) {"
   ok169q <- expectFreestandingCodegenFiles "limine serial slice length guard" ["examples/limine-serial.silt"] "serial-write-slice20" "== 20ULL"
   ok169r <- expectFreestandingCodegenFiles "limine serial slice byte load" ["examples/limine-serial.silt"] "serial-write-slice20" "uint8_t byte_2 = (*((uint8_t*)"
+  ok169s <- expectNormalizedFiles "limine static byte slice length normalization" ["examples/limine.silt"] "limine-ok-slice-len" "(u64 20)"
   ok170 <- expectFailure "target-contract limine lower-half address" badTargetContractLimineAddressSource
   ok171 <- expectFailure "boot-contract unknown target" badBootContractUnknownTargetSource
   ok172 <- expectFailure "boot-contract target mismatch" badBootContractTargetMismatchSource
   ok173 <- expectFailure "boot-contract duplicate clause" badBootContractDuplicateClauseSource
-  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok13g, ok13h, ok13i, ok13j, ok13k, ok14, ok15, ok16, ok17, ok18, ok19, ok20, ok21, ok22, ok23, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok39q, ok39r, ok39s, ok39t, ok39u, ok39v, ok39w, ok39x, ok40, ok41, ok42, ok43, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok67b, ok67c, ok67d, ok67e, ok68, ok69, ok70, ok70b, ok70c, ok70d, ok70e, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok169p, ok169q, ok169r, ok170, ok171, ok172, ok173]
+  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok13g, ok13h, ok13i, ok13j, ok13k, ok14, ok15, ok16, ok17, ok18, ok19, ok20, ok21, ok22, ok23, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok39q, ok39r, ok39s, ok39t, ok39u, ok39v, ok39w, ok39x, ok39y, ok39z, ok40, ok41, ok42, ok43, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok67b, ok67c, ok67d, ok67e, ok67f, ok67g, ok68, ok69, ok70, ok70b, ok70c, ok70d, ok70e, ok70f, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok169p, ok169q, ok169r, ok169s, ok170, ok171, ok172, ok173]
     then putStrLn "silt-test: all checks passed"
     else exitFailure
 

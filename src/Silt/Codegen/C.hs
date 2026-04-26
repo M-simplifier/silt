@@ -88,6 +88,12 @@ data LayoutFieldSpec = LayoutFieldSpec
   }
   deriving (Eq, Show)
 
+data StaticBytesSpec = StaticBytesSpec
+  { staticBytesInternalName :: Name
+  , staticBytesValues :: [Word64]
+  }
+  deriving (Eq, Show)
+
 data CodegenEnv = CodegenEnv
   { codegenExterns :: [ExternSpec]
   , codegenExports :: [ExportSpec]
@@ -95,6 +101,7 @@ data CodegenEnv = CodegenEnv
   , codegenCallingConventions :: [CallingConventionSpec]
   , codegenEntries :: [EntrySpec]
   , codegenLayouts :: [LayoutSpec]
+  , codegenStaticBytes :: [StaticBytesSpec]
   }
   deriving (Eq, Show)
 
@@ -125,9 +132,10 @@ emitDefinitionWith mode program name = do
   let codegenEnv = codegenSpecs checked
   (ty, nf) <- normalizeDefinitionTerm program name
   let usedExterns = filterUsedExterns codegenEnv [ty, nf]
+  let usedStaticBytes = filterUsedStaticBytes codegenEnv [ty, nf]
   prototypes <- traverse (renderExternPrototype codegenEnv) usedExterns
   lines' <- renderDefinitionLines codegenEnv name ty nf
-  pure (renderTranslationUnit mode (codegenLayouts codegenEnv) prototypes [lines'])
+  pure (renderTranslationUnit mode (codegenLayouts codegenEnv) usedStaticBytes prototypes [lines'])
 
 emitDefinitionsWith :: CodegenMode -> Program -> [Name] -> Either String String
 emitDefinitionsWith mode program names = do
@@ -141,6 +149,7 @@ emitDefinitionsWith mode program names = do
       )
       names
   let usedExterns = filterUsedExterns codegenEnv [term | (_, ty, nf) <- defs, term <- [ty, nf]]
+  let usedStaticBytes = filterUsedStaticBytes codegenEnv [term | (_, ty, nf) <- defs, term <- [ty, nf]]
   prototypes <- traverse (renderExternPrototype codegenEnv) usedExterns
   lines' <-
     mapM
@@ -148,7 +157,7 @@ emitDefinitionsWith mode program names = do
           renderDefinitionLines codegenEnv name ty nf
       )
       defs
-  pure (renderTranslationUnit mode (codegenLayouts codegenEnv) prototypes lines')
+  pure (renderTranslationUnit mode (codegenLayouts codegenEnv) usedStaticBytes prototypes lines')
 
 renderDefinitionLines :: CodegenEnv -> Name -> Term -> Term -> Either String [String]
 renderDefinitionLines codegenEnv name ty nf = do
@@ -176,18 +185,16 @@ renderDefinitionLines codegenEnv name ty nf = do
             ++ ["}"]
         )
 
-renderTranslationUnit :: CodegenMode -> [LayoutSpec] -> [String] -> [[String]] -> String
-renderTranslationUnit mode layouts prototypes definitions =
+renderTranslationUnit :: CodegenMode -> [LayoutSpec] -> [StaticBytesSpec] -> [String] -> [[String]] -> String
+renderTranslationUnit mode layouts staticBytes prototypes definitions =
   unlines
     ( preludeLines mode
-        ++ layoutLines
-        ++ (if null layoutLines then [] else [""])
-        ++ prototypes
-        ++ (if null prototypes then [] else [""])
-        ++ intercalate [""] definitions
+        ++ intercalate [""] blocks
     )
   where
     layoutLines = concatMap renderLayoutTypedef layouts
+    staticBytesLines = concatMap renderStaticBytesDecl staticBytes
+    blocks = filter (not . null) [layoutLines, staticBytesLines, prototypes] ++ definitions
 
 buildSignatureEnv :: CodegenEnv -> [(PiBinder, LamBinder)] -> Either String ([(CType, String)], [RuntimeBinding])
 buildSignatureEnv codegenEnv =
@@ -236,6 +243,13 @@ compileExpr codegenEnv fresh env expected term =
     TAddr value ->
       expectType expected CAddr "addr literal" >>
       Right (fresh, [], "((uintptr_t)" ++ show value ++ "ULL)")
+    TStaticBytesPtr name -> do
+      expectType expected CPtr "static-bytes pointer"
+      _ <-
+        case lookupStaticBytesSpec codegenEnv name of
+          Just spec -> Right spec
+          Nothing -> Left ("unknown static-bytes object for C backend: " ++ name)
+      Right (fresh, [], "((uintptr_t)&" ++ staticBytesSymbol name ++ "[0])")
     TLayout layoutName fields ->
       compileLayoutLiteral codegenEnv fresh env expected layoutName fields
     TLayoutField layoutName fieldName base ->
@@ -860,6 +874,12 @@ layoutSpecs checked =
   | CheckedLayout name size align fields <- checked
   ]
 
+staticBytesSpecs :: [CheckedDecl] -> [StaticBytesSpec]
+staticBytesSpecs checked =
+  [ StaticBytesSpec name values
+  | CheckedStaticBytes name values <- checked
+  ]
+
 codegenSpecs :: [CheckedDecl] -> CodegenEnv
 codegenSpecs checked =
   CodegenEnv
@@ -869,6 +889,7 @@ codegenSpecs checked =
     , codegenCallingConventions = callingConventionSpecs checked
     , codegenEntries = entrySpecs checked
     , codegenLayouts = layoutSpecs checked
+    , codegenStaticBytes = staticBytesSpecs checked
     }
 
 lookupExternSpec :: [ExternSpec] -> Name -> Maybe ExternSpec
@@ -920,6 +941,10 @@ lookupLayoutSpec :: CodegenEnv -> Name -> Maybe LayoutSpec
 lookupLayoutSpec codegenEnv target =
   Map.lookup target (Map.fromList [(layoutTypeName layout, layout) | layout <- codegenLayouts codegenEnv])
 
+lookupStaticBytesSpec :: CodegenEnv -> Name -> Maybe StaticBytesSpec
+lookupStaticBytesSpec codegenEnv target =
+  Map.lookup target (Map.fromList [(staticBytesInternalName bytes, bytes) | bytes <- codegenStaticBytes codegenEnv])
+
 filterUsedExterns :: CodegenEnv -> [Term] -> [ExternSpec]
 filterUsedExterns codegenEnv terms =
   [ extern
@@ -929,6 +954,15 @@ filterUsedExterns codegenEnv terms =
   where
     externNames = Set.fromList (map externInternalName (codegenExterns codegenEnv))
     used = Set.unions (map (termGlobals externNames) terms)
+
+filterUsedStaticBytes :: CodegenEnv -> [Term] -> [StaticBytesSpec]
+filterUsedStaticBytes codegenEnv terms =
+  [ bytes
+  | bytes <- codegenStaticBytes codegenEnv
+  , staticBytesInternalName bytes `Set.member` used
+  ]
+  where
+    used = Set.unions (map termStaticBytes terms)
 
 termGlobals :: Set.Set Name -> Term -> Set.Set Name
 termGlobals externNames term =
@@ -942,6 +976,7 @@ termGlobals externNames term =
     TU8 _ -> Set.empty
     TU64 _ -> Set.empty
     TAddr _ -> Set.empty
+    TStaticBytesPtr _ -> Set.empty
     TLayout _ fields ->
       Set.unions [termGlobals externNames value | LayoutFieldInit _ value <- fields]
     TLayoutField _ _ base ->
@@ -956,6 +991,31 @@ termGlobals externNames term =
       Set.unions (termGlobals externNames scrutinee : [termGlobals externNames body | CaseTerm _ _ body <- cases])
     TApp fn arg ->
       termGlobals externNames fn `Set.union` termGlobals externNames arg
+
+termStaticBytes :: Term -> Set.Set Name
+termStaticBytes term =
+  case term of
+    TVar _ -> Set.empty
+    TGlobal _ -> Set.empty
+    TUniverse _ -> Set.empty
+    TU8 _ -> Set.empty
+    TU64 _ -> Set.empty
+    TAddr _ -> Set.empty
+    TStaticBytesPtr name -> Set.singleton name
+    TLayout _ fields ->
+      Set.unions [termStaticBytes value | LayoutFieldInit _ value <- fields]
+    TLayoutField _ _ base ->
+      termStaticBytes base
+    TLayoutUpdate _ _ base value ->
+      termStaticBytes base `Set.union` termStaticBytes value
+    TPi _ _ domain codomain ->
+      termStaticBytes domain `Set.union` termStaticBytes codomain
+    TLam _ _ body ->
+      termStaticBytes body
+    TMatch scrutinee cases ->
+      Set.unions (termStaticBytes scrutinee : [termStaticBytes body | CaseTerm _ _ body <- cases])
+    TApp fn arg ->
+      termStaticBytes fn `Set.union` termStaticBytes arg
 
 flattenPis :: Term -> [PiBinder]
 flattenPis =
@@ -990,6 +1050,7 @@ countVarUses target term =
     TU8 _ -> 0
     TU64 _ -> 0
     TAddr _ -> 0
+    TStaticBytesPtr _ -> 0
     TLayout _ fields ->
       sum [countVarUses target value | LayoutFieldInit _ value <- fields]
     TLayoutField _ _ base ->
@@ -1116,6 +1177,21 @@ renderLayoutTypedef layout =
   , "  _Alignas(" ++ show (layoutTypeAlign layout) ++ ") uint8_t bytes[" ++ show (layoutTypeSize layout) ++ "];"
   , "} " ++ layoutTypeNameC (layoutTypeName layout) ++ ";"
   ]
+
+renderStaticBytesDecl :: StaticBytesSpec -> [String]
+renderStaticBytesDecl spec =
+  [ "static const uint8_t "
+      ++ staticBytesSymbol (staticBytesInternalName spec)
+      ++ "["
+      ++ show (length (staticBytesValues spec))
+      ++ "] __attribute__((section(\".rodata.silt\"))) = {"
+      ++ commaSep [show value ++ "u" | value <- staticBytesValues spec]
+      ++ "};"
+  ]
+
+staticBytesSymbol :: Name -> String
+staticBytesSymbol name =
+  "silt_static_" ++ cName name
 
 layoutTypeNameC :: Name -> String
 layoutTypeNameC name =

@@ -113,6 +113,8 @@ sexprToDecl sexpr =
       (\size' align' -> LayoutDecl name size' align' []) <$> parseNatural size <*> parseNatural align
     List [Atom "layout", Atom name, Atom size, Atom align, List fields] ->
       LayoutDecl name <$> parseNatural size <*> parseNatural align <*> traverse sexprToLayoutFieldDecl fields
+    List [Atom "static-bytes", Atom name, List values] ->
+      StaticBytes name <$> traverse sexprToStaticByte values
     List [Atom "extern", Atom name, ty] ->
       (\ty' -> Extern name ty' Nothing) <$> sexprToSurface ty
     List [Atom "extern", Atom name, ty, Atom symbol] ->
@@ -136,7 +138,7 @@ sexprToDecl sexpr =
     List [Atom "def", Atom name, expr] ->
       Define name <$> sexprToSurface expr
     _ ->
-      Left ("expected top-level (data ...), (layout ...), (extern ...), (export ...), (section ...), (calling-convention ...), (entry ...), (abi-contract ...), (target-contract ...), (boot-contract ...), (claim ...), or (def ...), found " ++ show sexpr)
+      Left ("expected top-level (data ...), (layout ...), (static-bytes ...), (extern ...), (export ...), (section ...), (calling-convention ...), (entry ...), (abi-contract ...), (target-contract ...), (boot-contract ...), (claim ...), or (def ...), found " ++ show sexpr)
 
 sexprToAbiContractClause :: SExpr -> Either String AbiContractClause
 sexprToAbiContractClause sexpr =
@@ -320,6 +322,14 @@ parseU8 digits = do
   if value <= 255
     then Right value
     else Left ("u8 literal out of range: " ++ digits)
+
+sexprToStaticByte :: SExpr -> Either String Word64
+sexprToStaticByte sexpr =
+  case sexpr of
+    List [Atom "u8", Atom digits] ->
+      parseU8 digits
+    _ ->
+      Left ("expected static byte literal (u8 n), found " ++ show sexpr)
 
 sexprToConstructorDecl :: SExpr -> Either String ConstructorDecl
 sexprToConstructorDecl sexpr =
