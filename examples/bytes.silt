@@ -1,0 +1,68 @@
+; Byte-level runtime representation seed.
+; This is a low-level U8 / Ptr U8 / slice-header surface, not strings, arrays,
+; dynamic slices, or static byte storage.
+
+(data ByteMem0 ())
+(data ByteMem1 ())
+
+(layout ByteSlice 16 8
+  ((base (Ptr U8) 0)
+   (len U64 8)))
+
+(claim byte-answer U8)
+(def byte-answer
+  (u64-to-u8 (u64 258)))
+
+(claim byte-answer-word U64)
+(def byte-answer-word
+  (u8-to-u64 byte-answer))
+
+(claim byte-eq-sample Bool)
+(def byte-eq-sample
+  (u8-eq (u8 42) (u64-to-u8 (u64 42))))
+
+(claim u8-size U64)
+(def u8-size
+  (size-of U8))
+
+(claim u8-align U64)
+(def u8-align
+  (align-of U8))
+
+(claim byte-base (Ptr U8))
+(def byte-base
+  (ptr-from-addr U8 (addr 4096)))
+
+(claim byte-third (Ptr U8))
+(def byte-third
+  (ptr-step U8 byte-base (u64 3)))
+
+(claim byte-third-addr Addr)
+(def byte-third-addr
+  (ptr-to-addr U8 byte-third))
+
+(claim byte-slice ByteSlice)
+(def byte-slice
+  (layout-values ByteSlice byte-base (u64 20)))
+
+(claim byte-slice-len U64)
+(def byte-slice-len
+  (field ByteSlice len byte-slice))
+
+(claim byte-slice-base-addr Addr)
+(def byte-slice-base-addr
+  (ptr-to-addr U8 (field ByteSlice base byte-slice)))
+
+(claim load-byte
+  (Pi ((ptr (Ptr U8)))
+      (Eff ByteMem0 ByteMem0 U8)))
+(def load-byte
+  (fn ((ptr (Ptr U8)))
+    (load ByteMem0 U8 ptr)))
+
+(claim store-byte
+  (Pi ((ptr (Ptr U8)) (value U8))
+      (Eff ByteMem0 ByteMem1 Unit)))
+(def store-byte
+  (fn ((ptr (Ptr U8)) (value U8))
+    (store ByteMem0 ByteMem1 U8 ptr value)))

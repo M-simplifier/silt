@@ -117,6 +117,7 @@ data PatternBinder = PatternBinder
 data Surface
   = SVar Name
   | SUniverse Int
+  | SU8 Word64
   | SU64 Word64
   | SAddr Word64
   | SPi [Binder Surface] Surface
@@ -147,6 +148,7 @@ data Term
   = TVar Int
   | TGlobal Name
   | TUniverse Int
+  | TU8 Word64
   | TU64 Word64
   | TAddr Word64
   | TPi Name Quantity Term Term
@@ -264,6 +266,7 @@ prettySurface surface =
     SVar name -> name
     SUniverse 0 -> "Type"
     SUniverse level -> "Type" ++ show level
+    SU8 value -> "(u8 " ++ show value ++ ")"
     SU64 value -> "(u64 " ++ show value ++ ")"
     SAddr value -> "(addr " ++ show value ++ ")"
     SPi binders body ->
@@ -349,6 +352,7 @@ prettyTerm term =
     TGlobal name -> name
     TUniverse 0 -> "Type"
     TUniverse level -> "Type" ++ show level
+    TU8 value -> "(u8 " ++ show value ++ ")"
     TU64 value -> "(u64 " ++ show value ++ ")"
     TAddr value -> "(addr " ++ show value ++ ")"
     TPi name quantity domain codomain ->

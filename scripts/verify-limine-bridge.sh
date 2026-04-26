@@ -13,7 +13,7 @@ SERIAL_SOURCES=(examples/limine-serial.silt)
 LIMINE_SOURCES=(examples/limine.silt)
 PANIC_SOURCES=(examples/limine-panic.silt)
 
-"$SILT_BIN" emit-freestanding-c-bundle "${SERIAL_SOURCES[@]}" -- serial-write-msg11 serial-write-msg15 serial-write-msg20 > "$TMPDIR/messages.c"
+"$SILT_BIN" emit-freestanding-c-bundle "${SERIAL_SOURCES[@]}" -- serial-write-msg11 serial-write-msg15 serial-write-msg20 serial-write-slice20 > "$TMPDIR/messages.c"
 "$SILT_BIN" emit-freestanding-c-bundle "${LIMINE_SOURCES[@]}" -- limine-entry > "$TMPDIR/limine.c"
 "$SILT_BIN" emit-freestanding-c-bundle "${PANIC_SOURCES[@]}" -- panic-entry > "$TMPDIR/panic.c"
 "$SILT_BIN" emit-freestanding-c-bundle "${PANIC_SOURCES[@]}" -- kernel-panic-oom kernel-panic-invariant > "$TMPDIR/panic-causes.c"
@@ -105,6 +105,21 @@ if ! grep -Fq 'uint8_t serial_write_msg20(silt_layout_SerialMsg20 msg) {' "$TMPD
   exit 1
 fi
 
+if ! grep -Fq 'uint8_t serial_write_slice20(silt_layout_SerialSlice slice) {' "$TMPDIR/messages.c"; then
+  echo "generated serial byte-slice writer does not take a SerialSlice layout value" >&2
+  exit 1
+fi
+
+if ! grep -Fq '== 20ULL' "$TMPDIR/messages.c"; then
+  echo "generated serial byte-slice writer does not guard the fixed 20-byte length" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'uint8_t byte_2 = (*((uint8_t*)' "$TMPDIR/messages.c"; then
+  echo "generated serial byte-slice writer does not load U8 bytes through the base pointer" >&2
+  exit 1
+fi
+
 if ! nm "$TMPDIR/messages.o" | awk '$2 == "T" && $3 == "serial_write_msg11" { found = 1 } END { exit found ? 0 : 1 }'; then
   echo "message writer object is missing serial_write_msg11" >&2
   exit 1
@@ -117,6 +132,11 @@ fi
 
 if ! nm "$TMPDIR/messages.o" | awk '$2 == "T" && $3 == "serial_write_msg20" { found = 1 } END { exit found ? 0 : 1 }'; then
   echo "message writer object is missing serial_write_msg20" >&2
+  exit 1
+fi
+
+if ! nm "$TMPDIR/messages.o" | awk '$2 == "T" && $3 == "serial_write_slice20" { found = 1 } END { exit found ? 0 : 1 }'; then
+  echo "message writer object is missing serial_write_slice20" >&2
   exit 1
 fi
 

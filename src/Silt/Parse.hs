@@ -207,6 +207,8 @@ sexprToSurface sexpr =
         Nothing -> Right (SVar atom)
     List [Atom "u64", Atom digits] ->
       SU64 <$> parseNatural digits
+    List [Atom "u8", Atom digits] ->
+      SU8 <$> parseU8 digits
     List [Atom "addr", Atom digits] ->
       SAddr <$> parseNatural digits
     List [Atom "let", List bindings, body] ->
@@ -311,6 +313,13 @@ parseNatural digits
             then Right (fromIntegral value)
             else Left ("u64 literal out of range: " ++ digits)
   | otherwise = Left ("expected natural-number literal, found " ++ show digits)
+
+parseU8 :: String -> Either String Word64
+parseU8 digits = do
+  value <- parseNatural digits
+  if value <= 255
+    then Right value
+    else Left ("u8 literal out of range: " ++ digits)
 
 sexprToConstructorDecl :: SExpr -> Either String ConstructorDecl
 sexprToConstructorDecl sexpr =

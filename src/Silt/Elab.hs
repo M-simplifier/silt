@@ -95,6 +95,7 @@ data Value
   | VPi Name Quantity Value Closure
   | VLam Name Quantity Closure
   | VNeutral Neutral
+  | VU8 Word64
   | VU64 Word64
   | VAddr Word64
   | VLayout Name [LayoutFieldInit Value]
@@ -932,6 +933,8 @@ infer globals ctx env surface =
             Nothing -> Left ("unknown name " ++ name)
     SUniverse level ->
       Right (TUniverse level, VUniverse (level + 1))
+    SU8 value ->
+      Right (TU8 value, u8TypeValue)
     SU64 value ->
       Right (TU64 value, u64TypeValue)
     SAddr value ->
@@ -1588,6 +1591,7 @@ countRuntimeUses globals target term =
           | otherwise -> 0
         TGlobal _ -> 0
         TUniverse _ -> 0
+        TU8 _ -> 0
         TU64 _ -> 0
         TAddr _ -> 0
         TLayout _ fields ->
@@ -1638,6 +1642,7 @@ countVarUses target term =
       | otherwise -> 0
     TGlobal _ -> 0
     TUniverse _ -> 0
+    TU8 _ -> 0
     TU64 _ -> 0
     TAddr _ -> 0
     TLayout _ fields ->
@@ -1693,6 +1698,8 @@ eval globals env term =
                   VNeutral (NGlobal name)
     TUniverse level ->
       VUniverse level
+    TU8 value ->
+      VU8 value
     TU64 value ->
       VU64 value
     TAddr value ->
@@ -1810,6 +1817,12 @@ foldNeutral name args =
 reducePrimitive :: Globals -> Name -> [Value] -> Maybe Value
 reducePrimitive globals name args =
   case (name, args) of
+    ("u8-to-u64", [VU8 value]) ->
+      Just (VU64 value)
+    ("u64-to-u8", [VU64 value]) ->
+      Just (VU8 (value .&. 255))
+    ("u8-eq", [VU8 left, VU8 right]) ->
+      Just (if left == right then VPrim "True" [] else VPrim "False" [])
     ("u64-add", [VU64 left, VU64 right]) ->
       Just (VU64 (left + right))
     ("u64-sub", [VU64 left, VU64 right]) ->
@@ -1881,6 +1894,7 @@ quote :: Int -> Value -> Term
 quote depth value =
   case value of
     VUniverse level -> TUniverse level
+    VU8 word -> TU8 word
     VU64 word -> TU64 word
     VAddr word -> TAddr word
     VLayout name fields ->
@@ -1946,6 +1960,9 @@ asDataApplication globals value =
 natTypeValue :: Value
 natTypeValue = VPrim "Nat" []
 
+u8TypeValue :: Value
+u8TypeValue = VPrim "U8" []
+
 u64TypeValue :: Value
 u64TypeValue = VPrim "U64" []
 
@@ -1958,6 +1975,7 @@ runtimeTypeLayoutValue globals value =
     VPrim "Unit" [] -> Just (1, 1)
     VPrim "Bool" [] -> Just (1, 1)
     VPrim "Nat" [] -> Just (8, 8)
+    VPrim "U8" [] -> Just (1, 1)
     VPrim "U64" [] -> Just (8, 8)
     VPrim "Addr" [] -> Just (8, 8)
     VPrim "Ptr" [_] -> Just (8, 8)
@@ -1994,6 +2012,10 @@ primitiveArities =
     , ("Bool", 0)
     , ("True", 0)
     , ("False", 0)
+    , ("U8", 0)
+    , ("u8-to-u64", 1)
+    , ("u64-to-u8", 1)
+    , ("u8-eq", 2)
     , ("U64", 0)
     , ("u64-add", 2)
     , ("u64-sub", 2)
@@ -2062,6 +2084,10 @@ builtinEntries globals =
     , builtinEntry globals "True" (TGlobal "Bool")
     , builtinEntry globals "False" (TGlobal "Bool")
     , builtinEntry globals "bool-case" boolCaseType
+    , builtinEntry globals "U8" (TUniverse 0)
+    , builtinEntry globals "u8-to-u64" u8ToU64Type
+    , builtinEntry globals "u64-to-u8" u64ToU8Type
+    , builtinEntry globals "u8-eq" u8CompareType
     , builtinEntry globals "U64" (TUniverse 0)
     , builtinEntry globals "u64-add" u64BinaryType
     , builtinEntry globals "u64-sub" u64BinaryType
@@ -2200,6 +2226,22 @@ u64CompareType =
     TPi "y" Q1 (TGlobal "U64") $
       TGlobal "Bool"
 
+u8ToU64Type :: Term
+u8ToU64Type =
+  TPi "x" Q1 (TGlobal "U8") $
+    TGlobal "U64"
+
+u64ToU8Type :: Term
+u64ToU8Type =
+  TPi "x" Q1 (TGlobal "U64") $
+    TGlobal "U8"
+
+u8CompareType :: Term
+u8CompareType =
+  TPi "x" Q1 (TGlobal "U8") $
+    TPi "y" Q1 (TGlobal "U8") $
+      TGlobal "Bool"
+
 addrAddType :: Term
 addrAddType =
   TPi "base" Q1 (TGlobal "Addr") $
@@ -2329,6 +2371,7 @@ shift cutoff delta term =
       | otherwise -> TVar index
     TGlobal name -> TGlobal name
     TUniverse level -> TUniverse level
+    TU8 value -> TU8 value
     TU64 value -> TU64 value
     TAddr value -> TAddr value
     TLayout name fields ->
@@ -2357,6 +2400,7 @@ subst index replacement term =
       | otherwise -> TVar current
     TGlobal name -> TGlobal name
     TUniverse level -> TUniverse level
+    TU8 value -> TU8 value
     TU64 value -> TU64 value
     TAddr value -> TAddr value
     TLayout name fields ->

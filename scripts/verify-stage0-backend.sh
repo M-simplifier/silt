@@ -118,6 +118,7 @@ fi
 "$SILT_BIN" emit-c-bundle examples/memory.silt read-word write-word seed-word-token seed-and-read-token increment-word bump-and-read read-next write-next read-header-magic read-header-next read-header-next-via-layout read-header-next-via-layout-token write-header-next write-header-next-token read-header-next-token write-header-fields write-header-fields-token override-header-next copy-header > "$TMPDIR/memory_runtime.c"
 "$SILT_BIN" emit-c-bundle examples/abi.silt inspect-header call-header-zero > "$TMPDIR/abi_runtime.c"
 "$SILT_BIN" emit-c-bundle examples/layout-values.silt header-template header-template-magic header-template-next header-magic-from-arg retarget-header retarget-template-next retargeted-magic-from-arg repack-header repacked-template-magic repacked-template-next override-template-next let-layout-next let-layout-magic-from-arg store-header-template store-and-read-magic > "$TMPDIR/layout_values_runtime.c"
+"$SILT_BIN" emit-c-bundle examples/bytes.silt byte-answer-word u8-size u8-align byte-third-addr byte-slice-len byte-slice-base-addr load-byte store-byte > "$TMPDIR/bytes_runtime.c"
 
 cat > "$TMPDIR/extern_impl.c" <<'EOF'
 #include <stdint.h>
@@ -205,8 +206,17 @@ uintptr_t let_layout_next(void);
 uint64_t let_layout_magic_from_arg(silt_layout_Header hdr);
 uint8_t store_header_template(uintptr_t dst);
 uint64_t store_and_read_magic(uintptr_t dst);
+uint64_t byte_answer_word(void);
+uint64_t u8_size(void);
+uint64_t u8_align(void);
+uintptr_t byte_third_addr(void);
+uint64_t byte_slice_len(void);
+uintptr_t byte_slice_base_addr(void);
+uint8_t load_byte(uintptr_t ptr);
+uint8_t store_byte(uintptr_t ptr, uint8_t value);
 int main(void) {
   uint64_t cell = 41ULL;
+  uint8_t byte_cell = 41u;
   uint64_t pair[2] = {7ULL, 11ULL};
   uintptr_t next = (uintptr_t)4096ULL;
   silt_layout_Header src = {0};
@@ -284,6 +294,15 @@ int main(void) {
   if (store_header_template((uintptr_t)&dst) != 0u) return 65;
   if (inspect_header((uintptr_t)&dst) != 77ULL) return 66;
   if (store_and_read_magic((uintptr_t)&dst) != 77ULL) return 67;
+  if (byte_answer_word() != 2ULL) return 68;
+  if (u8_size() != 1ULL) return 69;
+  if (u8_align() != 1ULL) return 70;
+  if (byte_third_addr() != (uintptr_t)4099ULL) return 71;
+  if (byte_slice_len() != 20ULL) return 72;
+  if (byte_slice_base_addr() != (uintptr_t)4096ULL) return 73;
+  if (load_byte((uintptr_t)&byte_cell) != 41u) return 74;
+  if (store_byte((uintptr_t)&byte_cell, 99u) != 0u) return 75;
+  if (byte_cell != 99u) return 76;
   return 0;
 }
 EOF
@@ -294,6 +313,7 @@ cc -std=c11 -Wall -Wextra -o "$TMPDIR/check" \
   "$TMPDIR/memory_runtime.c" \
   "$TMPDIR/abi_runtime.c" \
   "$TMPDIR/layout_values_runtime.c" \
+  "$TMPDIR/bytes_runtime.c" \
   "$TMPDIR/extern_impl.c" \
   "$TMPDIR/abi_impl.c" \
   "$TMPDIR/main.c"

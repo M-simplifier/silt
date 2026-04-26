@@ -1,5 +1,5 @@
 ; Shared Limine serial/debug-exit surface.
-; Entry artifacts pass this file before their entry-specific source.
+; Entry artifacts include this file from their entry-specific source.
 
 (data BootIO ())
 (data SerialReady ())
@@ -55,6 +55,10 @@
    (b17 U64 136)
    (b18 U64 144)
    (b19 U64 152)))
+
+(layout SerialSlice 16 8
+  ((base (Ptr U8) 0)
+   (len U64 8)))
 
 (claim io-seq
   (Pi ((pre 0 Type)
@@ -265,6 +269,80 @@
       (field SerialMsg20 b17 msg)
       (field SerialMsg20 b18 msg)
       (field SerialMsg20 b19 msg))))
+
+(claim serial-write-byte-at
+  (Pi ((base (Ptr U8)) (offset U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-byte-at
+  (fn ((base (Ptr U8)) (offset U64))
+    (bind SerialReady SerialReady SerialReady U8 Unit
+      (load SerialReady U8 (ptr-step U8 base offset))
+      (fn ((byte 1 U8))
+        (serial-write-byte (u8-to-u64 byte))))))
+
+(claim serial-write-byteptr2
+  (Pi ((base (Ptr U8)) (offset U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-byteptr2
+  (fn ((base (Ptr U8)) (offset U64))
+    (serial-seq
+      (serial-write-byte-at base offset)
+      (serial-write-byte-at base (u64-add offset (u64 1))))))
+
+(claim serial-write-byteptr3
+  (Pi ((base (Ptr U8)) (offset U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-byteptr3
+  (fn ((base (Ptr U8)) (offset U64))
+    (serial-seq
+      (serial-write-byteptr2 base offset)
+      (serial-write-byte-at base (u64-add offset (u64 2))))))
+
+(claim serial-write-byteptr4
+  (Pi ((base (Ptr U8)) (offset U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-byteptr4
+  (fn ((base (Ptr U8)) (offset U64))
+    (serial-seq
+      (serial-write-byteptr2 base offset)
+      (serial-write-byteptr2 base (u64-add offset (u64 2))))))
+
+(claim serial-write-byteptr8
+  (Pi ((base (Ptr U8)) (offset U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-byteptr8
+  (fn ((base (Ptr U8)) (offset U64))
+    (serial-seq
+      (serial-write-byteptr4 base offset)
+      (serial-write-byteptr4 base (u64-add offset (u64 4))))))
+
+(claim serial-write-byteptr12
+  (Pi ((base (Ptr U8)) (offset U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-byteptr12
+  (fn ((base (Ptr U8)) (offset U64))
+    (serial-seq
+      (serial-write-byteptr8 base offset)
+      (serial-write-byteptr4 base (u64-add offset (u64 8))))))
+
+(claim serial-write-byteptr20
+  (Pi ((base (Ptr U8)) (offset U64))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-byteptr20
+  (fn ((base (Ptr U8)) (offset U64))
+    (serial-seq
+      (serial-write-byteptr8 base offset)
+      (serial-write-byteptr12 base (u64-add offset (u64 8))))))
+
+(claim serial-write-slice20
+  (Pi ((slice SerialSlice))
+      (Eff SerialReady SerialReady Unit)))
+(def serial-write-slice20
+  (fn ((slice SerialSlice))
+    (let-layout SerialSlice ((base base) (len len)) slice
+      (match (u64-eq len (u64 20))
+        ((True) (serial-write-byteptr20 base (u64 0)))
+        ((False) (pure SerialReady Unit tt))))))
 
 (claim serial-init (Eff BootIO SerialReady Unit))
 (def serial-init

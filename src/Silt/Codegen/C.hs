@@ -16,6 +16,7 @@ import Silt.Syntax
 data CType
   = CUnit
   | CNat
+  | CU8
   | CU64
   | CAddr
   | CPtr
@@ -229,6 +230,9 @@ compileExpr codegenEnv fresh env expected term =
     TU64 value ->
       expectType expected CU64 "u64 literal" >>
       Right (fresh, [], show value ++ "ULL")
+    TU8 value ->
+      expectType expected CU8 "u8 literal" >>
+      Right (fresh, [], "((uint8_t)" ++ show value ++ "u)")
     TAddr value ->
       expectType expected CAddr "addr literal" >>
       Right (fresh, [], "((uintptr_t)" ++ show value ++ "ULL)")
@@ -377,6 +381,19 @@ compileApplication codegenEnv fresh env expected term =
       expectType expected CNat "S"
       (fresh', stmts, expr) <- compileExpr codegenEnv fresh env CNat arg
       Right (fresh', stmts, "(" ++ expr ++ " + 1ULL)")
+    (TGlobal "u8-to-u64", [value]) -> do
+      expectType expected CU64 "u8-to-u64"
+      (fresh1, valueStmts, valueExpr) <- compileExpr codegenEnv fresh env CU8 value
+      Right (fresh1, valueStmts, "((uint64_t)" ++ valueExpr ++ ")")
+    (TGlobal "u64-to-u8", [value]) -> do
+      expectType expected CU8 "u64-to-u8"
+      (fresh1, valueStmts, valueExpr) <- compileExpr codegenEnv fresh env CU64 value
+      Right (fresh1, valueStmts, "((uint8_t)(" ++ valueExpr ++ "))")
+    (TGlobal "u8-eq", [left, right]) -> do
+      expectType expected CBool "u8-eq"
+      (fresh1, leftStmts, leftExpr) <- compileExpr codegenEnv fresh env CU8 left
+      (fresh2, rightStmts, rightExpr) <- compileExpr codegenEnv fresh1 env CU8 right
+      Right (fresh2, leftStmts ++ rightStmts, "((" ++ leftExpr ++ " == " ++ rightExpr ++ ") ? 1u : 0u)")
     (TGlobal "u64-add", [left, right]) -> do
       expectType expected CU64 "u64-add"
       (fresh1, leftStmts, leftExpr) <- compileExpr codegenEnv fresh env CU64 left
@@ -746,6 +763,7 @@ compileRuntimeType codegenEnv term =
   case term of
     TGlobal "Unit" -> Right CUnit
     TGlobal "Nat" -> Right CNat
+    TGlobal "U8" -> Right CU8
     TGlobal "U64" -> Right CU64
     TGlobal "Addr" -> Right CAddr
     TGlobal "Bool" -> Right CBool
@@ -763,6 +781,7 @@ runtimeTypeLayoutTerm codegenEnv term =
     TGlobal "Unit" -> Right (1, 1)
     TGlobal "Bool" -> Right (1, 1)
     TGlobal "Nat" -> Right (8, 8)
+    TGlobal "U8" -> Right (1, 1)
     TGlobal "U64" -> Right (8, 8)
     TGlobal "Addr" -> Right (8, 8)
     TApp (TGlobal "Ptr") _ -> Right (8, 8)
@@ -920,6 +939,7 @@ termGlobals externNames term =
         then Set.singleton name
         else Set.empty
     TUniverse _ -> Set.empty
+    TU8 _ -> Set.empty
     TU64 _ -> Set.empty
     TAddr _ -> Set.empty
     TLayout _ fields ->
@@ -967,6 +987,7 @@ countVarUses target term =
       | otherwise -> 0
     TGlobal _ -> 0
     TUniverse _ -> 0
+    TU8 _ -> 0
     TU64 _ -> 0
     TAddr _ -> 0
     TLayout _ fields ->
@@ -1065,6 +1086,7 @@ cTypeName cType =
   case cType of
     CUnit -> "uint8_t"
     CNat -> "uint64_t"
+    CU8 -> "uint8_t"
     CU64 -> "uint64_t"
     CAddr -> "uintptr_t"
     CPtr -> "uintptr_t"
