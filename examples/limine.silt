@@ -33,12 +33,18 @@
    (page-count U64 16)
    (accepted U64 24)))
 
+(layout KernelBootPlanInvariant 24 8
+  ((nonzero-pages U64 0)
+   (accepted U64 8)
+   (direct-map-above-physical U64 16)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
 (static-cell limine-kernel-page-count U64)
 (static-cell limine-kernel-policy KernelBootPolicy)
 (static-cell limine-kernel-plan KernelBootPlan)
+(static-cell limine-kernel-plan-invariant KernelBootPlanInvariant)
 
 (data KernelDone ())
 
@@ -198,6 +204,20 @@
 (claim serial-write-boot-plan-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-boot-plan-ok
   (serial-write-slice20 limine-boot-plan-ok-slice))
+
+(static-bytes limine-plan-invariant-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 80) (u8 76) (u8 65) (u8 78) (u8 95)
+   (u8 73) (u8 78) (u8 86) (u8 95) (u8 79)
+   (u8 75) (u8 33) (u8 33) (u8 33) (u8 10)))
+
+(claim limine-plan-invariant-ok-slice SerialSlice)
+(def limine-plan-invariant-ok-slice
+  (layout-values SerialSlice limine-plan-invariant-ok-bytes limine-plan-invariant-ok-bytes-len))
+
+(claim serial-write-plan-invariant-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-plan-invariant-ok
+  (serial-write-slice20 limine-plan-invariant-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -583,6 +603,29 @@
       (kernel-boot-policy-available-pages policy)
       (kernel-boot-policy-accepted-word policy))))
 
+(claim kernel-bool-word
+  (Pi ((b Bool))
+      U64))
+(def kernel-bool-word
+  (fn ((b Bool))
+    (match b
+      ((True) (u64 1))
+      ((False) (u64 0)))))
+
+(claim kernel-boot-plan-physical-base
+  (Pi ((plan KernelBootPlan))
+      U64))
+(def kernel-boot-plan-physical-base
+  (fn ((plan KernelBootPlan))
+    (field KernelBootPlan physical-base plan)))
+
+(claim kernel-boot-plan-direct-base
+  (Pi ((plan KernelBootPlan))
+      U64))
+(def kernel-boot-plan-direct-base
+  (fn ((plan KernelBootPlan))
+    (field KernelBootPlan direct-base plan)))
+
 (claim kernel-boot-plan-page-count
   (Pi ((plan KernelBootPlan))
       U64))
@@ -613,6 +656,61 @@
 (claim kernel-boot-plan-sample-ready Bool)
 (def kernel-boot-plan-sample-ready
   (kernel-boot-plan-ready kernel-boot-plan-sample))
+
+(claim kernel-boot-plan-invariant-from-plan
+  (Pi ((plan KernelBootPlan))
+      KernelBootPlanInvariant))
+(def kernel-boot-plan-invariant-from-plan
+  (fn ((plan KernelBootPlan))
+    (layout-values KernelBootPlanInvariant
+      (kernel-bool-word (u64-lt (u64 0) (kernel-boot-plan-page-count plan)))
+      (kernel-bool-word (u64-eq (kernel-boot-plan-accepted-word plan) (u64 1)))
+      (kernel-bool-word (u64-lt (kernel-boot-plan-physical-base plan)
+                                (kernel-boot-plan-direct-base plan))))))
+
+(claim kernel-boot-plan-invariant-nonzero-pages
+  (Pi ((invariant KernelBootPlanInvariant))
+      U64))
+(def kernel-boot-plan-invariant-nonzero-pages
+  (fn ((invariant KernelBootPlanInvariant))
+    (field KernelBootPlanInvariant nonzero-pages invariant)))
+
+(claim kernel-boot-plan-invariant-accepted
+  (Pi ((invariant KernelBootPlanInvariant))
+      U64))
+(def kernel-boot-plan-invariant-accepted
+  (fn ((invariant KernelBootPlanInvariant))
+    (field KernelBootPlanInvariant accepted invariant)))
+
+(claim kernel-boot-plan-invariant-direct-map-above-physical
+  (Pi ((invariant KernelBootPlanInvariant))
+      U64))
+(def kernel-boot-plan-invariant-direct-map-above-physical
+  (fn ((invariant KernelBootPlanInvariant))
+    (field KernelBootPlanInvariant direct-map-above-physical invariant)))
+
+(claim kernel-boot-plan-invariant-ready
+  (Pi ((invariant KernelBootPlanInvariant))
+      Bool))
+(def kernel-boot-plan-invariant-ready
+  (fn ((invariant KernelBootPlanInvariant))
+    (match (u64-eq (kernel-boot-plan-invariant-nonzero-pages invariant) (u64 1))
+      ((True)
+        (match (u64-eq (kernel-boot-plan-invariant-accepted invariant) (u64 1))
+          ((True)
+            (u64-eq
+              (kernel-boot-plan-invariant-direct-map-above-physical invariant)
+              (u64 1)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-boot-plan-invariant-sample KernelBootPlanInvariant)
+(def kernel-boot-plan-invariant-sample
+  (kernel-boot-plan-invariant-from-plan kernel-boot-plan-sample))
+
+(claim kernel-boot-plan-invariant-sample-ready Bool)
+(def kernel-boot-plan-invariant-sample-ready
+  (kernel-boot-plan-invariant-ready kernel-boot-plan-invariant-sample))
 
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
@@ -697,6 +795,39 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-plan-invariant-store-and-report
+  (Pi ((plan KernelBootPlan))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-plan-invariant-store-and-report
+  (fn ((plan KernelBootPlan))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelBootPlanInvariant limine-kernel-plan-invariant
+        (kernel-boot-plan-invariant-from-plan plan))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelBootPlanInvariant Unit
+            (load SerialReady KernelBootPlanInvariant limine-kernel-plan-invariant)
+            (fn ((invariant 1 KernelBootPlanInvariant))
+              (match (kernel-boot-plan-invariant-ready invariant)
+                ((True) serial-write-plan-invariant-ok)
+                ((False) (pure SerialReady Unit tt))))))))))
+
+(claim limine-kernel-plan-check-and-report
+  (Pi ((plan KernelBootPlan))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-plan-check-and-report
+  (fn ((plan KernelBootPlan))
+    (match (kernel-boot-plan-ready plan)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          (io-seq SerialReady SerialReady SerialReady
+            (io-seq SerialReady SerialReady SerialReady
+              serial-write-kernel-pages-ok
+              serial-write-boot-policy-ok)
+            serial-write-boot-plan-ok)
+          (limine-kernel-plan-invariant-store-and-report plan)))
+      ((False) (pure SerialReady Unit tt)))))
+
 (claim limine-kernel-plan-store-and-report
   (Pi ((span KernelBootSpan) (policy KernelBootPolicy))
       (Eff SerialReady SerialReady Unit)))
@@ -710,14 +841,7 @@
           (bind SerialReady SerialReady SerialReady KernelBootPlan Unit
             (load SerialReady KernelBootPlan limine-kernel-plan)
             (fn ((plan 1 KernelBootPlan))
-              (match (kernel-boot-plan-ready plan)
-                ((True)
-                  (io-seq SerialReady SerialReady SerialReady
-                    (io-seq SerialReady SerialReady SerialReady
-                      serial-write-kernel-pages-ok
-                      serial-write-boot-policy-ok)
-                    serial-write-boot-plan-ok))
-                ((False) (pure SerialReady Unit tt))))))))))
+              (limine-kernel-plan-check-and-report plan))))))))
 
 (claim limine-kernel-policy-store-and-report
   (Pi ((span KernelBootSpan) (page-count U64))
