@@ -149,6 +149,19 @@
    (free-ready U64 64)
    (api-ready U64 72)))
 
+(layout KernelFrameAllocatorSemanticsState 88 8
+  ((initial-free-count U64 0)
+   (post-alloc-free-count U64 8)
+   (alloc-progress-ready U64 16)
+   (post-free-free-count U64 24)
+   (reusable-base U64 32)
+   (reusable-direct-base U64 40)
+   (reusable-count U64 48)
+   (alloc-api-ready U64 56)
+   (free-api-ready U64 64)
+   (reuse-ready U64 72)
+   (semantics-ready U64 80)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
@@ -167,6 +180,7 @@
 (static-cell limine-kernel-frame-allocator-state KernelFrameAllocatorState)
 (static-cell limine-kernel-frame-allocator-alloc-result KernelFrameAllocatorAllocResult)
 (static-cell limine-kernel-frame-allocator-free-result KernelFrameAllocatorFreeResult)
+(static-cell limine-kernel-frame-allocator-semantics-state KernelFrameAllocatorSemanticsState)
 
 (data KernelDone ())
 
@@ -494,6 +508,20 @@
 (claim serial-write-frame-allocator-free-api-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-frame-allocator-free-api-ok
   (serial-write-slice20 limine-frame-allocator-free-api-ok-slice))
+
+(static-bytes limine-frame-allocator-semantics-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 65) (u8 76) (u8 76) (u8 79) (u8 67)
+   (u8 95) (u8 83) (u8 69) (u8 77) (u8 95)
+   (u8 79) (u8 75) (u8 33) (u8 33) (u8 10)))
+
+(claim limine-frame-allocator-semantics-ok-slice SerialSlice)
+(def limine-frame-allocator-semantics-ok-slice
+  (layout-values SerialSlice limine-frame-allocator-semantics-ok-bytes limine-frame-allocator-semantics-ok-bytes-len))
+
+(claim serial-write-frame-allocator-semantics-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-allocator-semantics-ok
+  (serial-write-slice20 limine-frame-allocator-semantics-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -2235,6 +2263,117 @@
 (def kernel-frame-allocator-free-result-sample-ready
   (kernel-frame-allocator-free-result-ready kernel-frame-allocator-free-result-sample))
 
+(claim kernel-frame-allocator-alloc-progress-ready-word
+  (Pi ((alloc KernelFrameAllocatorAllocResult))
+      U64))
+(def kernel-frame-allocator-alloc-progress-ready-word
+  (fn ((alloc KernelFrameAllocatorAllocResult))
+    (kernel-bool-word
+      (match (kernel-frame-allocator-alloc-result-ready alloc)
+        ((True)
+          (u64-lt
+            (field KernelFrameAllocatorAllocResult output-free-count alloc)
+            (field KernelFrameAllocatorAllocResult input-free-count alloc)))
+        ((False) False)))))
+
+(claim kernel-frame-allocator-reuse-ready-word
+  (Pi ((free KernelFrameAllocatorFreeResult))
+      U64))
+(def kernel-frame-allocator-reuse-ready-word
+  (fn ((free KernelFrameAllocatorFreeResult))
+    (kernel-bool-word
+      (match (kernel-frame-allocator-free-result-ready free)
+        ((True)
+          (u64-lt
+            (u64 0)
+            (field KernelFrameAllocatorFreeResult output-free-count free)))
+        ((False) False)))))
+
+(claim kernel-frame-allocator-semantics-ready-word
+  (Pi ((alloc KernelFrameAllocatorAllocResult)
+       (free KernelFrameAllocatorFreeResult))
+      U64))
+(def kernel-frame-allocator-semantics-ready-word
+  (fn ((alloc KernelFrameAllocatorAllocResult)
+       (free KernelFrameAllocatorFreeResult))
+    (kernel-bool-word
+      (match (u64-eq (kernel-frame-allocator-alloc-progress-ready-word alloc) (u64 1))
+        ((True)
+          (u64-eq (kernel-frame-allocator-reuse-ready-word free) (u64 1)))
+        ((False) False)))))
+
+(claim kernel-frame-allocator-semantics-state-from-api
+  (Pi ((alloc KernelFrameAllocatorAllocResult)
+       (free KernelFrameAllocatorFreeResult))
+      KernelFrameAllocatorSemanticsState))
+(def kernel-frame-allocator-semantics-state-from-api
+  (fn ((alloc KernelFrameAllocatorAllocResult)
+       (free KernelFrameAllocatorFreeResult))
+    (layout-values KernelFrameAllocatorSemanticsState
+      (field KernelFrameAllocatorAllocResult input-free-count alloc)
+      (field KernelFrameAllocatorAllocResult output-free-count alloc)
+      (kernel-frame-allocator-alloc-progress-ready-word alloc)
+      (field KernelFrameAllocatorFreeResult output-free-count free)
+      (field KernelFrameAllocatorFreeResult freed-base free)
+      (field KernelFrameAllocatorFreeResult freed-direct-base free)
+      (field KernelFrameAllocatorFreeResult output-free-count free)
+      (field KernelFrameAllocatorAllocResult api-ready alloc)
+      (field KernelFrameAllocatorFreeResult api-ready free)
+      (kernel-frame-allocator-reuse-ready-word free)
+      (kernel-frame-allocator-semantics-ready-word alloc free))))
+
+(claim kernel-frame-allocator-semantics-state-ready
+  (Pi ((state KernelFrameAllocatorSemanticsState))
+      Bool))
+(def kernel-frame-allocator-semantics-state-ready
+  (fn ((state KernelFrameAllocatorSemanticsState))
+    (match (u64-eq (field KernelFrameAllocatorSemanticsState semantics-ready state) (u64 1))
+      ((True)
+        (match (u64-eq (field KernelFrameAllocatorSemanticsState alloc-api-ready state) (u64 1))
+          ((True)
+            (match (u64-eq (field KernelFrameAllocatorSemanticsState free-api-ready state) (u64 1))
+              ((True)
+                (match (u64-eq (field KernelFrameAllocatorSemanticsState alloc-progress-ready state) (u64 1))
+                  ((True)
+                    (match (u64-eq (field KernelFrameAllocatorSemanticsState reuse-ready state) (u64 1))
+                      ((True)
+                        (match (u64-lt (u64 0) (field KernelFrameAllocatorSemanticsState initial-free-count state))
+                          ((True)
+                            (match (u64-lt
+                                     (field KernelFrameAllocatorSemanticsState post-alloc-free-count state)
+                                     (field KernelFrameAllocatorSemanticsState initial-free-count state))
+                              ((True)
+                                (match (u64-lt
+                                         (field KernelFrameAllocatorSemanticsState post-alloc-free-count state)
+                                         (field KernelFrameAllocatorSemanticsState post-free-free-count state))
+                                  ((True)
+                                    (match (u64-eq
+                                             (field KernelFrameAllocatorSemanticsState reusable-count state)
+                                             (field KernelFrameAllocatorSemanticsState post-free-free-count state))
+                                      ((True)
+                                        (u64-lt
+                                          (field KernelFrameAllocatorSemanticsState reusable-base state)
+                                          (field KernelFrameAllocatorSemanticsState reusable-direct-base state)))
+                                      ((False) False)))
+                                  ((False) False)))
+                              ((False) False)))
+                          ((False) False)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-allocator-semantics-state-sample KernelFrameAllocatorSemanticsState)
+(def kernel-frame-allocator-semantics-state-sample
+  (kernel-frame-allocator-semantics-state-from-api
+    kernel-frame-allocator-alloc-result-sample
+    kernel-frame-allocator-free-result-sample))
+
+(claim kernel-frame-allocator-semantics-state-sample-ready Bool)
+(def kernel-frame-allocator-semantics-state-sample-ready
+  (kernel-frame-allocator-semantics-state-ready kernel-frame-allocator-semantics-state-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -2318,20 +2457,54 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-frame-allocator-semantics-check-and-report
+  (Pi ((state KernelFrameAllocatorSemanticsState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-allocator-semantics-check-and-report
+  (fn ((state KernelFrameAllocatorSemanticsState))
+    (match (kernel-frame-allocator-semantics-state-ready state)
+      ((True) serial-write-frame-allocator-semantics-ok)
+      ((False) (pure SerialReady Unit tt)))))
+
+(claim limine-kernel-frame-allocator-semantics-store-and-report
+  (Pi ((alloc KernelFrameAllocatorAllocResult)
+       (free KernelFrameAllocatorFreeResult))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-allocator-semantics-store-and-report
+  (fn ((alloc KernelFrameAllocatorAllocResult)
+       (free KernelFrameAllocatorFreeResult))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFrameAllocatorSemanticsState
+        limine-kernel-frame-allocator-semantics-state
+        (kernel-frame-allocator-semantics-state-from-api alloc free))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFrameAllocatorSemanticsState Unit
+            (load SerialReady KernelFrameAllocatorSemanticsState limine-kernel-frame-allocator-semantics-state)
+            (fn ((state 1 KernelFrameAllocatorSemanticsState))
+              (limine-kernel-frame-allocator-semantics-check-and-report state))))))))
+
 (claim limine-kernel-frame-allocator-free-api-check-and-report
-  (Pi ((result KernelFrameAllocatorFreeResult))
+  (Pi ((alloc KernelFrameAllocatorAllocResult)
+       (free KernelFrameAllocatorFreeResult))
       (Eff SerialReady SerialReady Unit)))
 (def limine-kernel-frame-allocator-free-api-check-and-report
-  (fn ((result KernelFrameAllocatorFreeResult))
-    (match (kernel-frame-allocator-free-result-ready result)
-      ((True) serial-write-frame-allocator-free-api-ok)
+  (fn ((alloc KernelFrameAllocatorAllocResult)
+       (free KernelFrameAllocatorFreeResult))
+    (match (kernel-frame-allocator-free-result-ready free)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-frame-allocator-free-api-ok
+          (limine-kernel-frame-allocator-semantics-store-and-report alloc free)))
       ((False) (pure SerialReady Unit tt)))))
 
 (claim limine-kernel-frame-allocator-free-api-store-and-report
-  (Pi ((state KernelFrameAllocatorState))
+  (Pi ((alloc KernelFrameAllocatorAllocResult)
+       (state KernelFrameAllocatorState))
       (Eff SerialReady SerialReady Unit)))
 (def limine-kernel-frame-allocator-free-api-store-and-report
-  (fn ((state KernelFrameAllocatorState))
+  (fn ((alloc KernelFrameAllocatorAllocResult)
+       (state KernelFrameAllocatorState))
     (bind SerialReady SerialReady SerialReady Unit Unit
       (store SerialReady SerialReady KernelFrameAllocatorFreeResult
         limine-kernel-frame-allocator-free-result
@@ -2341,7 +2514,7 @@
           (bind SerialReady SerialReady SerialReady KernelFrameAllocatorFreeResult Unit
             (load SerialReady KernelFrameAllocatorFreeResult limine-kernel-frame-allocator-free-result)
             (fn ((result 1 KernelFrameAllocatorFreeResult))
-              (limine-kernel-frame-allocator-free-api-check-and-report result))))))))
+              (limine-kernel-frame-allocator-free-api-check-and-report alloc result))))))))
 
 (claim limine-kernel-frame-allocator-alloc-api-check-and-report
   (Pi ((state KernelFrameAllocatorState)
@@ -2354,7 +2527,7 @@
       ((True)
         (io-seq SerialReady SerialReady SerialReady
           serial-write-frame-allocator-alloc-api-ok
-          (limine-kernel-frame-allocator-free-api-store-and-report state)))
+          (limine-kernel-frame-allocator-free-api-store-and-report result state)))
       ((False) (pure SerialReady Unit tt)))))
 
 (claim limine-kernel-frame-allocator-alloc-api-store-and-report
