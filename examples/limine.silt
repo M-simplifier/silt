@@ -45,6 +45,14 @@
    (kind U64 24)
    (ready U64 32)))
 
+(layout KernelFrameEligibility 48 8
+  ((candidate-ready U64 0)
+   (usable-kind U64 8)
+   (physical-page-aligned U64 16)
+   (direct-page-aligned U64 24)
+   (nonzero-pages U64 32)
+   (eligible U64 40)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
@@ -53,6 +61,7 @@
 (static-cell limine-kernel-plan KernelBootPlan)
 (static-cell limine-kernel-plan-invariant KernelBootPlanInvariant)
 (static-cell limine-kernel-frame-candidate KernelFrameCandidate)
+(static-cell limine-kernel-frame-eligibility KernelFrameEligibility)
 
 (data KernelDone ())
 
@@ -240,6 +249,20 @@
 (claim serial-write-frame-candidate-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-frame-candidate-ok
   (serial-write-slice20 limine-frame-candidate-ok-slice))
+
+(static-bytes limine-frame-eligibility-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 70) (u8 82) (u8 65) (u8 77) (u8 69)
+   (u8 95) (u8 69) (u8 76) (u8 73) (u8 71)
+   (u8 95) (u8 79) (u8 75) (u8 33) (u8 10)))
+
+(claim limine-frame-eligibility-ok-slice SerialSlice)
+(def limine-frame-eligibility-ok-slice
+  (layout-values SerialSlice limine-frame-eligibility-ok-bytes limine-frame-eligibility-ok-bytes-len))
+
+(claim serial-write-frame-eligibility-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-eligibility-ok
+  (serial-write-slice20 limine-frame-eligibility-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -811,6 +834,140 @@
 (def kernel-frame-candidate-sample-ready
   (kernel-frame-candidate-ready kernel-frame-candidate-sample))
 
+(claim limine-memmap-usable-kind U64)
+(def limine-memmap-usable-kind
+  (u64 0))
+
+(claim kernel-u64-page-aligned
+  (Pi ((value U64))
+      Bool))
+(def kernel-u64-page-aligned
+  (fn ((value U64))
+    (u64-eq (u64-rem value (u64 4096)) (u64 0))))
+
+(claim kernel-frame-candidate-usable-kind
+  (Pi ((candidate KernelFrameCandidate))
+      Bool))
+(def kernel-frame-candidate-usable-kind
+  (fn ((candidate KernelFrameCandidate))
+    (u64-eq (kernel-frame-candidate-kind candidate) limine-memmap-usable-kind)))
+
+(claim kernel-frame-candidate-physical-page-aligned
+  (Pi ((candidate KernelFrameCandidate))
+      Bool))
+(def kernel-frame-candidate-physical-page-aligned
+  (fn ((candidate KernelFrameCandidate))
+    (kernel-u64-page-aligned (kernel-frame-candidate-physical-base candidate))))
+
+(claim kernel-frame-candidate-direct-page-aligned
+  (Pi ((candidate KernelFrameCandidate))
+      Bool))
+(def kernel-frame-candidate-direct-page-aligned
+  (fn ((candidate KernelFrameCandidate))
+    (kernel-u64-page-aligned (kernel-frame-candidate-direct-base candidate))))
+
+(claim kernel-frame-candidate-eligible
+  (Pi ((candidate KernelFrameCandidate))
+      Bool))
+(def kernel-frame-candidate-eligible
+  (fn ((candidate KernelFrameCandidate))
+    (match (kernel-frame-candidate-ready candidate)
+      ((True)
+        (match (kernel-frame-candidate-usable-kind candidate)
+          ((True)
+            (match (kernel-frame-candidate-physical-page-aligned candidate)
+              ((True)
+                (match (kernel-frame-candidate-direct-page-aligned candidate)
+                  ((True) (u64-lt (u64 0) (kernel-frame-candidate-page-count candidate)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-eligibility-from-candidate
+  (Pi ((candidate KernelFrameCandidate))
+      KernelFrameEligibility))
+(def kernel-frame-eligibility-from-candidate
+  (fn ((candidate KernelFrameCandidate))
+    (layout-values KernelFrameEligibility
+      (kernel-frame-candidate-ready-word candidate)
+      (kernel-bool-word (kernel-frame-candidate-usable-kind candidate))
+      (kernel-bool-word (kernel-frame-candidate-physical-page-aligned candidate))
+      (kernel-bool-word (kernel-frame-candidate-direct-page-aligned candidate))
+      (kernel-bool-word (u64-lt (u64 0) (kernel-frame-candidate-page-count candidate)))
+      (kernel-bool-word (kernel-frame-candidate-eligible candidate)))))
+
+(claim kernel-frame-eligibility-candidate-ready
+  (Pi ((eligibility KernelFrameEligibility))
+      U64))
+(def kernel-frame-eligibility-candidate-ready
+  (fn ((eligibility KernelFrameEligibility))
+    (field KernelFrameEligibility candidate-ready eligibility)))
+
+(claim kernel-frame-eligibility-usable-kind
+  (Pi ((eligibility KernelFrameEligibility))
+      U64))
+(def kernel-frame-eligibility-usable-kind
+  (fn ((eligibility KernelFrameEligibility))
+    (field KernelFrameEligibility usable-kind eligibility)))
+
+(claim kernel-frame-eligibility-physical-page-aligned
+  (Pi ((eligibility KernelFrameEligibility))
+      U64))
+(def kernel-frame-eligibility-physical-page-aligned
+  (fn ((eligibility KernelFrameEligibility))
+    (field KernelFrameEligibility physical-page-aligned eligibility)))
+
+(claim kernel-frame-eligibility-direct-page-aligned
+  (Pi ((eligibility KernelFrameEligibility))
+      U64))
+(def kernel-frame-eligibility-direct-page-aligned
+  (fn ((eligibility KernelFrameEligibility))
+    (field KernelFrameEligibility direct-page-aligned eligibility)))
+
+(claim kernel-frame-eligibility-nonzero-pages
+  (Pi ((eligibility KernelFrameEligibility))
+      U64))
+(def kernel-frame-eligibility-nonzero-pages
+  (fn ((eligibility KernelFrameEligibility))
+    (field KernelFrameEligibility nonzero-pages eligibility)))
+
+(claim kernel-frame-eligibility-eligible-word
+  (Pi ((eligibility KernelFrameEligibility))
+      U64))
+(def kernel-frame-eligibility-eligible-word
+  (fn ((eligibility KernelFrameEligibility))
+    (field KernelFrameEligibility eligible eligibility)))
+
+(claim kernel-frame-eligibility-ready
+  (Pi ((eligibility KernelFrameEligibility))
+      Bool))
+(def kernel-frame-eligibility-ready
+  (fn ((eligibility KernelFrameEligibility))
+    (match (u64-eq (kernel-frame-eligibility-candidate-ready eligibility) (u64 1))
+      ((True)
+        (match (u64-eq (kernel-frame-eligibility-usable-kind eligibility) (u64 1))
+          ((True)
+            (match (u64-eq (kernel-frame-eligibility-physical-page-aligned eligibility) (u64 1))
+              ((True)
+                (match (u64-eq (kernel-frame-eligibility-direct-page-aligned eligibility) (u64 1))
+                  ((True)
+                    (match (u64-eq (kernel-frame-eligibility-nonzero-pages eligibility) (u64 1))
+                      ((True) (u64-eq (kernel-frame-eligibility-eligible-word eligibility) (u64 1)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-eligibility-sample KernelFrameEligibility)
+(def kernel-frame-eligibility-sample
+  (kernel-frame-eligibility-from-candidate kernel-frame-candidate-sample))
+
+(claim kernel-frame-eligibility-sample-ready Bool)
+(def kernel-frame-eligibility-sample-ready
+  (kernel-frame-eligibility-ready kernel-frame-eligibility-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -894,6 +1051,35 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-frame-eligibility-store-and-report
+  (Pi ((candidate KernelFrameCandidate))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-eligibility-store-and-report
+  (fn ((candidate KernelFrameCandidate))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFrameEligibility limine-kernel-frame-eligibility
+        (kernel-frame-eligibility-from-candidate candidate))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFrameEligibility Unit
+            (load SerialReady KernelFrameEligibility limine-kernel-frame-eligibility)
+            (fn ((eligibility 1 KernelFrameEligibility))
+              (match (kernel-frame-eligibility-ready eligibility)
+                ((True) serial-write-frame-eligibility-ok)
+                ((False) (pure SerialReady Unit tt))))))))))
+
+(claim limine-kernel-frame-candidate-check-and-report
+  (Pi ((candidate KernelFrameCandidate))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-candidate-check-and-report
+  (fn ((candidate KernelFrameCandidate))
+    (match (kernel-frame-candidate-ready candidate)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-frame-candidate-ok
+          (limine-kernel-frame-eligibility-store-and-report candidate)))
+      ((False) (pure SerialReady Unit tt)))))
+
 (claim limine-kernel-frame-candidate-store-and-report
   (Pi ((span KernelBootSpan)
        (plan KernelBootPlan)
@@ -911,9 +1097,7 @@
           (bind SerialReady SerialReady SerialReady KernelFrameCandidate Unit
             (load SerialReady KernelFrameCandidate limine-kernel-frame-candidate)
             (fn ((candidate 1 KernelFrameCandidate))
-              (match (kernel-frame-candidate-ready candidate)
-                ((True) serial-write-frame-candidate-ok)
-                ((False) (pure SerialReady Unit tt))))))))))
+              (limine-kernel-frame-candidate-check-and-report candidate))))))))
 
 (claim limine-kernel-plan-invariant-check-and-report
   (Pi ((span KernelBootSpan)

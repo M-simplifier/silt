@@ -95,6 +95,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_frame_candidate_ok_bytes[
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_frame_eligibility_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 69u, 76u, 73u, 71u, 95u, 79u, 75u, 33u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the frame-eligibility marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
   exit 1
@@ -132,6 +137,11 @@ fi
 
 if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_candidate[40] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed kernel frame-candidate static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_eligibility[48] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed kernel frame-eligibility static cell in bss" >&2
   exit 1
 fi
 
@@ -250,6 +260,16 @@ if ! grep -Fq 'silt_layout_KernelFrameCandidate candidate_' "$TMPDIR/limine.c"; 
   exit 1
 fi
 
+if ! grep -Fq '(*((silt_layout_KernelFrameEligibility*)(((uintptr_t)&silt_cell_limine_kernel_frame_eligibility[0])))) =' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store KernelFrameEligibility through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_KernelFrameEligibility eligibility_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load KernelFrameEligibility back through the static cell pointer" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'silt_layout_LimineHhdmRequest request_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load the HHDM request object" >&2
   exit 1
@@ -322,6 +342,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_frame_candidate_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the frame-candidate marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_frame_eligibility_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the frame-eligibility marker pointer from static bytes" >&2
   exit 1
 fi
 
