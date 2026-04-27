@@ -150,6 +150,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_frame_allocator_semantics
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_frame_lease_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 76u, 69u, 65u, 83u, 69u, 33u, 33u, 33u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the frame lease marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
   exit 1
@@ -242,6 +247,11 @@ fi
 
 if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_allocator_semantics_state[88] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed kernel frame allocator semantics static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_lease[88] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed kernel frame lease static cell in bss" >&2
   exit 1
 fi
 
@@ -470,6 +480,16 @@ if ! grep -Fq 'silt_layout_KernelFrameAllocatorSemanticsState state_' "$TMPDIR/l
   exit 1
 fi
 
+if ! grep -Fq '(*((silt_layout_KernelFrameLease*)(((uintptr_t)&silt_cell_limine_kernel_frame_lease[0])))) =' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store KernelFrameLease through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_KernelFrameLease lease_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load KernelFrameLease back through the static cell pointer" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'silt_layout_LimineHhdmRequest request_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load the HHDM request object" >&2
   exit 1
@@ -597,6 +617,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_frame_allocator_semantics_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the frame allocator semantics marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_frame_lease_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the frame lease marker pointer from static bytes" >&2
   exit 1
 fi
 
