@@ -70,6 +70,16 @@
    (span-ordered U64 32)
    (intent-ready U64 40)))
 
+(layout KernelFrameReservationState 64 8
+  ((physical-base U64 0)
+   (direct-base U64 8)
+   (page-count U64 16)
+   (previous-reserved U64 24)
+   (reserved U64 32)
+   (intent-ready U64 40)
+   (invariant-ready U64 48)
+   (state-ready U64 56)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
@@ -81,6 +91,7 @@
 (static-cell limine-kernel-frame-eligibility KernelFrameEligibility)
 (static-cell limine-kernel-frame-reservation-intent KernelFrameReservationIntent)
 (static-cell limine-kernel-frame-reservation-invariant KernelFrameReservationInvariant)
+(static-cell limine-kernel-frame-reservation-state KernelFrameReservationState)
 
 (data KernelDone ())
 
@@ -310,6 +321,20 @@
 (claim serial-write-frame-reservation-invariant-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-frame-reservation-invariant-ok
   (serial-write-slice20 limine-frame-reservation-invariant-ok-slice))
+
+(static-bytes limine-frame-reservation-state-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 70) (u8 82) (u8 65) (u8 77) (u8 69)
+   (u8 95) (u8 82) (u8 83) (u8 86) (u8 68)
+   (u8 95) (u8 79) (u8 75) (u8 33) (u8 10)))
+
+(claim limine-frame-reservation-state-ok-slice SerialSlice)
+(def limine-frame-reservation-state-ok-slice
+  (layout-values SerialSlice limine-frame-reservation-state-ok-bytes limine-frame-reservation-state-ok-bytes-len))
+
+(claim serial-write-frame-reservation-state-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-reservation-state-ok
+  (serial-write-slice20 limine-frame-reservation-state-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -1220,6 +1245,136 @@
 (def kernel-frame-reservation-invariant-sample-ready
   (kernel-frame-reservation-invariant-ready kernel-frame-reservation-invariant-sample))
 
+(claim kernel-frame-unreserved U64)
+(def kernel-frame-unreserved
+  (u64 0))
+
+(claim kernel-frame-reserved U64)
+(def kernel-frame-reserved
+  (u64 1))
+
+(claim kernel-frame-reservation-state-ready-word
+  (Pi ((intent KernelFrameReservationIntent)
+       (invariant KernelFrameReservationInvariant))
+      U64))
+(def kernel-frame-reservation-state-ready-word
+  (fn ((intent KernelFrameReservationIntent)
+       (invariant KernelFrameReservationInvariant))
+    (kernel-bool-word
+      (match (kernel-frame-reservation-intent-ready intent)
+        ((True) (kernel-frame-reservation-invariant-ready invariant))
+        ((False) False)))))
+
+(claim kernel-frame-reservation-state-from-intent-invariant
+  (Pi ((intent KernelFrameReservationIntent)
+       (invariant KernelFrameReservationInvariant))
+      KernelFrameReservationState))
+(def kernel-frame-reservation-state-from-intent-invariant
+  (fn ((intent KernelFrameReservationIntent)
+       (invariant KernelFrameReservationInvariant))
+    (layout-values KernelFrameReservationState
+      (kernel-frame-reservation-intent-physical-base intent)
+      (kernel-frame-reservation-intent-direct-base intent)
+      (kernel-frame-reservation-intent-page-count intent)
+      kernel-frame-unreserved
+      kernel-frame-reserved
+      (kernel-frame-reservation-intent-ready-flag intent)
+      (kernel-frame-reservation-invariant-ready-flag invariant)
+      (kernel-frame-reservation-state-ready-word intent invariant))))
+
+(claim kernel-frame-reservation-state-physical-base
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-reservation-state-physical-base
+  (fn ((state KernelFrameReservationState))
+    (field KernelFrameReservationState physical-base state)))
+
+(claim kernel-frame-reservation-state-direct-base
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-reservation-state-direct-base
+  (fn ((state KernelFrameReservationState))
+    (field KernelFrameReservationState direct-base state)))
+
+(claim kernel-frame-reservation-state-page-count
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-reservation-state-page-count
+  (fn ((state KernelFrameReservationState))
+    (field KernelFrameReservationState page-count state)))
+
+(claim kernel-frame-reservation-state-previous-reserved
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-reservation-state-previous-reserved
+  (fn ((state KernelFrameReservationState))
+    (field KernelFrameReservationState previous-reserved state)))
+
+(claim kernel-frame-reservation-state-reserved
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-reservation-state-reserved
+  (fn ((state KernelFrameReservationState))
+    (field KernelFrameReservationState reserved state)))
+
+(claim kernel-frame-reservation-state-intent-ready
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-reservation-state-intent-ready
+  (fn ((state KernelFrameReservationState))
+    (field KernelFrameReservationState intent-ready state)))
+
+(claim kernel-frame-reservation-state-invariant-ready
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-reservation-state-invariant-ready
+  (fn ((state KernelFrameReservationState))
+    (field KernelFrameReservationState invariant-ready state)))
+
+(claim kernel-frame-reservation-state-ready-flag
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-reservation-state-ready-flag
+  (fn ((state KernelFrameReservationState))
+    (field KernelFrameReservationState state-ready state)))
+
+(claim kernel-frame-reservation-state-ready
+  (Pi ((state KernelFrameReservationState))
+      Bool))
+(def kernel-frame-reservation-state-ready
+  (fn ((state KernelFrameReservationState))
+    (match (u64-eq (kernel-frame-reservation-state-previous-reserved state) kernel-frame-unreserved)
+      ((True)
+        (match (u64-eq (kernel-frame-reservation-state-reserved state) kernel-frame-reserved)
+          ((True)
+            (match (u64-eq (kernel-frame-reservation-state-intent-ready state) (u64 1))
+              ((True)
+                (match (u64-eq (kernel-frame-reservation-state-invariant-ready state) (u64 1))
+                  ((True)
+                    (match (u64-eq (kernel-frame-reservation-state-ready-flag state) (u64 1))
+                      ((True)
+                        (match (u64-lt (u64 0) (kernel-frame-reservation-state-page-count state))
+                          ((True)
+                            (u64-lt
+                              (kernel-frame-reservation-state-physical-base state)
+                              (kernel-frame-reservation-state-direct-base state)))
+                          ((False) False)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-reservation-state-sample KernelFrameReservationState)
+(def kernel-frame-reservation-state-sample
+  (kernel-frame-reservation-state-from-intent-invariant
+    kernel-frame-reservation-intent-sample
+    kernel-frame-reservation-invariant-sample))
+
+(claim kernel-frame-reservation-state-sample-ready Bool)
+(def kernel-frame-reservation-state-sample-ready
+  (kernel-frame-reservation-state-ready kernel-frame-reservation-state-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -1303,6 +1458,40 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-frame-reservation-state-store-and-report
+  (Pi ((intent KernelFrameReservationIntent)
+       (invariant KernelFrameReservationInvariant))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-reservation-state-store-and-report
+  (fn ((intent KernelFrameReservationIntent)
+       (invariant KernelFrameReservationInvariant))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFrameReservationState
+        limine-kernel-frame-reservation-state
+        (kernel-frame-reservation-state-from-intent-invariant intent invariant))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFrameReservationState Unit
+            (load SerialReady KernelFrameReservationState limine-kernel-frame-reservation-state)
+            (fn ((state 1 KernelFrameReservationState))
+              (match (kernel-frame-reservation-state-ready state)
+                ((True) serial-write-frame-reservation-state-ok)
+                ((False) (pure SerialReady Unit tt))))))))))
+
+(claim limine-kernel-frame-reservation-invariant-check-and-report
+  (Pi ((intent KernelFrameReservationIntent)
+       (invariant KernelFrameReservationInvariant))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-reservation-invariant-check-and-report
+  (fn ((intent KernelFrameReservationIntent)
+       (invariant KernelFrameReservationInvariant))
+    (match (kernel-frame-reservation-invariant-ready invariant)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-frame-reservation-invariant-ok
+          (limine-kernel-frame-reservation-state-store-and-report intent invariant)))
+      ((False) (pure SerialReady Unit tt)))))
+
 (claim limine-kernel-frame-reservation-invariant-store-and-report
   (Pi ((intent KernelFrameReservationIntent))
       (Eff SerialReady SerialReady Unit)))
@@ -1317,9 +1506,7 @@
           (bind SerialReady SerialReady SerialReady KernelFrameReservationInvariant Unit
             (load SerialReady KernelFrameReservationInvariant limine-kernel-frame-reservation-invariant)
             (fn ((invariant 1 KernelFrameReservationInvariant))
-              (match (kernel-frame-reservation-invariant-ready invariant)
-                ((True) serial-write-frame-reservation-invariant-ok)
-                ((False) (pure SerialReady Unit tt))))))))))
+              (limine-kernel-frame-reservation-invariant-check-and-report intent invariant))))))))
 
 (claim limine-kernel-frame-reservation-intent-check-and-report
   (Pi ((intent KernelFrameReservationIntent))
