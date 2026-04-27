@@ -53,6 +53,15 @@
    (nonzero-pages U64 32)
    (eligible U64 40)))
 
+(layout KernelFrameReservationIntent 56 8
+  ((physical-base U64 0)
+   (direct-base U64 8)
+   (page-count U64 16)
+   (candidate-ready U64 24)
+   (eligible U64 32)
+   (requested U64 40)
+   (intent-ready U64 48)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
@@ -62,6 +71,7 @@
 (static-cell limine-kernel-plan-invariant KernelBootPlanInvariant)
 (static-cell limine-kernel-frame-candidate KernelFrameCandidate)
 (static-cell limine-kernel-frame-eligibility KernelFrameEligibility)
+(static-cell limine-kernel-frame-reservation-intent KernelFrameReservationIntent)
 
 (data KernelDone ())
 
@@ -263,6 +273,20 @@
 (claim serial-write-frame-eligibility-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-frame-eligibility-ok
   (serial-write-slice20 limine-frame-eligibility-ok-slice))
+
+(static-bytes limine-frame-reservation-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 70) (u8 82) (u8 65) (u8 77) (u8 69)
+   (u8 95) (u8 82) (u8 69) (u8 83) (u8 86)
+   (u8 95) (u8 79) (u8 75) (u8 33) (u8 10)))
+
+(claim limine-frame-reservation-ok-slice SerialSlice)
+(def limine-frame-reservation-ok-slice
+  (layout-values SerialSlice limine-frame-reservation-ok-bytes limine-frame-reservation-ok-bytes-len))
+
+(claim serial-write-frame-reservation-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-reservation-ok
+  (serial-write-slice20 limine-frame-reservation-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -968,6 +992,124 @@
 (def kernel-frame-eligibility-sample-ready
   (kernel-frame-eligibility-ready kernel-frame-eligibility-sample))
 
+(claim kernel-frame-reservation-requested U64)
+(def kernel-frame-reservation-requested
+  (u64 1))
+
+(claim kernel-frame-reservation-intent-ready-word
+  (Pi ((candidate KernelFrameCandidate)
+       (eligibility KernelFrameEligibility))
+      U64))
+(def kernel-frame-reservation-intent-ready-word
+  (fn ((candidate KernelFrameCandidate)
+       (eligibility KernelFrameEligibility))
+    (kernel-bool-word
+      (match (kernel-frame-candidate-ready candidate)
+        ((True)
+          (match (kernel-frame-eligibility-ready eligibility)
+            ((True) (u64-lt (u64 0) (kernel-frame-candidate-page-count candidate)))
+            ((False) False)))
+        ((False) False)))))
+
+(claim kernel-frame-reservation-intent-from-candidate-eligibility
+  (Pi ((candidate KernelFrameCandidate)
+       (eligibility KernelFrameEligibility))
+      KernelFrameReservationIntent))
+(def kernel-frame-reservation-intent-from-candidate-eligibility
+  (fn ((candidate KernelFrameCandidate)
+       (eligibility KernelFrameEligibility))
+    (layout-values KernelFrameReservationIntent
+      (kernel-frame-candidate-physical-base candidate)
+      (kernel-frame-candidate-direct-base candidate)
+      (kernel-frame-candidate-page-count candidate)
+      (kernel-frame-candidate-ready-word candidate)
+      (kernel-frame-eligibility-eligible-word eligibility)
+      kernel-frame-reservation-requested
+      (kernel-frame-reservation-intent-ready-word candidate eligibility))))
+
+(claim kernel-frame-reservation-intent-physical-base
+  (Pi ((intent KernelFrameReservationIntent))
+      U64))
+(def kernel-frame-reservation-intent-physical-base
+  (fn ((intent KernelFrameReservationIntent))
+    (field KernelFrameReservationIntent physical-base intent)))
+
+(claim kernel-frame-reservation-intent-direct-base
+  (Pi ((intent KernelFrameReservationIntent))
+      U64))
+(def kernel-frame-reservation-intent-direct-base
+  (fn ((intent KernelFrameReservationIntent))
+    (field KernelFrameReservationIntent direct-base intent)))
+
+(claim kernel-frame-reservation-intent-page-count
+  (Pi ((intent KernelFrameReservationIntent))
+      U64))
+(def kernel-frame-reservation-intent-page-count
+  (fn ((intent KernelFrameReservationIntent))
+    (field KernelFrameReservationIntent page-count intent)))
+
+(claim kernel-frame-reservation-intent-candidate-ready
+  (Pi ((intent KernelFrameReservationIntent))
+      U64))
+(def kernel-frame-reservation-intent-candidate-ready
+  (fn ((intent KernelFrameReservationIntent))
+    (field KernelFrameReservationIntent candidate-ready intent)))
+
+(claim kernel-frame-reservation-intent-eligible
+  (Pi ((intent KernelFrameReservationIntent))
+      U64))
+(def kernel-frame-reservation-intent-eligible
+  (fn ((intent KernelFrameReservationIntent))
+    (field KernelFrameReservationIntent eligible intent)))
+
+(claim kernel-frame-reservation-intent-requested
+  (Pi ((intent KernelFrameReservationIntent))
+      U64))
+(def kernel-frame-reservation-intent-requested
+  (fn ((intent KernelFrameReservationIntent))
+    (field KernelFrameReservationIntent requested intent)))
+
+(claim kernel-frame-reservation-intent-ready-flag
+  (Pi ((intent KernelFrameReservationIntent))
+      U64))
+(def kernel-frame-reservation-intent-ready-flag
+  (fn ((intent KernelFrameReservationIntent))
+    (field KernelFrameReservationIntent intent-ready intent)))
+
+(claim kernel-frame-reservation-intent-ready
+  (Pi ((intent KernelFrameReservationIntent))
+      Bool))
+(def kernel-frame-reservation-intent-ready
+  (fn ((intent KernelFrameReservationIntent))
+    (match (u64-eq (kernel-frame-reservation-intent-candidate-ready intent) (u64 1))
+      ((True)
+        (match (u64-eq (kernel-frame-reservation-intent-eligible intent) (u64 1))
+          ((True)
+            (match (u64-eq (kernel-frame-reservation-intent-requested intent) (u64 1))
+              ((True)
+                (match (u64-eq (kernel-frame-reservation-intent-ready-flag intent) (u64 1))
+                  ((True)
+                    (match (u64-lt (u64 0) (kernel-frame-reservation-intent-page-count intent))
+                      ((True)
+                        (u64-lt
+                          (kernel-frame-reservation-intent-physical-base intent)
+                          (kernel-frame-reservation-intent-direct-base intent)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-reservation-intent-sample KernelFrameReservationIntent)
+(def kernel-frame-reservation-intent-sample
+  (kernel-frame-reservation-intent-from-candidate-eligibility
+    kernel-frame-candidate-sample
+    kernel-frame-eligibility-sample))
+
+(claim kernel-frame-reservation-intent-sample-ready Bool)
+(def kernel-frame-reservation-intent-sample-ready
+  (kernel-frame-reservation-intent-ready kernel-frame-reservation-intent-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -1051,6 +1193,40 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-frame-reservation-intent-store-and-report
+  (Pi ((candidate KernelFrameCandidate)
+       (eligibility KernelFrameEligibility))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-reservation-intent-store-and-report
+  (fn ((candidate KernelFrameCandidate)
+       (eligibility KernelFrameEligibility))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFrameReservationIntent
+        limine-kernel-frame-reservation-intent
+        (kernel-frame-reservation-intent-from-candidate-eligibility candidate eligibility))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFrameReservationIntent Unit
+            (load SerialReady KernelFrameReservationIntent limine-kernel-frame-reservation-intent)
+            (fn ((intent 1 KernelFrameReservationIntent))
+              (match (kernel-frame-reservation-intent-ready intent)
+                ((True) serial-write-frame-reservation-ok)
+                ((False) (pure SerialReady Unit tt))))))))))
+
+(claim limine-kernel-frame-eligibility-check-and-report
+  (Pi ((candidate KernelFrameCandidate)
+       (eligibility KernelFrameEligibility))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-eligibility-check-and-report
+  (fn ((candidate KernelFrameCandidate)
+       (eligibility KernelFrameEligibility))
+    (match (kernel-frame-eligibility-ready eligibility)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-frame-eligibility-ok
+          (limine-kernel-frame-reservation-intent-store-and-report candidate eligibility)))
+      ((False) (pure SerialReady Unit tt)))))
+
 (claim limine-kernel-frame-eligibility-store-and-report
   (Pi ((candidate KernelFrameCandidate))
       (Eff SerialReady SerialReady Unit)))
@@ -1064,9 +1240,7 @@
           (bind SerialReady SerialReady SerialReady KernelFrameEligibility Unit
             (load SerialReady KernelFrameEligibility limine-kernel-frame-eligibility)
             (fn ((eligibility 1 KernelFrameEligibility))
-              (match (kernel-frame-eligibility-ready eligibility)
-                ((True) serial-write-frame-eligibility-ok)
-                ((False) (pure SerialReady Unit tt))))))))))
+              (limine-kernel-frame-eligibility-check-and-report candidate eligibility))))))))
 
 (claim limine-kernel-frame-candidate-check-and-report
   (Pi ((candidate KernelFrameCandidate))
