@@ -115,6 +115,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_frame_reservation_state_o
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_frame_free_list_seed_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 70u, 76u, 73u, 83u, 84u, 95u, 83u, 69u, 69u, 68u, 95u, 79u, 75u, 33u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the frame free-list seed marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
   exit 1
@@ -172,6 +177,11 @@ fi
 
 if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_reservation_state[64] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed kernel frame-reservation-state static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_free_list_seed[64] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed kernel frame free-list seed static cell in bss" >&2
   exit 1
 fi
 
@@ -330,6 +340,16 @@ if ! grep -Fq 'silt_layout_KernelFrameReservationState state_' "$TMPDIR/limine.c
   exit 1
 fi
 
+if ! grep -Fq '(*((silt_layout_KernelFrameFreeListSeed*)(((uintptr_t)&silt_cell_limine_kernel_frame_free_list_seed[0])))) =' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store KernelFrameFreeListSeed through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_KernelFrameFreeListSeed seed_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load KernelFrameFreeListSeed back through the static cell pointer" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'silt_layout_LimineHhdmRequest request_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load the HHDM request object" >&2
   exit 1
@@ -422,6 +442,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_frame_reservation_state_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the frame-reservation-state marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_frame_free_list_seed_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the frame free-list seed marker pointer from static bytes" >&2
   exit 1
 fi
 

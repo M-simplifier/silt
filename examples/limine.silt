@@ -80,6 +80,16 @@
    (invariant-ready U64 48)
    (state-ready U64 56)))
 
+(layout KernelFrameFreeListSeed 64 8
+  ((reserved-base U64 0)
+   (free-base U64 8)
+   (free-direct-base U64 16)
+   (reserved-count U64 24)
+   (free-count U64 32)
+   (state-ready U64 40)
+   (free-ready U64 48)
+   (seed-ready U64 56)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
@@ -92,6 +102,7 @@
 (static-cell limine-kernel-frame-reservation-intent KernelFrameReservationIntent)
 (static-cell limine-kernel-frame-reservation-invariant KernelFrameReservationInvariant)
 (static-cell limine-kernel-frame-reservation-state KernelFrameReservationState)
+(static-cell limine-kernel-frame-free-list-seed KernelFrameFreeListSeed)
 
 (data KernelDone ())
 
@@ -335,6 +346,20 @@
 (claim serial-write-frame-reservation-state-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-frame-reservation-state-ok
   (serial-write-slice20 limine-frame-reservation-state-ok-slice))
+
+(static-bytes limine-frame-free-list-seed-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 70) (u8 76) (u8 73) (u8 83) (u8 84)
+   (u8 95) (u8 83) (u8 69) (u8 69) (u8 68)
+   (u8 95) (u8 79) (u8 75) (u8 33) (u8 10)))
+
+(claim limine-frame-free-list-seed-ok-slice SerialSlice)
+(def limine-frame-free-list-seed-ok-slice
+  (layout-values SerialSlice limine-frame-free-list-seed-ok-bytes limine-frame-free-list-seed-ok-bytes-len))
+
+(claim serial-write-frame-free-list-seed-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-free-list-seed-ok
+  (serial-write-slice20 limine-frame-free-list-seed-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -1375,6 +1400,141 @@
 (def kernel-frame-reservation-state-sample-ready
   (kernel-frame-reservation-state-ready kernel-frame-reservation-state-sample))
 
+(claim kernel-frame-reservation-state-multi-sample KernelFrameReservationState)
+(def kernel-frame-reservation-state-multi-sample
+  (layout-values KernelFrameReservationState
+    (u64 0)
+    (u64 4096)
+    (u64 2)
+    kernel-frame-unreserved
+    kernel-frame-reserved
+    (u64 1)
+    (u64 1)
+    (u64 1)))
+
+(claim kernel-frame-reserved-count U64)
+(def kernel-frame-reserved-count
+  (u64 1))
+
+(claim kernel-frame-free-list-ready-word
+  (Pi ((state KernelFrameReservationState))
+      U64))
+(def kernel-frame-free-list-ready-word
+  (fn ((state KernelFrameReservationState))
+    (kernel-bool-word
+      (match (kernel-frame-reservation-state-ready state)
+        ((True) (u64-lt kernel-frame-reserved-count (kernel-frame-reservation-state-page-count state)))
+        ((False) False)))))
+
+(claim kernel-frame-free-list-seed-from-reservation-state
+  (Pi ((state KernelFrameReservationState))
+      KernelFrameFreeListSeed))
+(def kernel-frame-free-list-seed-from-reservation-state
+  (fn ((state KernelFrameReservationState))
+    (layout-values KernelFrameFreeListSeed
+      (kernel-frame-reservation-state-physical-base state)
+      (u64-add (kernel-frame-reservation-state-physical-base state) (u64 4096))
+      (u64-add (kernel-frame-reservation-state-direct-base state) (u64 4096))
+      kernel-frame-reserved-count
+      (u64-sub (kernel-frame-reservation-state-page-count state) kernel-frame-reserved-count)
+      (kernel-frame-reservation-state-ready-flag state)
+      (kernel-frame-free-list-ready-word state)
+      (kernel-frame-free-list-ready-word state))))
+
+(claim kernel-frame-free-list-seed-reserved-base
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-free-list-seed-reserved-base
+  (fn ((seed KernelFrameFreeListSeed))
+    (field KernelFrameFreeListSeed reserved-base seed)))
+
+(claim kernel-frame-free-list-seed-free-base
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-free-list-seed-free-base
+  (fn ((seed KernelFrameFreeListSeed))
+    (field KernelFrameFreeListSeed free-base seed)))
+
+(claim kernel-frame-free-list-seed-free-direct-base
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-free-list-seed-free-direct-base
+  (fn ((seed KernelFrameFreeListSeed))
+    (field KernelFrameFreeListSeed free-direct-base seed)))
+
+(claim kernel-frame-free-list-seed-reserved-count
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-free-list-seed-reserved-count
+  (fn ((seed KernelFrameFreeListSeed))
+    (field KernelFrameFreeListSeed reserved-count seed)))
+
+(claim kernel-frame-free-list-seed-free-count
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-free-list-seed-free-count
+  (fn ((seed KernelFrameFreeListSeed))
+    (field KernelFrameFreeListSeed free-count seed)))
+
+(claim kernel-frame-free-list-seed-state-ready
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-free-list-seed-state-ready
+  (fn ((seed KernelFrameFreeListSeed))
+    (field KernelFrameFreeListSeed state-ready seed)))
+
+(claim kernel-frame-free-list-seed-free-ready
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-free-list-seed-free-ready
+  (fn ((seed KernelFrameFreeListSeed))
+    (field KernelFrameFreeListSeed free-ready seed)))
+
+(claim kernel-frame-free-list-seed-ready-flag
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-free-list-seed-ready-flag
+  (fn ((seed KernelFrameFreeListSeed))
+    (field KernelFrameFreeListSeed seed-ready seed)))
+
+(claim kernel-frame-free-list-seed-ready
+  (Pi ((seed KernelFrameFreeListSeed))
+      Bool))
+(def kernel-frame-free-list-seed-ready
+  (fn ((seed KernelFrameFreeListSeed))
+    (match (u64-eq (kernel-frame-free-list-seed-reserved-count seed) kernel-frame-reserved-count)
+      ((True)
+        (match (u64-eq (kernel-frame-free-list-seed-state-ready seed) (u64 1))
+          ((True)
+            (match (u64-eq (kernel-frame-free-list-seed-free-ready seed) (u64 1))
+              ((True)
+                (match (u64-eq (kernel-frame-free-list-seed-ready-flag seed) (u64 1))
+                  ((True)
+                    (match (u64-lt (u64 0) (kernel-frame-free-list-seed-free-count seed))
+                      ((True)
+                        (match (u64-lt
+                                 (kernel-frame-free-list-seed-reserved-base seed)
+                                 (kernel-frame-free-list-seed-free-base seed))
+                          ((True)
+                            (u64-lt
+                              (kernel-frame-free-list-seed-free-base seed)
+                              (kernel-frame-free-list-seed-free-direct-base seed)))
+                          ((False) False)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-free-list-seed-sample KernelFrameFreeListSeed)
+(def kernel-frame-free-list-seed-sample
+  (kernel-frame-free-list-seed-from-reservation-state
+    kernel-frame-reservation-state-multi-sample))
+
+(claim kernel-frame-free-list-seed-sample-ready Bool)
+(def kernel-frame-free-list-seed-sample-ready
+  (kernel-frame-free-list-seed-ready kernel-frame-free-list-seed-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -1458,6 +1618,36 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-frame-free-list-seed-store-and-report
+  (Pi ((state KernelFrameReservationState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-free-list-seed-store-and-report
+  (fn ((state KernelFrameReservationState))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFrameFreeListSeed
+        limine-kernel-frame-free-list-seed
+        (kernel-frame-free-list-seed-from-reservation-state state))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFrameFreeListSeed Unit
+            (load SerialReady KernelFrameFreeListSeed limine-kernel-frame-free-list-seed)
+            (fn ((seed 1 KernelFrameFreeListSeed))
+              (match (kernel-frame-free-list-seed-ready seed)
+                ((True) serial-write-frame-free-list-seed-ok)
+                ((False) (pure SerialReady Unit tt))))))))))
+
+(claim limine-kernel-frame-reservation-state-check-and-report
+  (Pi ((state KernelFrameReservationState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-reservation-state-check-and-report
+  (fn ((state KernelFrameReservationState))
+    (match (kernel-frame-reservation-state-ready state)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-frame-reservation-state-ok
+          (limine-kernel-frame-free-list-seed-store-and-report state)))
+      ((False) (pure SerialReady Unit tt)))))
+
 (claim limine-kernel-frame-reservation-state-store-and-report
   (Pi ((intent KernelFrameReservationIntent)
        (invariant KernelFrameReservationInvariant))
@@ -1474,9 +1664,7 @@
           (bind SerialReady SerialReady SerialReady KernelFrameReservationState Unit
             (load SerialReady KernelFrameReservationState limine-kernel-frame-reservation-state)
             (fn ((state 1 KernelFrameReservationState))
-              (match (kernel-frame-reservation-state-ready state)
-                ((True) serial-write-frame-reservation-state-ok)
-                ((False) (pure SerialReady Unit tt))))))))))
+              (limine-kernel-frame-reservation-state-check-and-report state))))))))
 
 (claim limine-kernel-frame-reservation-invariant-check-and-report
   (Pi ((intent KernelFrameReservationIntent)
