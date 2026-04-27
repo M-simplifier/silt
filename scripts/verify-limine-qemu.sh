@@ -241,4 +241,16 @@ if ! grep -Fq "SILT_ALLOC_STATE!!!" "$SERIAL_LOG"; then
   exit 1
 fi
 
+if ! grep -Fq "SILT_ALLOC_API_OK!!" "$SERIAL_LOG"; then
+  echo "QEMU serial log did not contain the Silt frame allocator alloc-API marker" >&2
+  sed -n '1,120p' "$SERIAL_LOG" >&2
+  exit 1
+fi
+
+if ! grep -Fq "SILT_FREE_API_OK!!!" "$SERIAL_LOG"; then
+  echo "QEMU serial log did not contain the Silt frame allocator free-API marker" >&2
+  sed -n '1,120p' "$SERIAL_LOG" >&2
+  exit 1
+fi
+
 echo "Limine QEMU smoke passed: entry reached and debug-exit marker observed"
