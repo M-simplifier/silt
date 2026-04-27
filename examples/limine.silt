@@ -90,6 +90,26 @@
    (free-ready U64 48)
    (seed-ready U64 56)))
 
+(layout KernelFrameAllocOneState 64 8
+  ((allocated-base U64 0)
+   (allocated-direct-base U64 8)
+   (reserved-count-before U64 16)
+   (free-count-before U64 24)
+   (reserved-count-after U64 32)
+   (free-count-after U64 40)
+   (allocated-count U64 48)
+   (alloc-ready U64 56)))
+
+(layout KernelFrameFreeOneState 64 8
+  ((freed-base U64 0)
+   (freed-direct-base U64 8)
+   (reserved-count-before U64 16)
+   (free-count-before U64 24)
+   (reserved-count-after U64 32)
+   (free-count-after U64 40)
+   (released-count U64 48)
+   (free-ready U64 56)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
@@ -103,6 +123,8 @@
 (static-cell limine-kernel-frame-reservation-invariant KernelFrameReservationInvariant)
 (static-cell limine-kernel-frame-reservation-state KernelFrameReservationState)
 (static-cell limine-kernel-frame-free-list-seed KernelFrameFreeListSeed)
+(static-cell limine-kernel-frame-alloc-one-state KernelFrameAllocOneState)
+(static-cell limine-kernel-frame-free-one-state KernelFrameFreeOneState)
 
 (data KernelDone ())
 
@@ -360,6 +382,34 @@
 (claim serial-write-frame-free-list-seed-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-frame-free-list-seed-ok
   (serial-write-slice20 limine-frame-free-list-seed-ok-slice))
+
+(static-bytes limine-frame-alloc-one-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 65) (u8 76) (u8 76) (u8 79) (u8 67)
+   (u8 95) (u8 79) (u8 78) (u8 69) (u8 95)
+   (u8 79) (u8 75) (u8 33) (u8 33) (u8 10)))
+
+(claim limine-frame-alloc-one-ok-slice SerialSlice)
+(def limine-frame-alloc-one-ok-slice
+  (layout-values SerialSlice limine-frame-alloc-one-ok-bytes limine-frame-alloc-one-ok-bytes-len))
+
+(claim serial-write-frame-alloc-one-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-alloc-one-ok
+  (serial-write-slice20 limine-frame-alloc-one-ok-slice))
+
+(static-bytes limine-frame-free-one-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 70) (u8 82) (u8 69) (u8 69) (u8 95)
+   (u8 79) (u8 78) (u8 69) (u8 95) (u8 79)
+   (u8 75) (u8 33) (u8 33) (u8 33) (u8 10)))
+
+(claim limine-frame-free-one-ok-slice SerialSlice)
+(def limine-frame-free-one-ok-slice
+  (layout-values SerialSlice limine-frame-free-one-ok-bytes limine-frame-free-one-ok-bytes-len))
+
+(claim serial-write-frame-free-one-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-free-one-ok
+  (serial-write-slice20 limine-frame-free-one-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -1535,6 +1585,272 @@
 (def kernel-frame-free-list-seed-sample-ready
   (kernel-frame-free-list-seed-ready kernel-frame-free-list-seed-sample))
 
+(claim kernel-frame-alloc-one-ready-word
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-alloc-one-ready-word
+  (fn ((seed KernelFrameFreeListSeed))
+    (kernel-bool-word (kernel-frame-free-list-seed-ready seed))))
+
+(claim kernel-frame-alloc-one-reserved-count-after
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-alloc-one-reserved-count-after
+  (fn ((seed KernelFrameFreeListSeed))
+    (match (kernel-frame-free-list-seed-ready seed)
+      ((True) (u64-add (kernel-frame-free-list-seed-reserved-count seed) (u64 1)))
+      ((False) (kernel-frame-free-list-seed-reserved-count seed)))))
+
+(claim kernel-frame-alloc-one-free-count-after
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-alloc-one-free-count-after
+  (fn ((seed KernelFrameFreeListSeed))
+    (match (kernel-frame-free-list-seed-ready seed)
+      ((True) (u64-sub (kernel-frame-free-list-seed-free-count seed) (u64 1)))
+      ((False) (kernel-frame-free-list-seed-free-count seed)))))
+
+(claim kernel-frame-alloc-one-state-from-free-list-seed
+  (Pi ((seed KernelFrameFreeListSeed))
+      KernelFrameAllocOneState))
+(def kernel-frame-alloc-one-state-from-free-list-seed
+  (fn ((seed KernelFrameFreeListSeed))
+    (layout-values KernelFrameAllocOneState
+      (kernel-frame-free-list-seed-free-base seed)
+      (kernel-frame-free-list-seed-free-direct-base seed)
+      (kernel-frame-free-list-seed-reserved-count seed)
+      (kernel-frame-free-list-seed-free-count seed)
+      (kernel-frame-alloc-one-reserved-count-after seed)
+      (kernel-frame-alloc-one-free-count-after seed)
+      kernel-frame-reserved-count
+      (kernel-frame-alloc-one-ready-word seed))))
+
+(claim kernel-frame-alloc-one-allocated-base
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-alloc-one-allocated-base
+  (fn ((state KernelFrameAllocOneState))
+    (field KernelFrameAllocOneState allocated-base state)))
+
+(claim kernel-frame-alloc-one-allocated-direct-base
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-alloc-one-allocated-direct-base
+  (fn ((state KernelFrameAllocOneState))
+    (field KernelFrameAllocOneState allocated-direct-base state)))
+
+(claim kernel-frame-alloc-one-reserved-count-before
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-alloc-one-reserved-count-before
+  (fn ((state KernelFrameAllocOneState))
+    (field KernelFrameAllocOneState reserved-count-before state)))
+
+(claim kernel-frame-alloc-one-free-count-before
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-alloc-one-free-count-before
+  (fn ((state KernelFrameAllocOneState))
+    (field KernelFrameAllocOneState free-count-before state)))
+
+(claim kernel-frame-alloc-one-reserved-count-after-field
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-alloc-one-reserved-count-after-field
+  (fn ((state KernelFrameAllocOneState))
+    (field KernelFrameAllocOneState reserved-count-after state)))
+
+(claim kernel-frame-alloc-one-free-count-after-field
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-alloc-one-free-count-after-field
+  (fn ((state KernelFrameAllocOneState))
+    (field KernelFrameAllocOneState free-count-after state)))
+
+(claim kernel-frame-alloc-one-allocated-count
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-alloc-one-allocated-count
+  (fn ((state KernelFrameAllocOneState))
+    (field KernelFrameAllocOneState allocated-count state)))
+
+(claim kernel-frame-alloc-one-ready-flag
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-alloc-one-ready-flag
+  (fn ((state KernelFrameAllocOneState))
+    (field KernelFrameAllocOneState alloc-ready state)))
+
+(claim kernel-frame-alloc-one-state-ready
+  (Pi ((state KernelFrameAllocOneState))
+      Bool))
+(def kernel-frame-alloc-one-state-ready
+  (fn ((state KernelFrameAllocOneState))
+    (match (u64-eq (kernel-frame-alloc-one-ready-flag state) (u64 1))
+      ((True)
+        (match (u64-eq (kernel-frame-alloc-one-allocated-count state) kernel-frame-reserved-count)
+          ((True)
+            (match (u64-lt (u64 0) (kernel-frame-alloc-one-free-count-before state))
+              ((True)
+                (match (u64-eq
+                         (kernel-frame-alloc-one-reserved-count-after-field state)
+                         (u64-add (kernel-frame-alloc-one-reserved-count-before state) kernel-frame-reserved-count))
+                  ((True)
+                    (match (u64-eq
+                             (u64-add (kernel-frame-alloc-one-free-count-after-field state) kernel-frame-reserved-count)
+                             (kernel-frame-alloc-one-free-count-before state))
+                      ((True)
+                        (u64-lt
+                          (kernel-frame-alloc-one-allocated-base state)
+                          (kernel-frame-alloc-one-allocated-direct-base state)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-alloc-one-state-sample KernelFrameAllocOneState)
+(def kernel-frame-alloc-one-state-sample
+  (kernel-frame-alloc-one-state-from-free-list-seed
+    kernel-frame-free-list-seed-sample))
+
+(claim kernel-frame-alloc-one-state-sample-ready Bool)
+(def kernel-frame-alloc-one-state-sample-ready
+  (kernel-frame-alloc-one-state-ready kernel-frame-alloc-one-state-sample))
+
+(claim kernel-frame-free-one-ready-word
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-free-one-ready-word
+  (fn ((state KernelFrameAllocOneState))
+    (kernel-bool-word (kernel-frame-alloc-one-state-ready state))))
+
+(claim kernel-frame-free-one-reserved-count-after
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-free-one-reserved-count-after
+  (fn ((state KernelFrameAllocOneState))
+    (match (kernel-frame-alloc-one-state-ready state)
+      ((True) (u64-sub (kernel-frame-alloc-one-reserved-count-after-field state) kernel-frame-reserved-count))
+      ((False) (kernel-frame-alloc-one-reserved-count-after-field state)))))
+
+(claim kernel-frame-free-one-free-count-after
+  (Pi ((state KernelFrameAllocOneState))
+      U64))
+(def kernel-frame-free-one-free-count-after
+  (fn ((state KernelFrameAllocOneState))
+    (match (kernel-frame-alloc-one-state-ready state)
+      ((True) (u64-add (kernel-frame-alloc-one-free-count-after-field state) kernel-frame-reserved-count))
+      ((False) (kernel-frame-alloc-one-free-count-after-field state)))))
+
+(claim kernel-frame-free-one-state-from-alloc-one-state
+  (Pi ((state KernelFrameAllocOneState))
+      KernelFrameFreeOneState))
+(def kernel-frame-free-one-state-from-alloc-one-state
+  (fn ((state KernelFrameAllocOneState))
+    (layout-values KernelFrameFreeOneState
+      (kernel-frame-alloc-one-allocated-base state)
+      (kernel-frame-alloc-one-allocated-direct-base state)
+      (kernel-frame-alloc-one-reserved-count-after-field state)
+      (kernel-frame-alloc-one-free-count-after-field state)
+      (kernel-frame-free-one-reserved-count-after state)
+      (kernel-frame-free-one-free-count-after state)
+      kernel-frame-reserved-count
+      (kernel-frame-free-one-ready-word state))))
+
+(claim kernel-frame-free-one-freed-base
+  (Pi ((state KernelFrameFreeOneState))
+      U64))
+(def kernel-frame-free-one-freed-base
+  (fn ((state KernelFrameFreeOneState))
+    (field KernelFrameFreeOneState freed-base state)))
+
+(claim kernel-frame-free-one-freed-direct-base
+  (Pi ((state KernelFrameFreeOneState))
+      U64))
+(def kernel-frame-free-one-freed-direct-base
+  (fn ((state KernelFrameFreeOneState))
+    (field KernelFrameFreeOneState freed-direct-base state)))
+
+(claim kernel-frame-free-one-reserved-count-before
+  (Pi ((state KernelFrameFreeOneState))
+      U64))
+(def kernel-frame-free-one-reserved-count-before
+  (fn ((state KernelFrameFreeOneState))
+    (field KernelFrameFreeOneState reserved-count-before state)))
+
+(claim kernel-frame-free-one-free-count-before
+  (Pi ((state KernelFrameFreeOneState))
+      U64))
+(def kernel-frame-free-one-free-count-before
+  (fn ((state KernelFrameFreeOneState))
+    (field KernelFrameFreeOneState free-count-before state)))
+
+(claim kernel-frame-free-one-reserved-count-after-field
+  (Pi ((state KernelFrameFreeOneState))
+      U64))
+(def kernel-frame-free-one-reserved-count-after-field
+  (fn ((state KernelFrameFreeOneState))
+    (field KernelFrameFreeOneState reserved-count-after state)))
+
+(claim kernel-frame-free-one-free-count-after-field
+  (Pi ((state KernelFrameFreeOneState))
+      U64))
+(def kernel-frame-free-one-free-count-after-field
+  (fn ((state KernelFrameFreeOneState))
+    (field KernelFrameFreeOneState free-count-after state)))
+
+(claim kernel-frame-free-one-released-count
+  (Pi ((state KernelFrameFreeOneState))
+      U64))
+(def kernel-frame-free-one-released-count
+  (fn ((state KernelFrameFreeOneState))
+    (field KernelFrameFreeOneState released-count state)))
+
+(claim kernel-frame-free-one-ready-flag
+  (Pi ((state KernelFrameFreeOneState))
+      U64))
+(def kernel-frame-free-one-ready-flag
+  (fn ((state KernelFrameFreeOneState))
+    (field KernelFrameFreeOneState free-ready state)))
+
+(claim kernel-frame-free-one-state-ready
+  (Pi ((state KernelFrameFreeOneState))
+      Bool))
+(def kernel-frame-free-one-state-ready
+  (fn ((state KernelFrameFreeOneState))
+    (match (u64-eq (kernel-frame-free-one-ready-flag state) (u64 1))
+      ((True)
+        (match (u64-eq (kernel-frame-free-one-released-count state) kernel-frame-reserved-count)
+          ((True)
+            (match (u64-lt (u64 0) (kernel-frame-free-one-reserved-count-before state))
+              ((True)
+                (match (u64-eq
+                         (u64-add (kernel-frame-free-one-reserved-count-after-field state) kernel-frame-reserved-count)
+                         (kernel-frame-free-one-reserved-count-before state))
+                  ((True)
+                    (match (u64-eq
+                             (u64-add (kernel-frame-free-one-free-count-before state) kernel-frame-reserved-count)
+                             (kernel-frame-free-one-free-count-after-field state))
+                      ((True)
+                        (u64-lt
+                          (kernel-frame-free-one-freed-base state)
+                          (kernel-frame-free-one-freed-direct-base state)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-free-one-state-sample KernelFrameFreeOneState)
+(def kernel-frame-free-one-state-sample
+  (kernel-frame-free-one-state-from-alloc-one-state
+    kernel-frame-alloc-one-state-sample))
+
+(claim kernel-frame-free-one-state-sample-ready Bool)
+(def kernel-frame-free-one-state-sample-ready
+  (kernel-frame-free-one-state-ready kernel-frame-free-one-state-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -1618,6 +1934,71 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-frame-free-one-state-check-and-report
+  (Pi ((state KernelFrameFreeOneState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-free-one-state-check-and-report
+  (fn ((state KernelFrameFreeOneState))
+    (match (kernel-frame-free-one-state-ready state)
+      ((True) serial-write-frame-free-one-ok)
+      ((False) (pure SerialReady Unit tt)))))
+
+(claim limine-kernel-frame-free-one-state-store-and-report
+  (Pi ((state KernelFrameAllocOneState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-free-one-state-store-and-report
+  (fn ((state KernelFrameAllocOneState))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFrameFreeOneState
+        limine-kernel-frame-free-one-state
+        (kernel-frame-free-one-state-from-alloc-one-state state))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFrameFreeOneState Unit
+            (load SerialReady KernelFrameFreeOneState limine-kernel-frame-free-one-state)
+            (fn ((freed 1 KernelFrameFreeOneState))
+              (limine-kernel-frame-free-one-state-check-and-report freed))))))))
+
+(claim limine-kernel-frame-alloc-one-state-check-and-report
+  (Pi ((state KernelFrameAllocOneState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-alloc-one-state-check-and-report
+  (fn ((state KernelFrameAllocOneState))
+    (match (kernel-frame-alloc-one-state-ready state)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-frame-alloc-one-ok
+          (limine-kernel-frame-free-one-state-store-and-report state)))
+      ((False) (pure SerialReady Unit tt)))))
+
+(claim limine-kernel-frame-alloc-one-state-store-and-report
+  (Pi ((seed KernelFrameFreeListSeed))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-alloc-one-state-store-and-report
+  (fn ((seed KernelFrameFreeListSeed))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFrameAllocOneState
+        limine-kernel-frame-alloc-one-state
+        (kernel-frame-alloc-one-state-from-free-list-seed seed))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFrameAllocOneState Unit
+            (load SerialReady KernelFrameAllocOneState limine-kernel-frame-alloc-one-state)
+            (fn ((state 1 KernelFrameAllocOneState))
+              (limine-kernel-frame-alloc-one-state-check-and-report state))))))))
+
+(claim limine-kernel-frame-free-list-seed-check-and-report
+  (Pi ((seed KernelFrameFreeListSeed))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-free-list-seed-check-and-report
+  (fn ((seed KernelFrameFreeListSeed))
+    (match (kernel-frame-free-list-seed-ready seed)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-frame-free-list-seed-ok
+          (limine-kernel-frame-alloc-one-state-store-and-report seed)))
+      ((False) (pure SerialReady Unit tt)))))
+
 (claim limine-kernel-frame-free-list-seed-store-and-report
   (Pi ((state KernelFrameReservationState))
       (Eff SerialReady SerialReady Unit)))
@@ -1632,9 +2013,7 @@
           (bind SerialReady SerialReady SerialReady KernelFrameFreeListSeed Unit
             (load SerialReady KernelFrameFreeListSeed limine-kernel-frame-free-list-seed)
             (fn ((seed 1 KernelFrameFreeListSeed))
-              (match (kernel-frame-free-list-seed-ready seed)
-                ((True) serial-write-frame-free-list-seed-ok)
-                ((False) (pure SerialReady Unit tt))))))))))
+              (limine-kernel-frame-free-list-seed-check-and-report seed))))))))
 
 (claim limine-kernel-frame-reservation-state-check-and-report
   (Pi ((state KernelFrameReservationState))
