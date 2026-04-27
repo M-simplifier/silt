@@ -155,6 +155,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_frame_lease_ok_bytes[20] 
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_allocator_handoff_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 72u, 65u, 78u, 68u, 79u, 70u, 70u, 33u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the allocator handoff marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
   exit 1
@@ -252,6 +257,11 @@ fi
 
 if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_lease[88] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed kernel frame lease static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_allocator_handoff[96] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed kernel allocator handoff static cell in bss" >&2
   exit 1
 fi
 
@@ -475,7 +485,7 @@ if ! grep -Fq '(*((silt_layout_KernelFrameAllocatorSemanticsState*)(((uintptr_t)
   exit 1
 fi
 
-if ! grep -Fq 'silt_layout_KernelFrameAllocatorSemanticsState state_' "$TMPDIR/limine.c"; then
+if ! grep -Fq 'silt_layout_KernelFrameAllocatorSemanticsState semantics_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load KernelFrameAllocatorSemanticsState back through the static cell pointer" >&2
   exit 1
 fi
@@ -487,6 +497,16 @@ fi
 
 if ! grep -Fq 'silt_layout_KernelFrameLease lease_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load KernelFrameLease back through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq '(*((silt_layout_KernelAllocatorHandoff*)(((uintptr_t)&silt_cell_limine_kernel_allocator_handoff[0])))) =' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store KernelAllocatorHandoff through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_KernelAllocatorHandoff handoff_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load KernelAllocatorHandoff back through the static cell pointer" >&2
   exit 1
 fi
 
@@ -622,6 +642,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_frame_lease_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the frame lease marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_allocator_handoff_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the allocator handoff marker pointer from static bytes" >&2
   exit 1
 fi
 
