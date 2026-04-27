@@ -75,6 +75,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_kernel_pages_ok_bytes[20]
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_boot_policy_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 80u, 79u, 76u, 73u, 67u, 89u, 95u, 79u, 75u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the boot-policy marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed boot-state static cell in bss" >&2
   exit 1
@@ -92,6 +97,11 @@ fi
 
 if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_page_count[8] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed kernel page-count static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_policy[24] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed kernel policy static cell in bss" >&2
   exit 1
 fi
 
@@ -170,6 +180,16 @@ if ! grep -Fq 'uint64_t page_count_' "$TMPDIR/limine.c"; then
   exit 1
 fi
 
+if ! grep -Fq '(*((silt_layout_KernelBootPolicy*)(((uintptr_t)&silt_cell_limine_kernel_policy[0])))) =' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store KernelBootPolicy through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_KernelBootPolicy policy_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load KernelBootPolicy back through the static cell pointer" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'silt_layout_LimineHhdmRequest request_' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not load the HHDM request object" >&2
   exit 1
@@ -222,6 +242,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_kernel_pages_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the kernel-pages marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_boot_policy_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the boot-policy marker pointer from static bytes" >&2
   exit 1
 fi
 

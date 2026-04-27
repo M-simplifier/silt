@@ -22,10 +22,16 @@
    (direct-end U64 24)
    (kind U64 32)))
 
+(layout KernelBootPolicy 24 8
+  ((required-pages U64 0)
+   (available-pages U64 8)
+   (accepted U64 16)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
 (static-cell limine-kernel-page-count U64)
+(static-cell limine-kernel-policy KernelBootPolicy)
 
 (data KernelDone ())
 
@@ -157,6 +163,20 @@
 (claim serial-write-kernel-pages-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-kernel-pages-ok
   (serial-write-slice20 limine-kernel-pages-ok-slice))
+
+(static-bytes limine-boot-policy-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 66) (u8 79) (u8 79) (u8 84) (u8 95)
+   (u8 80) (u8 79) (u8 76) (u8 73) (u8 67)
+   (u8 89) (u8 95) (u8 79) (u8 75) (u8 10)))
+
+(claim limine-boot-policy-ok-slice SerialSlice)
+(def limine-boot-policy-ok-slice
+  (layout-values SerialSlice limine-boot-policy-ok-bytes limine-boot-policy-ok-bytes-len))
+
+(claim serial-write-boot-policy-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-boot-policy-ok
+  (serial-write-slice20 limine-boot-policy-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -475,6 +495,62 @@
 (def kernel-span-sample-has-pages
   (kernel-span-has-pages kernel-span-sample))
 
+(claim kernel-boot-policy-from-page-count
+  (Pi ((page-count U64))
+      KernelBootPolicy))
+(def kernel-boot-policy-from-page-count
+  (fn ((page-count U64))
+    (match (u64-lt (u64 0) page-count)
+      ((True)
+        (layout-values KernelBootPolicy
+          (u64 1)
+          page-count
+          (u64 1)))
+      ((False)
+        (layout-values KernelBootPolicy
+          (u64 1)
+          page-count
+          (u64 0))))))
+
+(claim kernel-boot-policy-required-pages
+  (Pi ((policy KernelBootPolicy))
+      U64))
+(def kernel-boot-policy-required-pages
+  (fn ((policy KernelBootPolicy))
+    (field KernelBootPolicy required-pages policy)))
+
+(claim kernel-boot-policy-available-pages
+  (Pi ((policy KernelBootPolicy))
+      U64))
+(def kernel-boot-policy-available-pages
+  (fn ((policy KernelBootPolicy))
+    (field KernelBootPolicy available-pages policy)))
+
+(claim kernel-boot-policy-accepted-word
+  (Pi ((policy KernelBootPolicy))
+      U64))
+(def kernel-boot-policy-accepted-word
+  (fn ((policy KernelBootPolicy))
+    (field KernelBootPolicy accepted policy)))
+
+(claim kernel-boot-policy-ready
+  (Pi ((policy KernelBootPolicy))
+      Bool))
+(def kernel-boot-policy-ready
+  (fn ((policy KernelBootPolicy))
+    (match (u64-lt (kernel-boot-policy-available-pages policy)
+                   (kernel-boot-policy-required-pages policy))
+      ((True) False)
+      ((False) (u64-eq (kernel-boot-policy-accepted-word policy) (u64 1))))))
+
+(claim kernel-boot-policy-sample KernelBootPolicy)
+(def kernel-boot-policy-sample
+  (kernel-boot-policy-from-page-count kernel-span-sample-page-count))
+
+(claim kernel-boot-policy-sample-ready Bool)
+(def kernel-boot-policy-sample-ready
+  (kernel-boot-policy-ready kernel-boot-policy-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -558,6 +634,26 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-policy-store-and-report
+  (Pi ((page-count U64))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-policy-store-and-report
+  (fn ((page-count U64))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelBootPolicy limine-kernel-policy
+        (kernel-boot-policy-from-page-count page-count))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelBootPolicy Unit
+            (load SerialReady KernelBootPolicy limine-kernel-policy)
+            (fn ((policy 1 KernelBootPolicy))
+              (match (kernel-boot-policy-ready policy)
+                ((True)
+                  (io-seq SerialReady SerialReady SerialReady
+                    serial-write-kernel-pages-ok
+                    serial-write-boot-policy-ok))
+                ((False) (pure SerialReady Unit tt))))))))))
+
 (claim limine-kernel-page-count-store-and-report
   (Pi ((span KernelBootSpan))
       (Eff SerialReady SerialReady Unit)))
@@ -571,9 +667,7 @@
           (bind SerialReady SerialReady SerialReady U64 Unit
             (load SerialReady U64 limine-kernel-page-count)
             (fn ((page-count 1 U64))
-              (match (u64-lt (u64 0) page-count)
-                ((True) serial-write-kernel-pages-ok)
-                ((False) (pure SerialReady Unit tt))))))))))
+              (limine-kernel-policy-store-and-report page-count))))))))
 
 (claim limine-kernel-span-consume-and-report
   (Pi ((span KernelBootSpan))
