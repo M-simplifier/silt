@@ -38,6 +38,13 @@
    (accepted U64 8)
    (direct-map-above-physical U64 16)))
 
+(layout KernelFrameCandidate 40 8
+  ((physical-base U64 0)
+   (direct-base U64 8)
+   (page-count U64 16)
+   (kind U64 24)
+   (ready U64 32)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
@@ -45,6 +52,7 @@
 (static-cell limine-kernel-policy KernelBootPolicy)
 (static-cell limine-kernel-plan KernelBootPlan)
 (static-cell limine-kernel-plan-invariant KernelBootPlanInvariant)
+(static-cell limine-kernel-frame-candidate KernelFrameCandidate)
 
 (data KernelDone ())
 
@@ -218,6 +226,20 @@
 (claim serial-write-plan-invariant-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-plan-invariant-ok
   (serial-write-slice20 limine-plan-invariant-ok-slice))
+
+(static-bytes limine-frame-candidate-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 70) (u8 82) (u8 65) (u8 77) (u8 69)
+   (u8 95) (u8 67) (u8 65) (u8 78) (u8 68)
+   (u8 95) (u8 79) (u8 75) (u8 33) (u8 10)))
+
+(claim limine-frame-candidate-ok-slice SerialSlice)
+(def limine-frame-candidate-ok-slice
+  (layout-values SerialSlice limine-frame-candidate-ok-bytes limine-frame-candidate-ok-bytes-len))
+
+(claim serial-write-frame-candidate-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-candidate-ok
+  (serial-write-slice20 limine-frame-candidate-ok-slice))
 
 (static-bytes limine-memmap-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -712,6 +734,83 @@
 (def kernel-boot-plan-invariant-sample-ready
   (kernel-boot-plan-invariant-ready kernel-boot-plan-invariant-sample))
 
+(claim kernel-frame-candidate-from-span-plan-invariant
+  (Pi ((span KernelBootSpan)
+       (plan KernelBootPlan)
+       (invariant KernelBootPlanInvariant))
+      KernelFrameCandidate))
+(def kernel-frame-candidate-from-span-plan-invariant
+  (fn ((span KernelBootSpan)
+       (plan KernelBootPlan)
+       (invariant KernelBootPlanInvariant))
+    (layout-values KernelFrameCandidate
+      (kernel-boot-plan-physical-base plan)
+      (kernel-boot-plan-direct-base plan)
+      (kernel-boot-plan-page-count plan)
+      (kernel-span-kind span)
+      (kernel-bool-word (kernel-boot-plan-invariant-ready invariant)))))
+
+(claim kernel-frame-candidate-physical-base
+  (Pi ((candidate KernelFrameCandidate))
+      U64))
+(def kernel-frame-candidate-physical-base
+  (fn ((candidate KernelFrameCandidate))
+    (field KernelFrameCandidate physical-base candidate)))
+
+(claim kernel-frame-candidate-direct-base
+  (Pi ((candidate KernelFrameCandidate))
+      U64))
+(def kernel-frame-candidate-direct-base
+  (fn ((candidate KernelFrameCandidate))
+    (field KernelFrameCandidate direct-base candidate)))
+
+(claim kernel-frame-candidate-page-count
+  (Pi ((candidate KernelFrameCandidate))
+      U64))
+(def kernel-frame-candidate-page-count
+  (fn ((candidate KernelFrameCandidate))
+    (field KernelFrameCandidate page-count candidate)))
+
+(claim kernel-frame-candidate-kind
+  (Pi ((candidate KernelFrameCandidate))
+      U64))
+(def kernel-frame-candidate-kind
+  (fn ((candidate KernelFrameCandidate))
+    (field KernelFrameCandidate kind candidate)))
+
+(claim kernel-frame-candidate-ready-word
+  (Pi ((candidate KernelFrameCandidate))
+      U64))
+(def kernel-frame-candidate-ready-word
+  (fn ((candidate KernelFrameCandidate))
+    (field KernelFrameCandidate ready candidate)))
+
+(claim kernel-frame-candidate-ready
+  (Pi ((candidate KernelFrameCandidate))
+      Bool))
+(def kernel-frame-candidate-ready
+  (fn ((candidate KernelFrameCandidate))
+    (match (u64-eq (kernel-frame-candidate-ready-word candidate) (u64 1))
+      ((True)
+        (match (u64-lt (u64 0) (kernel-frame-candidate-page-count candidate))
+          ((True)
+            (u64-lt
+              (kernel-frame-candidate-physical-base candidate)
+              (kernel-frame-candidate-direct-base candidate)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-candidate-sample KernelFrameCandidate)
+(def kernel-frame-candidate-sample
+  (kernel-frame-candidate-from-span-plan-invariant
+    kernel-span-sample
+    kernel-boot-plan-sample
+    kernel-boot-plan-invariant-sample))
+
+(claim kernel-frame-candidate-sample-ready Bool)
+(def kernel-frame-candidate-sample-ready
+  (kernel-frame-candidate-ready kernel-frame-candidate-sample))
+
 (claim boot-state-roundtrip (Eff SerialReady SerialReady Unit))
 (def boot-state-roundtrip
   (io-seq SerialReady SerialReady SerialReady
@@ -795,11 +894,50 @@
                 (limine-memmap-first-entry-roundtrip response))))
           ((False) (pure SerialReady Unit tt)))))))
 
+(claim limine-kernel-frame-candidate-store-and-report
+  (Pi ((span KernelBootSpan)
+       (plan KernelBootPlan)
+       (invariant KernelBootPlanInvariant))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-candidate-store-and-report
+  (fn ((span KernelBootSpan)
+       (plan KernelBootPlan)
+       (invariant KernelBootPlanInvariant))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFrameCandidate limine-kernel-frame-candidate
+        (kernel-frame-candidate-from-span-plan-invariant span plan invariant))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFrameCandidate Unit
+            (load SerialReady KernelFrameCandidate limine-kernel-frame-candidate)
+            (fn ((candidate 1 KernelFrameCandidate))
+              (match (kernel-frame-candidate-ready candidate)
+                ((True) serial-write-frame-candidate-ok)
+                ((False) (pure SerialReady Unit tt))))))))))
+
+(claim limine-kernel-plan-invariant-check-and-report
+  (Pi ((span KernelBootSpan)
+       (plan KernelBootPlan)
+       (invariant KernelBootPlanInvariant))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-plan-invariant-check-and-report
+  (fn ((span KernelBootSpan)
+       (plan KernelBootPlan)
+       (invariant KernelBootPlanInvariant))
+    (match (kernel-boot-plan-invariant-ready invariant)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-plan-invariant-ok
+          (limine-kernel-frame-candidate-store-and-report span plan invariant)))
+      ((False) (pure SerialReady Unit tt)))))
+
 (claim limine-kernel-plan-invariant-store-and-report
-  (Pi ((plan KernelBootPlan))
+  (Pi ((span KernelBootSpan)
+       (plan KernelBootPlan))
       (Eff SerialReady SerialReady Unit)))
 (def limine-kernel-plan-invariant-store-and-report
-  (fn ((plan KernelBootPlan))
+  (fn ((span KernelBootSpan)
+       (plan KernelBootPlan))
     (bind SerialReady SerialReady SerialReady Unit Unit
       (store SerialReady SerialReady KernelBootPlanInvariant limine-kernel-plan-invariant
         (kernel-boot-plan-invariant-from-plan plan))
@@ -808,15 +946,15 @@
           (bind SerialReady SerialReady SerialReady KernelBootPlanInvariant Unit
             (load SerialReady KernelBootPlanInvariant limine-kernel-plan-invariant)
             (fn ((invariant 1 KernelBootPlanInvariant))
-              (match (kernel-boot-plan-invariant-ready invariant)
-                ((True) serial-write-plan-invariant-ok)
-                ((False) (pure SerialReady Unit tt))))))))))
+              (limine-kernel-plan-invariant-check-and-report span plan invariant))))))))
 
 (claim limine-kernel-plan-check-and-report
-  (Pi ((plan KernelBootPlan))
+  (Pi ((span KernelBootSpan)
+       (plan KernelBootPlan))
       (Eff SerialReady SerialReady Unit)))
 (def limine-kernel-plan-check-and-report
-  (fn ((plan KernelBootPlan))
+  (fn ((span KernelBootSpan)
+       (plan KernelBootPlan))
     (match (kernel-boot-plan-ready plan)
       ((True)
         (io-seq SerialReady SerialReady SerialReady
@@ -825,7 +963,7 @@
               serial-write-kernel-pages-ok
               serial-write-boot-policy-ok)
             serial-write-boot-plan-ok)
-          (limine-kernel-plan-invariant-store-and-report plan)))
+          (limine-kernel-plan-invariant-store-and-report span plan)))
       ((False) (pure SerialReady Unit tt)))))
 
 (claim limine-kernel-plan-store-and-report
@@ -841,7 +979,7 @@
           (bind SerialReady SerialReady SerialReady KernelBootPlan Unit
             (load SerialReady KernelBootPlan limine-kernel-plan)
             (fn ((plan 1 KernelBootPlan))
-              (limine-kernel-plan-check-and-report plan))))))))
+              (limine-kernel-plan-check-and-report span plan))))))))
 
 (claim limine-kernel-policy-store-and-report
   (Pi ((span KernelBootSpan) (page-count U64))

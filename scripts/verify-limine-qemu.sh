@@ -187,4 +187,10 @@ if ! grep -Fq "SILT_PLAN_INV_OK!!!" "$SERIAL_LOG"; then
   exit 1
 fi
 
+if ! grep -Fq "SILT_FRAME_CAND_OK!" "$SERIAL_LOG"; then
+  echo "QEMU serial log did not contain the Silt frame-candidate marker" >&2
+  sed -n '1,120p' "$SERIAL_LOG" >&2
+  exit 1
+fi
+
 echo "Limine QEMU smoke passed: entry reached and debug-exit marker observed"
