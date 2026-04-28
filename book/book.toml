@@ -1,0 +1,23 @@
+[book]
+title = "The Silt Programming Language"
+authors = ["The Silt contributors"]
+description = "S式、依存型、数量、低レイヤー表現、freestanding targetを一冊で学ぶSilt公式ブック"
+language = "ja"
+src = "src"
+
+[build]
+build-dir = "../out/book"
+create-missing = false
+use-default-preprocessors = true
+
+[output.html]
+site-url = "/silt/book/"
+default-theme = "light"
+preferred-dark-theme = "navy"
+smart-punctuation = true
+mathjax-support = false
+additional-css = ["theme/silt.css"]
+
+[output.html.fold]
+enable = true
+level = 1

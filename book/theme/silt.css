@@ -1,0 +1,30 @@
+:root {
+  --content-max-width: 920px;
+}
+
+.content main {
+  line-height: 1.82;
+}
+
+.content h1,
+.content h2,
+.content h3 {
+  letter-spacing: 0;
+}
+
+.content pre code {
+  line-height: 1.55;
+}
+
+.content blockquote {
+  border-left-color: #4f6f52;
+  color: #323b34;
+}
+
+.content table {
+  font-size: 0.95em;
+}
+
+.menu-title {
+  letter-spacing: 0;
+}

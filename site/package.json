@@ -1,0 +1,11 @@
+{
+  "name": "silt-site",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "spago run -m Main"
+  },
+  "devDependencies": {
+    "spago": "1.0.3"
+  }
+}

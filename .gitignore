@@ -6,6 +6,9 @@
 # Public-safe project metadata and build entrypoints.
 !/.gitignore
 !/LICENSE
+!/README.md
+!/STATUS.md
+!/CONTRIBUTING.md
 !/silt.cabal
 !/cabal.project
 
@@ -23,9 +26,20 @@
 !/support/
 !/support/**
 
-# Explicit quarantine: not part of the initial public-safe history.
-README.md
-docs/
+# Public Silt Book and its publication workflow.
+!/.github/
+!/.github/workflows/
+!/.github/workflows/book.yml
+!/book/
+!/book/**
+!/site/
+!/site/**
+/site/.spago/
+/site/output/
+/site/node_modules/
+
+# Explicit quarantine: not part of the public-safe history.
+/docs/
 
 # Generated/local outputs.
 dist-newstyle/

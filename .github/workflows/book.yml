@@ -1,0 +1,106 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "book/**"
+      - "site/**"
+      - "site/package-lock.json"
+      - "README.md"
+      - "STATUS.md"
+      - "CONTRIBUTING.md"
+      - "LICENSE"
+      - "silt.cabal"
+      - "scripts/build-public-site.sh"
+      - "scripts/verify-public.sh"
+      - "scripts/verify-silt-book.sh"
+      - ".github/workflows/book.yml"
+  pull_request:
+    paths:
+      - "book/**"
+      - "site/**"
+      - "site/package-lock.json"
+      - "README.md"
+      - "STATUS.md"
+      - "CONTRIBUTING.md"
+      - "LICENSE"
+      - "silt.cabal"
+      - "scripts/build-public-site.sh"
+      - "scripts/verify-public.sh"
+      - "scripts/verify-silt-book.sh"
+      - ".github/workflows/book.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install site dependencies
+        run: npm ci --prefix site
+
+      - name: Install PureScript compiler
+        run: |
+          mkdir -p "$HOME/.local/bin" "$RUNNER_TEMP/purescript"
+          curl -sSL https://github.com/purescript/purescript/releases/download/v0.15.16/linux64.tar.gz \
+            -o "$RUNNER_TEMP/purescript.tar.gz"
+          echo "44da9efb8a4e14519e8fd5350acc377a4b981e42351a78c53e9f84045bf38e22  $RUNNER_TEMP/purescript.tar.gz" \
+            | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/purescript.tar.gz" -C "$RUNNER_TEMP/purescript"
+          cp "$RUNNER_TEMP/purescript/purescript/purs" "$HOME/.local/bin/purs"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install mdBook
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.5.2/mdbook-v0.5.2-x86_64-unknown-linux-gnu.tar.gz \
+            -o "$RUNNER_TEMP/mdbook.tar.gz"
+          echo "084e4342ba564db270108763e404a7d1f309d932651a22484e93c0dc1a071f6d  $RUNNER_TEMP/mdbook.tar.gz" \
+            | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/mdbook.tar.gz" -C "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify public artifact
+        run: scripts/verify-public.sh
+
+      - name: Setup Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: out/site
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5

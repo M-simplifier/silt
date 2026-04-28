@@ -2,16 +2,16 @@ cabal-version:      3.0
 name:               silt
 version:            0.1.0.0
 build-type:         Simple
-license:            BSD-3-Clause
+license:            MIT
 license-file:       LICENSE
 author:             Silt contributors
 maintainer:         Silt contributors
 category:           Language
-synopsis:           Stage0 bootstrap for the SILT research language
+synopsis:           Stage0 bootstrap for the Silt research language
 description:
-  Stage0 bootstrap checker for a next-generation pure functional systems
-  programming language with an S-expression surface and a quantitative
-  dependent core direction.
+  Stage0 bootstrap checker for an experimental systems language with an
+  S-expression surface, a small dependent core, quantities, and freestanding C
+  backend evidence.
 
 common common-options
   default-language: GHC2021
@@ -44,3 +44,7 @@ test-suite silt-test
       Silt.Parse
       Silt.Source
       Silt.Syntax
+
+source-repository head
+  type:     git
+  location: https://github.com/M-simplifier/silt.git

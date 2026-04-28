@@ -1,0 +1,11 @@
+package:
+  name: silt-site
+  dependencies:
+    - effect
+    - foldable-traversable
+    - prelude
+    - strings
+workspace:
+  packageSet:
+    registry: 73.3.0
+  extraPackages: {}

@@ -1,5 +1,6 @@
 ; Minimal checked Limine request/response layouts for the current x86_64 path.
-; This models only request delimiters, base revision, and HHDM.
+; This models only request delimiters, base revision, HHDM, and minimal Memmap
+; response shapes used by the current smoke path.
 
 (layout LimineRequestsStartMarker 32 8
   ((m0 U64 0)
