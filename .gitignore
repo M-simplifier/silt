@@ -9,6 +9,7 @@
 !/README.md
 !/STATUS.md
 !/CONTRIBUTING.md
+!/MAINTAINERS.md
 !/silt.cabal
 !/cabal.project
 
@@ -28,8 +29,12 @@
 
 # Public Silt Book and its publication workflow.
 !/.github/
+!/.github/ISSUE_TEMPLATE/
+!/.github/ISSUE_TEMPLATE/**
 !/.github/workflows/
 !/.github/workflows/book.yml
+!/.github/workflows/ci.yml
+!/.github/pull_request_template.md
 !/book/
 !/book/**
 !/site/

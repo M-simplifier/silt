@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible problem in the current public Silt subset.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for checking Silt. Please keep reports tied to the current public subset.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide the smallest Silt program or command sequence that shows the issue.
+      placeholder: |
+        cabal run silt -- check example.silt
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, GHC/Cabal versions, and any relevant tool versions.
+    validations:
+      required: false

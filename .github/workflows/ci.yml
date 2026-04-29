@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "src/**"
+      - "test/**"
+      - "examples/**"
+      - "scripts/verify-stage0-backend.sh"
+      - "scripts/verify-freestanding-backend.sh"
+      - "scripts/verify-x86_64-elf-backend.sh"
+      - "scripts/verify-limine-bridge.sh"
+      - "support/**"
+      - "cabal.project"
+      - "silt.cabal"
+      - ".github/workflows/ci.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "ci-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  stage0:
+    name: Stage0 checker and backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Haskell
+        uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # v2
+        with:
+          ghc-version: "9.6.7"
+          cabal-version: "3.12.1.0"
+
+      - name: Update package index
+        run: cabal update
+
+      - name: Run test suite
+        run: cabal test all
+
+      - name: Verify hosted backend
+        run: scripts/verify-stage0-backend.sh
+
+      - name: Verify freestanding backend
+        run: scripts/verify-freestanding-backend.sh
+
+      - name: Verify x86_64 ELF bridge
+        run: scripts/verify-x86_64-elf-backend.sh
+
+      - name: Verify Limine bridge
+        run: scripts/verify-limine-bridge.sh

@@ -25,6 +25,10 @@ If an issue is accepted, the maintainers may implement the change from that
 issue in the repository. This does not guarantee that every accepted issue will
 be scheduled, implemented, or released.
 
+Maintainer pull requests are used as the repository's default change-management
+unit. See [MAINTAINERS.md](MAINTAINERS.md) for the maintainer branch, review,
+and verification workflow.
+
 ## Security And Production Use
 
 Silt is not ready for production use. Do not rely on it for security-sensitive
