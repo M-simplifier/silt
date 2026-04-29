@@ -1568,12 +1568,14 @@ checkMatch globals ctx env scrutineeSurface arms expected = do
   expectedTerm <- reifyType (length env) expected
   case asDataApplication globals scrutineeTy of
     Just ("Bool", _) -> do
+      rejectUnexpectedArms globals "Bool" arms
       falseBody <- constructorArm "False" 0 arms
       trueBody <- constructorArm "True" 0 arms
       falseTerm <- check globals ctx env falseBody expected
       trueTerm <- check globals ctx env trueBody expected
       pure (apps (TGlobal "bool-case") [expectedTerm, falseTerm, trueTerm, scrutineeTerm])
     Just ("Nat", _) -> do
+      rejectUnexpectedArms globals "Nat" arms
       zeroBody <- constructorArm "Z" 0 arms
       (succBinder, succBody) <- constructorArm1 "S" arms
       zeroTerm <- check globals ctx env zeroBody expected

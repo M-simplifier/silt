@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Current Status
+    url: https://github.com/M-simplifier/silt/blob/main/STATUS.md
+    about: Read the current public claim boundary before opening broad requests.
+  - name: Silt Book
+    url: https://m-simplifier.github.io/silt/book/
+    about: Read the official Japanese guide.

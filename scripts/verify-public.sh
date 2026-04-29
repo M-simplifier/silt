@@ -25,7 +25,7 @@ admin_tool='su''do'
 deny_terms="(${home_path}|${local_user}|${local_project}|${ai_vendor}|${ai_chat}|${ai_agent}|${sensitive_word}|${classified_jp}|${chat_jp}|${conversation_jp}|${continue_jp}|${admin_tool}|${repo_cycle}|${run_mode}|${process_word})"
 
 if grep -RInE "$deny_terms" \
-  README.md STATUS.md CONTRIBUTING.md LICENSE silt.cabal site/src site/static site/package.json site/spago.yaml site/spago.lock book .github scripts/build-public-site.sh; then
+  README.md STATUS.md CONTRIBUTING.md MAINTAINERS.md LICENSE silt.cabal site/src site/static site/package.json site/spago.yaml site/spago.lock book .github scripts/build-public-site.sh; then
   echo "public files contain local or non-public coordination terms" >&2
   exit 1
 fi

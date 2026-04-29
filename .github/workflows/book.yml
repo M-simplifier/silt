@@ -10,26 +10,14 @@ on:
       - "README.md"
       - "STATUS.md"
       - "CONTRIBUTING.md"
+      - "MAINTAINERS.md"
       - "LICENSE"
       - "silt.cabal"
       - "scripts/build-public-site.sh"
       - "scripts/verify-public.sh"
       - "scripts/verify-silt-book.sh"
-      - ".github/workflows/book.yml"
+      - ".github/**"
   pull_request:
-    paths:
-      - "book/**"
-      - "site/**"
-      - "site/package-lock.json"
-      - "README.md"
-      - "STATUS.md"
-      - "CONTRIBUTING.md"
-      - "LICENSE"
-      - "silt.cabal"
-      - "scripts/build-public-site.sh"
-      - "scripts/verify-public.sh"
-      - "scripts/verify-silt-book.sh"
-      - ".github/workflows/book.yml"
   workflow_dispatch:
 
 permissions:
