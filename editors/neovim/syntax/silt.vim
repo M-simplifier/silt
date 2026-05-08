@@ -17,7 +17,8 @@ syntax keyword siltForm
       \ byte-slice-is-empty byte-slice-len byte-slice-take
       \ host-arg-base host-arg-count host-arg-len host-arg-text
       \ host-env-base host-env-has host-env-len host-env-present host-env-text
-      \ host-put-byte host-seq host-write-text let-layout let-load-layout load match nat-case nat-elim pure
+      \ host-file-write-bytes host-put-byte host-seq host-write-file
+      \ host-write-text let-layout let-load-layout load match nat-case nat-elim pure
       \ ptr-add ptr-field ptr-from-addr ptr-step ptr-to-addr size-of
       \ store store-field store-fields the u8 u8-eq u8-to-u64 u64
       \ text-base text-byte-at text-drop text-from-bytes text-is-empty

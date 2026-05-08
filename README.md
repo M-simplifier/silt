@@ -47,9 +47,11 @@ production kernel.
   bounded pure view helpers for empty/take/drop, an explicit `Nat` / `U64`
   bridge, and a first-order hosted text-output path that lowers through
   `nat-elim` to a C loop, plus explicit hosted process-argument and environment
-  text views.
-- Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`, and
-  `hosted-exit`, that build and run through the package spine.
+  text views, and a first-order hosted file-write boundary over explicit
+  `TextView` path/body values.
+- Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
+  `hosted-exit`, and `hosted-write-file`, that build and run through the
+  package spine.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
@@ -71,6 +73,7 @@ scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-hosted-args.sh
 scripts/verify-hosted-env.sh
 scripts/verify-hosted-exit.sh
+scripts/verify-hosted-file-write.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
