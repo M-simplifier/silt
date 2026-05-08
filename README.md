@@ -10,9 +10,10 @@ programs through a first-order freestanding C path.
 The current repository is a stage0 bootstrap, not a production compiler. Its
 public claim is intentionally narrow: Silt can typecheck and lower a real subset
 that reaches x86_64 ELF, Limine/QEMU smoke tests, typed static storage, and a
-one-frame allocator handoff case study. It does not yet provide macros, a module
-system, indexed inductive families, a general allocator, direct object
-emission, self-hosting, or a production kernel.
+one-frame allocator handoff case study with a bounded live frame-pool cell
+update. It does not yet provide macros, a module system, indexed inductive
+families, a general allocator, direct object emission, self-hosting, or a
+production kernel.
 
 ## Start Here
 
@@ -37,8 +38,9 @@ emission, self-hosting, or a production kernel.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
-- QEMU-observed Limine smoke paths, including HHDM/Memmap response reads and an
-  allocator handoff marker.
+- QEMU-observed Limine smoke paths, including HHDM/Memmap response reads, a
+  bounded live frame-pool alloc/free cell update, and an allocator handoff
+  marker.
 
 ## Quick Checks
 
