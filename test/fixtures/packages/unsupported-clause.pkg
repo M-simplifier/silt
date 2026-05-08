@@ -1,0 +1,5 @@
+(package bad
+  (bin bad
+    (sources src/main.silt)
+    (entry app-main)
+    (dependencies other)))

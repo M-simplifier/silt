@@ -1,0 +1,4 @@
+(package bad
+  (bin bad
+    (sources ../bad.silt)
+    (entry bad-main)))

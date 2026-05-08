@@ -1,0 +1,2 @@
+(claim app-main U64)
+(def app-main (u64 0))

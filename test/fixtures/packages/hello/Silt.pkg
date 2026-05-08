@@ -1,0 +1,7 @@
+(package hello
+  (bin hello
+    (sources src/main.silt)
+    (entry app-main))
+  (test hello-test
+    (sources src/main.silt tests/main.silt)
+    (entry hello-test)))

@@ -3,6 +3,7 @@ module Silt.Codegen.C
   , emitDefinitionsC
   , emitDefinitionFreestandingC
   , emitDefinitionsFreestandingC
+  , cSymbolName
   ) where
 
 import Data.Char (isAlphaNum)
@@ -1524,3 +1525,7 @@ cName name =
     normalize c
       | isAlphaNum c = c
       | otherwise = '_'
+
+cSymbolName :: Name -> String
+cSymbolName =
+  cName

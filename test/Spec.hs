@@ -8,7 +8,9 @@ import Silt.Codegen.C
   , emitDefinitionsFreestandingC
   )
 import Silt.Elab (checkProgram, normalizeDefinition)
-import Silt.Parse (parseProgram)
+import Silt.Format (formatSExprSource)
+import Silt.Package (Package (..), parsePackageSource)
+import Silt.Parse (parseProgram, parseSExprs)
 import Silt.Source (readProgramBundle)
 import Silt.Syntax (Program (..))
 import System.Exit (exitFailure)
@@ -39,6 +41,14 @@ main = do
   ok13j <- expectSourceFailure "include rejects cycles" ["test/fixtures/includes/cycle-a.silt"] "include cycle:"
   ok13k <- expectCheckFile "byte buffer example file" "examples/bytes.silt"
   ok13l <- expectCheckFile "limine protocol shared source" "examples/limine-protocol.silt"
+  ok13m <- expectFormat "formatter compacts current surface" "(claim id(Pi((A Type)(x A))A))" "(claim id (Pi ((A Type) (x A)) A))\n"
+  ok13n <- expectFormatIdempotent "formatter is idempotent" formatFixtureSource
+  ok13o <- expectFormatParses "formatter output parses" formatFixtureMessySource
+  ok13p <- expectFormat "formatter preserves top-level include" "(include test/fixtures/includes/lib.silt)\n" "(include test/fixtures/includes/lib.silt)\n"
+  ok13q <- expectPackageFile "package manifest parses" "test/fixtures/packages/hello/Silt.pkg" "hello" 2
+  ok13r <- expectPackageFailureFile "package rejects parent source" "test/fixtures/packages/bad-parent-source.pkg" "source path cannot contain '..'"
+  ok13s <- expectPackageFailureFile "package rejects duplicate targets" "test/fixtures/packages/duplicate-targets.pkg" "package target names must be unique"
+  ok13t <- expectPackageFailureFile "package rejects dependency clause for v0" "test/fixtures/packages/unsupported-clause.pkg" "unsupported target clause"
   ok14 <- expectCheck "generic data" optionSource
   ok15 <- expectCheck "recursive generic data" recursiveDataSource
   ok16 <- expectFailure "missing claim" "(def nope Type)"
@@ -411,7 +421,7 @@ main = do
   ok171 <- expectFailure "boot-contract unknown target" badBootContractUnknownTargetSource
   ok172 <- expectFailure "boot-contract target mismatch" badBootContractTargetMismatchSource
   ok173 <- expectFailure "boot-contract duplicate clause" badBootContractDuplicateClauseSource
-  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok13g, ok13h, ok13i, ok13j, ok13k, ok13l, ok14, ok15, ok16, ok17, ok18, ok18a, ok18b, ok19, ok20, ok21, ok22, ok23, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok39q, ok39r, ok39s, ok39t, ok39u, ok39v, ok39w, ok39x, ok39y, ok39z, ok40, ok41, ok42, ok43, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok67b, ok67c, ok67d, ok67e, ok67f, ok67g, ok68, ok69, ok70, ok70b, ok70c, ok70d, ok70e, ok70f, ok70g, ok70h, ok70i, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169a, ok169a1, ok169a2, ok169a3, ok169a4, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok169o1, ok169o2, ok169p, ok169q, ok169r, ok169s, ok169t, ok169u, ok169v, ok169w, ok169x, ok169y, ok169z, ok169aa, ok169ab, ok169ac, ok169ad, ok169ae, ok169af, ok169ag, ok169ah, ok169ai, ok169aj, ok169ak, ok169al, ok169am, ok169an, ok169ao, ok169ap, ok169aq, ok169ar, ok169as, ok169at, ok169au, ok169av, ok169aw, ok169ax, ok169ay, ok169ba, ok169bb, ok169bc, ok169bd, ok169be, ok169bf, ok169bg, ok169bh, ok169bi, ok169bj, ok169bk, ok169bl, ok169bm, ok169bn, ok169bo, ok169bp, ok169bq, ok169br, ok169bs, ok169bt, ok169bu, ok169bv, ok169bw, ok169bx, ok169by, ok169bz, ok169ca, ok169cb, ok169cc, ok169cd, ok169ce, ok169cf, ok169cg, ok169ch, ok169ci, ok169cj, ok169ck, ok169cl, ok169cm, ok169cn, ok169co, ok169cp, ok169cq, ok169cr, ok169cs, ok169ct, ok169cu, ok169cv, ok169cw, ok169cx, ok169cy, ok169cz, ok169da, ok169db, ok169dc, ok169dc1, ok169dc2, ok169dc3, ok169dc4, ok169dc5, ok169dc6, ok169dc7, ok169dc8, ok169dc9, ok169dc10, ok169dd, ok169de, ok169df, ok169dg, ok169dh, ok169di, ok169dj, ok169dk, ok169dl, ok169dm, ok169dn, ok169do, ok169dp, ok169dq, ok169dr, ok169ds, ok169dt, ok169du, ok169dv, ok169dw, ok169dx, ok169dy, ok169dz, ok169ea, ok169eb, ok169ec, ok169ed, ok169ee, ok169ef, ok169eg, ok169eh, ok169ei, ok169ej, ok169ek, ok169el, ok169em, ok169en, ok169eo, ok169ep, ok169eq, ok169er, ok169es, ok169et, ok169eu, ok169ev, ok169ew, ok169ex, ok169ey, ok170, ok171, ok172, ok173]
+  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok13g, ok13h, ok13i, ok13j, ok13k, ok13l, ok13m, ok13n, ok13o, ok13p, ok13q, ok13r, ok13s, ok13t, ok14, ok15, ok16, ok17, ok18, ok18a, ok18b, ok19, ok20, ok21, ok22, ok23, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok39q, ok39r, ok39s, ok39t, ok39u, ok39v, ok39w, ok39x, ok39y, ok39z, ok40, ok41, ok42, ok43, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok67b, ok67c, ok67d, ok67e, ok67f, ok67g, ok68, ok69, ok70, ok70b, ok70c, ok70d, ok70e, ok70f, ok70g, ok70h, ok70i, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169a, ok169a1, ok169a2, ok169a3, ok169a4, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok169o1, ok169o2, ok169p, ok169q, ok169r, ok169s, ok169t, ok169u, ok169v, ok169w, ok169x, ok169y, ok169z, ok169aa, ok169ab, ok169ac, ok169ad, ok169ae, ok169af, ok169ag, ok169ah, ok169ai, ok169aj, ok169ak, ok169al, ok169am, ok169an, ok169ao, ok169ap, ok169aq, ok169ar, ok169as, ok169at, ok169au, ok169av, ok169aw, ok169ax, ok169ay, ok169ba, ok169bb, ok169bc, ok169bd, ok169be, ok169bf, ok169bg, ok169bh, ok169bi, ok169bj, ok169bk, ok169bl, ok169bm, ok169bn, ok169bo, ok169bp, ok169bq, ok169br, ok169bs, ok169bt, ok169bu, ok169bv, ok169bw, ok169bx, ok169by, ok169bz, ok169ca, ok169cb, ok169cc, ok169cd, ok169ce, ok169cf, ok169cg, ok169ch, ok169ci, ok169cj, ok169ck, ok169cl, ok169cm, ok169cn, ok169co, ok169cp, ok169cq, ok169cr, ok169cs, ok169ct, ok169cu, ok169cv, ok169cw, ok169cx, ok169cy, ok169cz, ok169da, ok169db, ok169dc, ok169dc1, ok169dc2, ok169dc3, ok169dc4, ok169dc5, ok169dc6, ok169dc7, ok169dc8, ok169dc9, ok169dc10, ok169dd, ok169de, ok169df, ok169dg, ok169dh, ok169di, ok169dj, ok169dk, ok169dl, ok169dm, ok169dn, ok169do, ok169dp, ok169dq, ok169dr, ok169ds, ok169dt, ok169du, ok169dv, ok169dw, ok169dx, ok169dy, ok169dz, ok169ea, ok169eb, ok169ec, ok169ed, ok169ee, ok169ef, ok169eg, ok169eh, ok169ei, ok169ej, ok169ek, ok169el, ok169em, ok169en, ok169eo, ok169ep, ok169eq, ok169er, ok169es, ok169et, ok169eu, ok169ev, ok169ew, ok169ex, ok169ey, ok170, ok171, ok172, ok173]
     then putStrLn "silt-test: all checks passed"
     else exitFailure
 
@@ -439,6 +449,91 @@ expectCheckProgram label programResult =
     Right _ -> do
       putStrLn ("PASS [" ++ label ++ "]")
       pure True
+
+expectFormat :: String -> String -> String -> IO Bool
+expectFormat label source expected =
+  case formatSExprSource source of
+    Left err -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected format success, got: " ++ err)
+      pure False
+    Right actual
+      | actual == expected -> do
+          putStrLn ("PASS [" ++ label ++ "]")
+          pure True
+      | otherwise -> do
+          putStrLn ("FAIL [" ++ label ++ "] expected:\n" ++ expected ++ "\ngot:\n" ++ actual)
+          pure False
+
+expectFormatIdempotent :: String -> String -> IO Bool
+expectFormatIdempotent label source =
+  case formatSExprSource source of
+    Left err -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected first format success, got: " ++ err)
+      pure False
+    Right once ->
+      case formatSExprSource once of
+        Left err -> do
+          putStrLn ("FAIL [" ++ label ++ "] expected second format success, got: " ++ err)
+          pure False
+        Right twice
+          | once == twice -> do
+              putStrLn ("PASS [" ++ label ++ "]")
+              pure True
+          | otherwise -> do
+              putStrLn ("FAIL [" ++ label ++ "] expected idempotent output")
+              pure False
+
+expectFormatParses :: String -> String -> IO Bool
+expectFormatParses label source =
+  case (parseSExprs source, formatSExprSource source) of
+    (Left err, _) -> do
+      putStrLn ("FAIL [" ++ label ++ "] source parse failed: " ++ err)
+      pure False
+    (_, Left err) -> do
+      putStrLn ("FAIL [" ++ label ++ "] format failed: " ++ err)
+      pure False
+    (Right before, Right output) ->
+      case parseSExprs output of
+        Left err -> do
+          putStrLn ("FAIL [" ++ label ++ "] formatted output parse failed: " ++ err)
+          pure False
+        Right after
+          | before == after -> do
+              putStrLn ("PASS [" ++ label ++ "]")
+              pure True
+          | otherwise -> do
+              putStrLn ("FAIL [" ++ label ++ "] formatted output changed the S-expression tree")
+              pure False
+
+expectPackageFile :: String -> FilePath -> String -> Int -> IO Bool
+expectPackageFile label path expectedName expectedTargetCount = do
+  source <- readFile path
+  case parsePackageSource source of
+    Left err -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected package parse success, got: " ++ err)
+      pure False
+    Right package
+      | packageName package == expectedName && length (packageTargets package) == expectedTargetCount -> do
+          putStrLn ("PASS [" ++ label ++ "]")
+          pure True
+      | otherwise -> do
+          putStrLn ("FAIL [" ++ label ++ "] parsed unexpected package: " ++ show package)
+          pure False
+
+expectPackageFailureFile :: String -> FilePath -> String -> IO Bool
+expectPackageFailureFile label path expectedFragment = do
+  source <- readFile path
+  case parsePackageSource source of
+    Left err
+      | expectedFragment `isInfixOf` err -> do
+          putStrLn ("PASS [" ++ label ++ "]")
+          pure True
+      | otherwise -> do
+          putStrLn ("FAIL [" ++ label ++ "] expected fragment " ++ expectedFragment ++ ", got: " ++ err)
+          pure False
+    Right package -> do
+      putStrLn ("FAIL [" ++ label ++ "] expected package parse failure, got: " ++ show package)
+      pure False
 
 expectSourceFailure :: String -> [FilePath] -> String -> IO Bool
 expectSourceFailure label paths expectedFragment = do
@@ -2529,4 +2624,20 @@ codegenFunctionSource =
     , "      a)))"
     , "(claim erase-first (Pi ((proof 0 Nat) (x 1 Nat)) Nat))"
     , "(def erase-first (fn ((proof 0 Nat) (x 1 Nat)) x))"
+    ]
+
+formatFixtureSource :: String
+formatFixtureSource =
+  unlines
+    [ "(claim choose(Pi((flag Bool)(fallback U64)(value U64))U64))"
+    , "(def choose(fn((flag Bool)(fallback U64)(value U64))(match flag((False)fallback)((True)value))))"
+    ]
+
+formatFixtureMessySource :: String
+formatFixtureMessySource =
+  unlines
+    [ "(layout Header 16 8((magic U64 0)(next Addr 8)))"
+    , "(claim read-next(Pi((hdr(Ptr Header)))Addr))"
+    , "(def read-next(fn((hdr(Ptr Header)))(load-field Header next hdr)))"
+    , "(target-contract hosted-x86_64(format elf64)(arch x86_64)(abi sysv))"
     ]
