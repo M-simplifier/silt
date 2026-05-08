@@ -59,6 +59,9 @@ production kernel.
 - QEMU-observed Limine smoke paths, including HHDM/Memmap response reads, a
   bounded live frame-pool alloc/free cell update, and an allocator handoff
   marker.
+- A single-local-package `Silt.pkg` spine with `silt build [TARGET]`,
+  `silt run [TARGET] [-- ARG...]`, and `silt test [TARGET]` for explicit
+  `bin` and `test` targets.
 
 ## Quick Checks
 

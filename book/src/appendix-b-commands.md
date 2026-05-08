@@ -94,6 +94,16 @@ scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
 ```
 
+## package CLI
+
+```bash
+cabal run silt -- build
+cabal run silt -- build hosted-hello
+cabal run silt -- run hosted-echo -- SILT_ARG
+cabal run silt -- test
+cabal run silt -- test text-eq-test
+```
+
 ## QEMU smoke
 
 ```bash

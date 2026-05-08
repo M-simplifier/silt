@@ -14,7 +14,7 @@ import Silt.Source (readProgramBundle)
 import Silt.Syntax (Name, Program (..), prettyDecl)
 import System.Environment (getArgs)
 import System.Exit (die, exitFailure)
-import System.IO (hPutStrLn, stderr)
+import System.IO (hPutStr, hPutStrLn, stderr)
 
 main :: IO ()
 main = do
@@ -35,7 +35,11 @@ main = do
     ("run" : target : "--" : programArgs) ->
       runPackage (Just target) programArgs
     ["test"] ->
-      testPackage
+      testPackage Nothing
+    ["test", target] ->
+      testPackage (Just target)
+    ["help"] ->
+      putStr usage
     ["parse", path] -> do
       Program decls <- loadProgramBundle [path]
       mapM_ (putStrLn . prettyDecl) decls
@@ -115,8 +119,9 @@ main = do
       program <- loadProgramBundle [path]
       output <- either die pure (emitDefinitionsFreestandingC program names)
       putStrLn output
-    _ ->
-      putStrLn usage
+    _ -> do
+      hPutStr stderr usage
+      exitFailure
 
 usage :: String
 usage =
@@ -124,10 +129,11 @@ usage =
     [ "silt stage0"
     , ""
     , "Usage:"
+    , "  silt help"
     , "  silt version"
     , "  silt build [TARGET]"
     , "  silt run [TARGET] [-- ARG...]"
-    , "  silt test"
+    , "  silt test [TARGET]"
     , "  silt sexpr FILE"
     , "  silt fmt FILE"
     , "  silt fmt --check FILE..."
