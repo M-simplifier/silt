@@ -1,0 +1,22 @@
+; Hosted argument example.
+; This echoes argv[1] followed by a newline. Missing argv[1] is an empty view.
+
+(static-bytes hosted-echo-newline-bytes
+  ((u8 10)))
+
+(claim hosted-echo-newline-slice ByteSlice)
+(def hosted-echo-newline-slice
+  (byte-slice-from hosted-echo-newline-bytes hosted-echo-newline-bytes-len))
+
+(claim hosted-echo-newline-text TextView)
+(def hosted-echo-newline-text
+  (text-from-bytes hosted-echo-newline-slice))
+
+(claim hosted-echo-main (Eff HostIO HostIO Unit))
+(def hosted-echo-main
+  (bind HostIO HostIO HostIO TextView Unit
+    (host-arg-text (u64 1))
+    (fn ((arg 1 TextView))
+      (host-seq
+        (host-write-text arg)
+        (host-write-text hosted-echo-newline-text)))))

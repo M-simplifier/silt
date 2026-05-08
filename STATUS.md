@@ -21,14 +21,16 @@ Silt currently demonstrates:
   parsing and checker diagnostics
 - lightweight Neovim filetype and syntax files for the current public surface
 - a single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
-  no-argument hosted entries
+  no-argument hosted entry functions, plus `silt run [TARGET] -- ARG...`
+  forwarding through the hosted package harness
 - a conservative standard-library seed with checker/normalizer-backed
   `Option`, `Result`, and `List` helpers; explicit `ByteSlice` and `TextView`
   views over `U8` / `Ptr U8`; an explicit `Nat` / `U64` bridge; and a
   first-order hosted text-output path that lowers through `nat-elim` to a C
-  loop
-- a root `hosted-hello` package example that compiles and prints through the
-  hosted package harness
+  loop; and explicit hosted process-argument count/base/length boundaries with
+  a `host-arg-text` view constructor
+- root `hosted-hello` and `hosted-echo` package examples that compile, run, and
+  print through the hosted package harness
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -54,6 +56,7 @@ scripts/verify-platform-tools.sh
 scripts/verify-editor-tools.sh
 scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
+scripts/verify-hosted-args.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
@@ -78,7 +81,8 @@ Silt does not currently claim:
 - a package ecosystem, dependencies, workspaces, or lockfiles
 - mature LSP/editor tooling, semantic highlighting, or formatter-on-save
   integration
-- hosted CLI args, environment access, files, or general hosted IO
+- environment access, files, process exit control, general hosted IO, or
+  package argument policy beyond `silt run [TARGET] -- ARG...`
 - runtime representation for generic ADTs
 - indexed inductive families
 - complete totality checking

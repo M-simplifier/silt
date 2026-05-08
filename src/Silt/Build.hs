@@ -39,12 +39,12 @@ buildPackage maybeTargetName = do
   output <- buildPackageTarget root target
   putStrLn ("Built " ++ packageTargetName target ++ " at " ++ output)
 
-runPackage :: Maybe Name -> IO ()
-runPackage maybeTargetName = do
+runPackage :: Maybe Name -> [String] -> IO ()
+runPackage maybeTargetName programArgs = do
   (root, package) <- loadPackage
   target <- either die pure (selectBuildTarget maybeTargetName package)
   output <- buildPackageTarget root target
-  callProcess output []
+  callProcess output programArgs
 
 testPackage :: IO ()
 testPackage = do
@@ -144,14 +144,38 @@ renderHarness kind entry ret =
   unlines
     ( [ "#include <stdint.h>"
       , "#include <stdio.h>"
+      , "#include <string.h>"
+      , ""
+      , "static int silt_host_argc = 0;"
+      , "static char **silt_host_argv = 0;"
       , ""
       , "uint8_t silt_host_put_byte(uint8_t byte) {"
       , "  return putchar((int)byte) == EOF ? 1u : 0u;"
       , "}"
       , ""
+      , "uint64_t silt_host_arg_count(void) {"
+      , "  return silt_host_argc <= 0 ? 0ULL : (uint64_t)silt_host_argc;"
+      , "}"
+      , ""
+      , "uintptr_t silt_host_arg_base(uint64_t index) {"
+      , "  if (index >= (uint64_t)silt_host_argc || silt_host_argv[index] == 0) {"
+      , "    return (uintptr_t)\"\";"
+      , "  }"
+      , "  return (uintptr_t)silt_host_argv[index];"
+      , "}"
+      , ""
+      , "uint64_t silt_host_arg_len(uint64_t index) {"
+      , "  if (index >= (uint64_t)silt_host_argc || silt_host_argv[index] == 0) {"
+      , "    return 0ULL;"
+      , "  }"
+      , "  return (uint64_t)strlen(silt_host_argv[index]);"
+      , "}"
+      , ""
       , cReturnType ret ++ " " ++ cSymbolName entry ++ "(void);"
       , ""
-      , "int main(void) {"
+      , "int main(int argc, char **argv) {"
+      , "  silt_host_argc = argc;"
+      , "  silt_host_argv = argv;"
       ]
         ++ renderHarnessBody kind entry ret
         ++ ["}"]

@@ -13,6 +13,7 @@ on:
       - "scripts/verify-package-spine.sh"
       - "scripts/verify-platform-tools.sh"
       - "scripts/verify-editor-tools.sh"
+      - "scripts/verify-hosted-args.sh"
       - "scripts/verify-stdlib-hosted-seed.sh"
       - "scripts/verify-x86_64-elf-backend.sh"
       - "scripts/verify-limine-bridge.sh"
@@ -63,6 +64,9 @@ jobs:
 
       - name: Verify stdlib hosted seed
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-stdlib-hosted-seed.sh
+
+      - name: Verify hosted args
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-args.sh
 
       - name: Verify hosted backend
         run: scripts/verify-stage0-backend.sh

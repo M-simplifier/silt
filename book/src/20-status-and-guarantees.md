@@ -16,8 +16,8 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - 現在のS式source subsetを `fmt` / `fmt --check` でcanonicalに扱う
 - `lint` でcanonical formatting、source bundle parsing、checker diagnosticsをまとめて確認する
 - `editors/neovim/` の軽量filetype/syntax fileで現在のsurfaceを編集する
-- 単一local packageの `Silt.pkg` から、no-argument hosted entryを `build` / `run` / `test` する
-- 標準ライブラリseedとして、checker/normalizer-backedな `Option` / `Result` / `List`、`U8` / `Ptr U8` 上の `ByteSlice` / `TextView`、`Nat` / `U64` の明示bridge、`nat-elim` からC loopへ落ちるfirst-orderなhosted text output境界を使う
+- 単一local packageの `Silt.pkg` から、no-argument hosted entry functionを `build` / `run` / `test` し、`run -- ARG...` でhosted process argumentを渡す
+- 標準ライブラリseedとして、checker/normalizer-backedな `Option` / `Result` / `List`、`U8` / `Ptr U8` 上の `ByteSlice` / `TextView`、`Nat` / `U64` の明示bridge、`nat-elim` からC loopへ落ちるfirst-orderなhosted text output境界、そして明示的なhosted argument境界と `host-arg-text` を使う
 
 これらはSiltの型検査、正規化、layout検査、数量チェックによって支えられます。たとえば、`Ptr U64` と `Ptr BootInfo` は同じ機械表現になり得ますが、Siltの型では区別されます。`layout` のフィールドは、宣言したサイズ、アラインメント、オフセットに従って扱われます。
 
@@ -40,7 +40,7 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - module/import system
 - package ecosystem、dependency resolution、workspace、lockfile
 - 成熟したLSP/editor tooling、semantic highlighting、formatter-on-save連携
-- hosted CLI args、環境変数、file IO、general hosted IO
+- 環境変数、file IO、process exit control、general hosted IO、`silt run [TARGET] -- ARG...` を超えるargument policy
 - generic ADTのruntime representation
 - indexed inductive families
 - 完全なtotality checking

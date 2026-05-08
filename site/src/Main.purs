@@ -119,7 +119,7 @@ hero =
             , el "a" [ cls "button", attr "href" "https://github.com/M-simplifier/silt" ] [ text "View Source" ]
             ]
         , el "p" [ cls "status-line" ]
-            [ text "Stage0 today: checker, NbE equality, quantities, layout/memory/ABI seeds, freestanding C/ELF/Limine smoke paths." ]
+            [ text "Stage0 today: checker, NbE equality, quantities, package/tooling spines, layout/memory/ABI seeds, freestanding C/ELF/Limine smoke paths." ]
         ]
     , el "div" [ cls "hero-panel", attr "aria-label" "Silt verification example" ]
         [ codeBlock heroSnippet
@@ -188,6 +188,7 @@ verificationSnippet =
 cabal run silt -- check examples/limine.silt
 cabal run silt -- norm examples/limine.silt kernel-allocator-handoff-sample-ready
 scripts/verify-stage0-backend.sh
+scripts/verify-hosted-args.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh

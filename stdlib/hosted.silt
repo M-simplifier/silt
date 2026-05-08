@@ -1,9 +1,12 @@
 ; Hosted IO seed.
-; The package harness supplies silt_host_put_byte for hosted examples.
+; The package harness supplies the silt_host_* boundaries for hosted examples.
 
 (data HostIO ())
 
 (extern host-put-byte (Pi ((byte U8)) (Eff HostIO HostIO Unit)) silt_host_put_byte)
+(extern host-arg-count (Eff HostIO HostIO U64) silt_host_arg_count)
+(extern host-arg-base (Pi ((index U64)) (Eff HostIO HostIO (Ptr U8))) silt_host_arg_base)
+(extern host-arg-len (Pi ((index U64)) (Eff HostIO HostIO U64)) silt_host_arg_len)
 
 (claim host-seq
   (Pi ((first 1 (Eff HostIO HostIO Unit))
@@ -52,3 +55,14 @@
     (match (u64-eq (text-len text) (u64 5))
       ((False) (pure HostIO Unit tt))
       ((True) (host-write-text text)))))
+
+(claim host-arg-text (Pi ((index U64)) (Eff HostIO HostIO TextView)))
+(def host-arg-text
+  (fn ((index U64))
+    (bind HostIO HostIO HostIO (Ptr U8) TextView
+      (host-arg-base index)
+      (fn ((base 1 (Ptr U8)))
+        (bind HostIO HostIO HostIO U64 TextView
+          (host-arg-len index)
+          (fn ((len 1 U64))
+            (pure HostIO TextView (text-view-from base len))))))))
