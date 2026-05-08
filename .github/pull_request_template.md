@@ -2,6 +2,10 @@
 
 -
 
+## Goal
+
+-
+
 ## Claim Boundary
 
 - [ ] This keeps the current public claim boundary.

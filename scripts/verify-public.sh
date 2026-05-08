@@ -25,13 +25,13 @@ admin_tool='su''do'
 deny_terms="(${home_path}|${local_user}|${local_project}|${ai_vendor}|${ai_chat}|${ai_agent}|${sensitive_word}|${classified_jp}|${chat_jp}|${conversation_jp}|${continue_jp}|${admin_tool}|${repo_cycle}|${run_mode}|${process_word})"
 
 if grep -RInE "$deny_terms" \
-  README.md STATUS.md CONTRIBUTING.md MAINTAINERS.md LICENSE silt.cabal site/src site/static site/package.json site/spago.yaml site/spago.lock book .github scripts/build-public-site.sh; then
+  README.md STATUS.md AGENTS.md CONTRIBUTING.md MAINTAINERS.md LICENSE silt.cabal site/src site/static site/package.json site/spago.yaml site/spago.lock book .github scripts/build-public-site.sh; then
   echo "public files contain local or non-public coordination terms" >&2
   exit 1
 fi
 
 if grep -RInE '(production-ready|full kernel|complete allocator|memory-safe|formally verified compiler|guarantees memory safety)' \
-  README.md STATUS.md site/src site/static book/src out/site; then
+  README.md STATUS.md AGENTS.md site/src site/static book/src out/site; then
   echo "public files contain over-broad maturity or safety claims" >&2
   exit 1
 fi
@@ -41,8 +41,9 @@ for expected in \
   "SILT_ALLOC_HANDOFF" \
   "not a production compiler" \
   "not self-hosted" \
-  "no general allocator or kernel"; do
-  if ! grep -RIn "$expected" README.md STATUS.md CONTRIBUTING.md site book/src out/site >/dev/null; then
+  "no general allocator or kernel" \
+  "Goal-Driven Work"; do
+  if ! grep -RIn "$expected" README.md STATUS.md AGENTS.md CONTRIBUTING.md site book/src out/site >/dev/null; then
     echo "missing expected public boundary text: $expected" >&2
     exit 1
   fi

@@ -71,3 +71,8 @@ Silt does not currently claim:
 The project is moving by evidence-bearing slices. New language claims should be
 public only when they have checker support, examples, tests, documentation, and
 an executable verification path.
+
+Maintainer work is Goal-driven. The owner should be asked to manage reviewable
+Goals and public-boundary decisions, not internal implementation slices. See
+[AGENTS.md](AGENTS.md) and [MAINTAINERS.md](MAINTAINERS.md) for the public
+operator and maintainer workflow.

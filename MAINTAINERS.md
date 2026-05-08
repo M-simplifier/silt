@@ -6,6 +6,8 @@ safe to show.
 
 ## Default Flow
 
+- Manage owner-facing work as explicit Goals with reviewable acceptance
+  criteria, verification expectations, and stop conditions.
 - Create a short-lived branch from `main` for every non-trivial change.
 - Open a pull request before merging back to `main`.
 - Use squash merge so public history stays readable.
@@ -22,6 +24,7 @@ experimental.
 Every maintainer pull request should answer four questions:
 
 - What changed?
+- Which Goal or public-boundary cleanup does this support?
 - Did the public claim boundary stay the same, narrow, or widen?
 - Which checks ran?
 - Is every changed public file safe to publish?
