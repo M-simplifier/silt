@@ -16,6 +16,7 @@ on:
       - "scripts/verify-hosted-args.sh"
       - "scripts/verify-hosted-env.sh"
       - "scripts/verify-hosted-exit.sh"
+      - "scripts/verify-hosted-file-read.sh"
       - "scripts/verify-hosted-file-write.sh"
       - "scripts/verify-text-view-helpers.sh"
       - "scripts/verify-stdlib-hosted-seed.sh"
@@ -80,6 +81,9 @@ jobs:
 
       - name: Verify hosted file write
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-file-write.sh
+
+      - name: Verify hosted file read
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-file-read.sh
 
       - name: Verify text view helpers
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-view-helpers.sh

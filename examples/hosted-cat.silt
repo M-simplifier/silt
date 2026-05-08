@@ -1,0 +1,25 @@
+; Hosted file-read example.
+
+; This writes the content of the path in argv[1] to hosted stdout.
+
+(claim hosted-cat-main (Eff HostIO HostIO Unit))
+
+(def
+  hosted-cat-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    TextView
+    Unit
+    (host-arg-text (u64 1))
+    (fn
+      ((path 1 TextView))
+      (bind
+        HostIO
+        HostIO
+        HostIO
+        TextView
+        Unit
+        (host-read-file path)
+        (fn ((body 1 TextView)) (host-write-text body))))))
