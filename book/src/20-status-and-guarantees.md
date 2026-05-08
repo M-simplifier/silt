@@ -17,7 +17,7 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - `lint` でcanonical formatting、source bundle parsing、checker diagnosticsをまとめて確認する
 - `editors/neovim/` の軽量filetype/syntax fileで現在のsurfaceを編集する
 - 単一local packageの `Silt.pkg` から、no-argument hosted entry functionを `build` / `run` / `test` し、`run -- ARG...` でhosted process argumentを渡し、名前を指定した単一のenvironment lookupを行い、bin entryの結果をprocess statusとして外に返し、明示的な `TextView` path/bodyでfirst-orderなhosted file writeを行い、明示的な `TextView` pathからhost-ownedな `TextView` へfirst-orderなhosted file readを行い、`text-eq-test` と `text-prefix-test` でbyte-backed text predicateをpackage testとして確認する
-- 標準ライブラリseedとして、checker/normalizer-backedな `Option` / `Result` / `List`、`U8` / `Ptr U8` 上の `ByteSlice` / `TextView`、boundedなempty/take/drop view helper、`byte-slice-eq` / `text-eq` によるbyte-wise equality、`byte-slice-starts-with` / `text-starts-with` によるprefix check、`Nat` / `U64` の明示bridge、`nat-elim` からC loopへ落ちるfirst-orderなhosted text output境界、明示的なhosted argument境界と `host-arg-text`、明示的なhosted environment境界と `host-env-text`、明示的なhosted file-write境界と `host-write-file`、そして明示的なhosted file-read境界と `host-read-file` を使う
+- 標準ライブラリseedとして、checker/normalizer-backedな `Option` / `Result` / `List` とmap/and-then系combinator、`U8` / `Ptr U8` 上の `ByteSlice` / `TextView`、boundedなempty/take/drop view helper、`byte-slice-eq` / `text-eq` によるbyte-wise equality、`byte-slice-starts-with` / `text-starts-with` によるprefix check、`Nat` / `U64` の明示bridge、`nat-elim` からC loopへ落ちるfirst-orderなhosted text output境界、明示的なhosted argument境界と `host-arg-text`、明示的なhosted environment境界と `host-env-text`、明示的なhosted file-write境界と `host-write-file`、そして明示的なhosted file-read境界と `host-read-file` を使う
 
 これらはSiltの型検査、正規化、layout検査、数量チェックによって支えられます。たとえば、`Ptr U64` と `Ptr BootInfo` は同じ機械表現になり得ますが、Siltの型では区別されます。`layout` のフィールドは、宣言したサイズ、アラインメント、オフセットに従って扱われます。
 
@@ -42,6 +42,7 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - 成熟したLSP/editor tooling、semantic highlighting、formatter-on-save連携
 - append mode、directory operation、path library、missing-vs-empty file-read error distinction、allocator-backed Silt file buffer、process spawning、signal、stdout/stderr abstraction、general hosted IO、environment enumeration/mutation、`silt run [TARGET] -- ARG...` を超えるargument policy
 - generic ADTのruntime representation
+- general closure conversion
 - indexed inductive families
 - 完全なtotality checking
 - UTF-8 validation、汎用文字列、配列、dynamic slice、allocator-backed byte/text buffer、substring/search/scanning API、collation、text-normalization API

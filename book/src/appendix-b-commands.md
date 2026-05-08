@@ -92,6 +92,7 @@ scripts/verify-text-view-helpers.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
+scripts/verify-stdlib-core-combinators.sh
 ```
 
 ## package CLI
@@ -101,6 +102,7 @@ cabal run silt -- build
 cabal run silt -- build hosted-hello
 cabal run silt -- run hosted-echo -- SILT_ARG
 cabal run silt -- test
+cabal run silt -- test stdlib-test
 cabal run silt -- test text-eq-test
 cabal run silt -- test text-prefix-test
 ```

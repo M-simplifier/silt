@@ -1,25 +1,240 @@
 (claim stdlib-option-sample U64)
-(def stdlib-option-sample
-  (option-unwrap-or U64 (u64 0) (Some U64 (u64 42))))
+
+(def stdlib-option-sample (option-unwrap-or U64 (u64 0) (Some U64 (u64 42))))
 
 (claim stdlib-result-sample U64)
-(def stdlib-result-sample
-  (result-unwrap-or Bool U64 (u64 0) (Ok Bool U64 (u64 7))))
+
+(def stdlib-result-sample (result-unwrap-or Bool U64 (u64 0) (Ok Bool U64 (u64 7))))
 
 (claim stdlib-list-sample U64)
-(def stdlib-list-sample
-  (list-head-or U64 (u64 0) (Cons U64 (u64 9) (Nil U64))))
+
+(def stdlib-list-sample (list-head-or U64 (u64 0) (Cons U64 (u64 9) (Nil U64))))
+
+(claim stdlib-option-map-sample U64)
+
+(def
+  stdlib-option-map-sample
+  (option-unwrap-or
+    U64
+    (u64 0)
+    (option-map U64 U64 (fn ((value U64)) (u64-add value (u64 1))) (Some U64 (u64 41)))))
+
+(claim stdlib-option-map-none-sample U64)
+
+(def
+  stdlib-option-map-none-sample
+  (option-unwrap-or
+    U64
+    (u64 13)
+    (option-map U64 U64 (fn ((value U64)) (u64-add value (u64 1))) (None U64))))
+
+(claim stdlib-option-and-then-sample U64)
+
+(def
+  stdlib-option-and-then-sample
+  (option-unwrap-or
+    U64
+    (u64 0)
+    (option-and-then
+      U64
+      U64
+      (fn ((value U64)) (Some U64 (u64-add value (u64 2))))
+      (Some U64 (u64 40)))))
+
+(claim stdlib-option-and-then-none-sample U64)
+
+(def
+  stdlib-option-and-then-none-sample
+  (option-unwrap-or
+    U64
+    (u64 17)
+    (option-and-then
+      U64
+      U64
+      (fn ((value U64)) (Some U64 (u64-add value (u64 2))))
+      (None U64))))
+
+(claim stdlib-option-and-then-continuation-none-sample U64)
+
+(def
+  stdlib-option-and-then-continuation-none-sample
+  (option-unwrap-or
+    U64
+    (u64 23)
+    (option-and-then U64 U64 (fn ((value U64)) (None U64)) (Some U64 (u64 40)))))
+
+(claim stdlib-result-map-sample U64)
+
+(def
+  stdlib-result-map-sample
+  (result-unwrap-or
+    Bool
+    U64
+    (u64 0)
+    (result-map
+      Bool
+      U64
+      U64
+      (fn ((value U64)) (u64-add value (u64 1)))
+      (Ok Bool U64 (u64 6)))))
+
+(claim stdlib-result-map-error-preserve-sample Bool)
+
+(def
+  stdlib-result-map-error-preserve-sample
+  (result-error-or
+    Bool
+    U64
+    True
+    (result-map
+      Bool
+      U64
+      U64
+      (fn ((value U64)) (u64-add value (u64 1)))
+      (Err Bool U64 False))))
+
+(claim stdlib-result-map-err-sample U64)
+
+(def
+  stdlib-result-map-err-sample
+  (result-error-or
+    U64
+    U64
+    (u64 0)
+    (result-map-err Bool U64 U64 (fn ((err Bool)) (u64 99)) (Err Bool U64 False))))
+
+(claim stdlib-result-map-err-ok-sample U64)
+
+(def
+  stdlib-result-map-err-ok-sample
+  (result-unwrap-or
+    U64
+    U64
+    (u64 0)
+    (result-map-err Bool U64 U64 (fn ((err Bool)) (u64 99)) (Ok Bool U64 (u64 7)))))
+
+(claim stdlib-result-and-then-sample U64)
+
+(def
+  stdlib-result-and-then-sample
+  (result-unwrap-or
+    Bool
+    U64
+    (u64 0)
+    (result-and-then
+      Bool
+      U64
+      U64
+      (fn ((value U64)) (Ok Bool U64 (u64-add value (u64 2))))
+      (Ok Bool U64 (u64 5)))))
+
+(claim stdlib-result-and-then-error-sample Bool)
+
+(def
+  stdlib-result-and-then-error-sample
+  (result-error-or
+    Bool
+    U64
+    True
+    (result-and-then
+      Bool
+      U64
+      U64
+      (fn ((value U64)) (Ok Bool U64 (u64-add value (u64 2))))
+      (Err Bool U64 False))))
+
+(claim stdlib-result-and-then-continuation-error-sample Bool)
+
+(def
+  stdlib-result-and-then-continuation-error-sample
+  (result-error-or
+    Bool
+    U64
+    True
+    (result-and-then
+      Bool
+      U64
+      U64
+      (fn ((value U64)) (Err Bool U64 False))
+      (Ok Bool U64 (u64 5)))))
+
+(claim stdlib-result-error-ok-sample U64)
+
+(def
+  stdlib-result-error-ok-sample
+  (result-error-or U64 U64 (u64 77) (Ok U64 U64 (u64 7))))
+
+(claim stdlib-list-tail-sample U64)
+
+(def
+  stdlib-list-tail-sample
+  (list-head-or
+    U64
+    (u64 0)
+    (list-tail-or U64 (Nil U64) (Cons U64 (u64 1) (Cons U64 (u64 2) (Nil U64))))))
+
+(claim stdlib-list-tail-nil-sample U64)
+
+(def
+  stdlib-list-tail-nil-sample
+  (list-head-or U64 (u64 0) (list-tail-or U64 (Cons U64 (u64 55) (Nil U64)) (Nil U64))))
 
 (claim stdlib-text-len-sample U64)
-(def stdlib-text-len-sample
-  (text-len hosted-hello-text))
+
+(def stdlib-text-len-sample (text-len hosted-hello-text))
 
 (claim stdlib-nat-word-sample U64)
-(def stdlib-nat-word-sample
-  (nat-to-word (S (S (S Z)))))
+
+(def stdlib-nat-word-sample (nat-to-word (S (S (S Z)))))
+
+(claim stdlib-combinator-happy-test Bool)
+
+(def
+  stdlib-combinator-happy-test
+  (bool-and
+    (u64-eq stdlib-option-map-sample (u64 42))
+    (bool-and
+      (u64-eq stdlib-option-and-then-sample (u64 42))
+      (bool-and
+        (u64-eq stdlib-result-map-sample (u64 7))
+        (bool-and
+          (u64-eq stdlib-result-map-err-sample (u64 99))
+          (bool-and
+            (u64-eq stdlib-result-and-then-sample (u64 7))
+            (u64-eq stdlib-list-tail-sample (u64 2))))))))
+
+(claim stdlib-combinator-fallback-test Bool)
+
+(def
+  stdlib-combinator-fallback-test
+  (bool-and
+    (u64-eq stdlib-option-map-none-sample (u64 13))
+    (bool-and
+      (u64-eq stdlib-option-and-then-none-sample (u64 17))
+      (bool-and
+        (u64-eq stdlib-option-and-then-continuation-none-sample (u64 23))
+        (bool-and
+          (bool-not stdlib-result-map-error-preserve-sample)
+          (bool-and
+            (u64-eq stdlib-result-map-err-ok-sample (u64 7))
+            (bool-and
+              (bool-not stdlib-result-and-then-error-sample)
+              (bool-and
+                (bool-not stdlib-result-and-then-continuation-error-sample)
+                (bool-and
+                  (u64-eq stdlib-result-error-ok-sample (u64 77))
+                  (u64-eq stdlib-list-tail-nil-sample (u64 55)))))))))))
+
+(claim stdlib-combinator-test Bool)
+
+(def
+  stdlib-combinator-test
+  (bool-and stdlib-combinator-happy-test stdlib-combinator-fallback-test))
 
 (claim stdlib-test Bool)
-(def stdlib-test
+
+(def
+  stdlib-test
   (bool-and
     (u64-eq stdlib-option-sample (u64 42))
     (bool-and
@@ -28,4 +243,4 @@
         (u64-eq stdlib-list-sample (u64 9))
         (bool-and
           (u64-eq stdlib-text-len-sample (u64 5))
-          (u64-eq stdlib-nat-word-sample (u64 3)))))))
+          (bool-and (u64-eq stdlib-nat-word-sample (u64 3)) stdlib-combinator-test))))))
