@@ -33,6 +33,7 @@ cabal run silt -- emit-freestanding-c examples/limine.silt limine-entry
 ```bash
 scripts/verify-stage0-backend.sh
 scripts/verify-hosted-args.sh
+scripts/verify-hosted-env.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh

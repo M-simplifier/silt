@@ -17,6 +17,15 @@
       stdlib/hosted.silt
       examples/hosted-echo.silt)
     (entry hosted-echo-main))
+  (bin hosted-env
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-env.silt)
+    (entry hosted-env-main))
   (test stdlib-test
     (sources
       stdlib/core.silt

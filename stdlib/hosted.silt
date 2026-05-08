@@ -7,6 +7,9 @@
 (extern host-arg-count (Eff HostIO HostIO U64) silt_host_arg_count)
 (extern host-arg-base (Pi ((index U64)) (Eff HostIO HostIO (Ptr U8))) silt_host_arg_base)
 (extern host-arg-len (Pi ((index U64)) (Eff HostIO HostIO U64)) silt_host_arg_len)
+(extern host-env-present (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO Bool)) silt_host_env_present)
+(extern host-env-base (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO (Ptr U8))) silt_host_env_base)
+(extern host-env-len (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO U64)) silt_host_env_len)
 
 (claim host-seq
   (Pi ((first 1 (Eff HostIO HostIO Unit))
@@ -64,5 +67,21 @@
       (fn ((base 1 (Ptr U8)))
         (bind HostIO HostIO HostIO U64 TextView
           (host-arg-len index)
+          (fn ((len 1 U64))
+            (pure HostIO TextView (text-view-from base len))))))))
+
+(claim host-env-has (Pi ((name TextView)) (Eff HostIO HostIO Bool)))
+(def host-env-has
+  (fn ((name TextView))
+    (host-env-present (text-base name) (text-len name))))
+
+(claim host-env-text (Pi ((name TextView)) (Eff HostIO HostIO TextView)))
+(def host-env-text
+  (fn ((name TextView))
+    (bind HostIO HostIO HostIO (Ptr U8) TextView
+      (host-env-base (text-base name) (text-len name))
+      (fn ((base 1 (Ptr U8)))
+        (bind HostIO HostIO HostIO U64 TextView
+          (host-env-len (text-base name) (text-len name))
           (fn ((len 1 U64))
             (pure HostIO TextView (text-view-from base len))))))))

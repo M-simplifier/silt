@@ -1,0 +1,52 @@
+; Hosted environment example.
+; This writes the value of SILT_HOSTED_ENV followed by a newline.
+; A missing variable is an empty view.
+
+(static-bytes hosted-env-key-bytes
+  ((u8 83)
+   (u8 73)
+   (u8 76)
+   (u8 84)
+   (u8 95)
+   (u8 72)
+   (u8 79)
+   (u8 83)
+   (u8 84)
+   (u8 69)
+   (u8 68)
+   (u8 95)
+   (u8 69)
+   (u8 78)
+   (u8 86)))
+
+(claim hosted-env-key-slice ByteSlice)
+(def hosted-env-key-slice
+  (byte-slice-from hosted-env-key-bytes hosted-env-key-bytes-len))
+
+(claim hosted-env-key-text TextView)
+(def hosted-env-key-text
+  (text-from-bytes hosted-env-key-slice))
+
+(static-bytes hosted-env-newline-bytes
+  ((u8 10)))
+
+(claim hosted-env-newline-slice ByteSlice)
+(def hosted-env-newline-slice
+  (byte-slice-from hosted-env-newline-bytes hosted-env-newline-bytes-len))
+
+(claim hosted-env-newline-text TextView)
+(def hosted-env-newline-text
+  (text-from-bytes hosted-env-newline-slice))
+
+(claim hosted-env-ready (Eff HostIO HostIO Bool))
+(def hosted-env-ready
+  (host-env-has hosted-env-key-text))
+
+(claim hosted-env-main (Eff HostIO HostIO Unit))
+(def hosted-env-main
+  (bind HostIO HostIO HostIO TextView Unit
+    (host-env-text hosted-env-key-text)
+    (fn ((value 1 TextView))
+      (host-seq
+        (host-write-text value)
+        (host-write-text hosted-env-newline-text)))))
