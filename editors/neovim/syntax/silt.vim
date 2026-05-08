@@ -14,6 +14,7 @@ syntax keyword siltDeclaration
 syntax keyword siltForm
       \ Eff Pi addr align-of bind bool-case field field-offset fn let
       \ host-arg-base host-arg-count host-arg-len host-arg-text
+      \ host-env-base host-env-has host-env-len host-env-present host-env-text
       \ host-put-byte host-seq host-write-text let-layout let-load-layout load match nat-case nat-elim pure
       \ ptr-add ptr-field ptr-from-addr ptr-step ptr-to-addr size-of
       \ store store-field store-fields the u8 u8-eq u8-to-u64 u64

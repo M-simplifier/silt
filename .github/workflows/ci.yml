@@ -14,6 +14,7 @@ on:
       - "scripts/verify-platform-tools.sh"
       - "scripts/verify-editor-tools.sh"
       - "scripts/verify-hosted-args.sh"
+      - "scripts/verify-hosted-env.sh"
       - "scripts/verify-stdlib-hosted-seed.sh"
       - "scripts/verify-x86_64-elf-backend.sh"
       - "scripts/verify-limine-bridge.sh"
@@ -67,6 +68,9 @@ jobs:
 
       - name: Verify hosted args
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-args.sh
+
+      - name: Verify hosted env
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-env.sh
 
       - name: Verify hosted backend
         run: scripts/verify-stage0-backend.sh

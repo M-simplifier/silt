@@ -189,6 +189,7 @@ cabal run silt -- check examples/limine.silt
 cabal run silt -- norm examples/limine.silt kernel-allocator-handoff-sample-ready
 scripts/verify-stage0-backend.sh
 scripts/verify-hosted-args.sh
+scripts/verify-hosted-env.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh

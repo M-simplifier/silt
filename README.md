@@ -46,9 +46,9 @@ production kernel.
   `Result`, and `List` helpers, byte/text view types over `U8` and `Ptr U8`,
   an explicit `Nat` / `U64` bridge, and a first-order hosted text-output path
   that lowers through `nat-elim` to a C loop, plus explicit hosted
-  process-argument text views.
-- Root package examples, `hosted-hello` and `hosted-echo`, that build and run
-  through the package spine.
+  process-argument and environment text views.
+- Root package examples, `hosted-hello`, `hosted-echo`, and `hosted-env`, that
+  build and run through the package spine.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
@@ -68,6 +68,7 @@ scripts/verify-editor-tools.sh
 scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-hosted-args.sh
+scripts/verify-hosted-env.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh

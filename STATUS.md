@@ -28,9 +28,10 @@ Silt currently demonstrates:
   views over `U8` / `Ptr U8`; an explicit `Nat` / `U64` bridge; and a
   first-order hosted text-output path that lowers through `nat-elim` to a C
   loop; and explicit hosted process-argument count/base/length boundaries with
-  a `host-arg-text` view constructor
-- root `hosted-hello` and `hosted-echo` package examples that compile, run, and
-  print through the hosted package harness
+  a `host-arg-text` view constructor; and explicit hosted environment
+  presence/base/length boundaries with `host-env-has` and `host-env-text`
+- root `hosted-hello`, `hosted-echo`, and `hosted-env` package examples that
+  compile, run, and print through the hosted package harness
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -57,6 +58,7 @@ scripts/verify-editor-tools.sh
 scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-hosted-args.sh
+scripts/verify-hosted-env.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
@@ -81,8 +83,8 @@ Silt does not currently claim:
 - a package ecosystem, dependencies, workspaces, or lockfiles
 - mature LSP/editor tooling, semantic highlighting, or formatter-on-save
   integration
-- environment access, files, process exit control, general hosted IO, or
-  package argument policy beyond `silt run [TARGET] -- ARG...`
+- file IO, process exit control, general hosted IO, environment enumeration or
+  mutation, or package argument policy beyond `silt run [TARGET] -- ARG...`
 - runtime representation for generic ADTs
 - indexed inductive families
 - complete totality checking
