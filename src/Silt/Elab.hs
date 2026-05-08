@@ -2000,6 +2000,8 @@ reducePrimitive globals name args =
       Just (VU64 value)
     ("u64-to-u8", [VU64 value]) ->
       Just (VU8 (value .&. 255))
+    ("nat-to-u64", [value]) ->
+      VU64 <$> natValueToWord64 value
     ("u8-eq", [VU8 left, VU8 right]) ->
       Just (if left == right then VPrim "True" [] else VPrim "False" [])
     ("u64-add", [VU64 left, VU64 right]) ->
@@ -2068,6 +2070,13 @@ reducePrimitive globals name args =
        in Just (vApp globals (vApp globals succCase n) recursive)
     _ ->
       Nothing
+
+natValueToWord64 :: Value -> Maybe Word64
+natValueToWord64 value =
+  case value of
+    VPrim "Z" [] -> Just 0
+    VPrim "S" [inner] -> (1 +) <$> natValueToWord64 inner
+    _ -> Nothing
 
 quote :: Int -> Value -> Term
 quote depth value =
@@ -2199,6 +2208,8 @@ primitiveArities =
     , ("u64-to-u8", 1)
     , ("u8-eq", 2)
     , ("U64", 0)
+    , ("nat-to-u64", 1)
+    , ("u64-to-nat", 1)
     , ("u64-add", 2)
     , ("u64-sub", 2)
     , ("u64-mul", 2)
@@ -2271,6 +2282,8 @@ builtinEntries globals =
     , builtinEntry globals "u64-to-u8" u64ToU8Type
     , builtinEntry globals "u8-eq" u8CompareType
     , builtinEntry globals "U64" (TUniverse 0)
+    , builtinEntry globals "nat-to-u64" natToU64Type
+    , builtinEntry globals "u64-to-nat" u64ToNatType
     , builtinEntry globals "u64-add" u64BinaryType
     , builtinEntry globals "u64-sub" u64BinaryType
     , builtinEntry globals "u64-mul" u64BinaryType
@@ -2417,6 +2430,16 @@ u64ToU8Type :: Term
 u64ToU8Type =
   TPi "x" Q1 (TGlobal "U64") $
     TGlobal "U8"
+
+natToU64Type :: Term
+natToU64Type =
+  TPi "x" Q1 (TGlobal "Nat") $
+    TGlobal "U64"
+
+u64ToNatType :: Term
+u64ToNatType =
+  TPi "x" Q1 (TGlobal "U64") $
+    TGlobal "Nat"
 
 u8CompareType :: Term
 u8CompareType =

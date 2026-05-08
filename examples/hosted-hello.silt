@@ -17,4 +17,4 @@
 
 (claim hosted-hello-main (Eff HostIO HostIO Unit))
 (def hosted-hello-main
-  (host-write-text5 hosted-hello-text))
+  (host-write-text hosted-hello-text))

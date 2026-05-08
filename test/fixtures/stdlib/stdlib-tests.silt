@@ -14,6 +14,10 @@
 (def stdlib-text-len-sample
   (text-len hosted-hello-text))
 
+(claim stdlib-nat-word-sample U64)
+(def stdlib-nat-word-sample
+  (nat-to-word (S (S (S Z)))))
+
 (claim stdlib-test Bool)
 (def stdlib-test
   (bool-and
@@ -22,4 +26,6 @@
       (u64-eq stdlib-result-sample (u64 7))
       (bool-and
         (u64-eq stdlib-list-sample (u64 9))
-        (u64-eq stdlib-text-len-sample (u64 5))))))
+        (bool-and
+          (u64-eq stdlib-text-len-sample (u64 5))
+          (u64-eq stdlib-nat-word-sample (u64 3)))))))

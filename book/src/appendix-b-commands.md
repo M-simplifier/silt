@@ -13,7 +13,7 @@ cabal run silt -- run hosted-hello
 cabal run silt -- test stdlib-test
 ```
 
-これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entryに限られます。root packageには、stdlib seedを使って `SILT` を出力する `hosted-hello` と、stdlibの正規化例を確認する `stdlib-test` が含まれます。dependency、workspace、lockfile、CLI args、環境変数、file IOはまだclaimしません。
+これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entryに限られます。root packageには、stdlib seedの `TextView` と `host-write-text` で `SILT` を出力する `hosted-hello` と、stdlibの正規化例を確認する `stdlib-test` が含まれます。dependency、workspace、lockfile、CLI args、環境変数、file IOはまだclaimしません。
 
 ## formatter
 

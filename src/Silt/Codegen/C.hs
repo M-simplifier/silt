@@ -443,6 +443,14 @@ compileApplication codegenEnv fresh env expected term =
       expectType expected CU8 "u64-to-u8"
       (fresh1, valueStmts, valueExpr) <- compileExpr codegenEnv fresh env CU64 value
       Right (fresh1, valueStmts, "((uint8_t)(" ++ valueExpr ++ "))")
+    (TGlobal "nat-to-u64", [value]) -> do
+      expectType expected CU64 "nat-to-u64"
+      (fresh1, valueStmts, valueExpr) <- compileExpr codegenEnv fresh env CNat value
+      Right (fresh1, valueStmts, "((uint64_t)(" ++ valueExpr ++ "))")
+    (TGlobal "u64-to-nat", [value]) -> do
+      expectType expected CNat "u64-to-nat"
+      (fresh1, valueStmts, valueExpr) <- compileExpr codegenEnv fresh env CU64 value
+      Right (fresh1, valueStmts, "((uint64_t)(" ++ valueExpr ++ "))")
     (TGlobal "u8-eq", [left, right]) -> do
       expectType expected CBool "u8-eq"
       (fresh1, leftStmts, leftExpr) <- compileExpr codegenEnv fresh env CU8 left
