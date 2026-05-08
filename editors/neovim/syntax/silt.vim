@@ -14,7 +14,8 @@ syntax keyword siltDeclaration
 syntax keyword siltForm
       \ Eff Pi addr align-of bind bool-case field field-offset fn let
       \ byte-slice-at byte-slice-base byte-slice-drop byte-slice-from
-      \ byte-slice-eq byte-slice-is-empty byte-slice-len byte-slice-take
+      \ byte-slice-eq byte-slice-is-empty byte-slice-len byte-slice-starts-with
+      \ byte-slice-take
       \ host-arg-base host-arg-count host-arg-len host-arg-text
       \ host-env-base host-env-has host-env-len host-env-present host-env-text
       \ host-file-read-base host-file-read-len host-file-write-bytes
@@ -23,7 +24,7 @@ syntax keyword siltForm
       \ ptr-add ptr-field ptr-from-addr ptr-step ptr-to-addr size-of
       \ store store-field store-fields the u8 u8-eq u8-to-u64 u64
       \ text-base text-byte-at text-drop text-from-bytes text-is-empty
-      \ text-eq text-len text-take text-view-from
+      \ text-eq text-len text-starts-with text-take text-view-from
       \ u64-add u64-and u64-div u64-eq u64-lt u64-lte u64-mul u64-or
       \ u64-rem u64-shl u64-shr u64-sub u64-to-nat u64-to-u8 u64-xor
       \ with-fields x86-in8 x86-out8

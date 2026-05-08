@@ -80,4 +80,14 @@
       stdlib/text.silt
       stdlib/hosted.silt
       examples/text-eq.silt)
-    (entry text-eq-test)))
+    (entry text-eq-test))
+  (test
+    text-prefix-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/text-prefix.silt)
+    (entry text-prefix-test)))

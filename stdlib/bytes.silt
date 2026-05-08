@@ -106,3 +106,17 @@
                           ((right-byte 1 U8))
                           (pure cap Bool (u8-eq left-byte right-byte)))))))))))
          (u64-to-nat (byte-slice-len left)))))))
+
+(claim
+  byte-slice-starts-with
+  (Pi ((cap 0 Type) (bytes ByteSlice) (prefix ByteSlice)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-starts-with
+  (fn
+    ((cap 0 Type) (bytes ByteSlice) (prefix ByteSlice))
+    (match
+      (u64-lte (byte-slice-len prefix) (byte-slice-len bytes))
+      ((False) (pure cap Bool False))
+      ((True)
+       (byte-slice-eq cap (byte-slice-take bytes (byte-slice-len prefix)) prefix)))))
