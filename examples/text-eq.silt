@@ -1,0 +1,100 @@
+; Text equality example over explicit byte-backed views.
+
+; This does not claim UTF-8 validation, dynamic strings, or allocation.
+
+(static-bytes text-eq-left-bytes ((u8 83) (u8 73) (u8 76) (u8 84)))
+
+(static-bytes text-eq-same-bytes ((u8 83) (u8 73) (u8 76) (u8 84)))
+
+(static-bytes text-eq-different-bytes ((u8 83) (u8 73) (u8 76) (u8 88)))
+
+(static-bytes text-eq-short-bytes ((u8 83) (u8 73) (u8 76)))
+
+(claim text-eq-left TextView)
+
+(def text-eq-left (text-view-from text-eq-left-bytes text-eq-left-bytes-len))
+
+(claim text-eq-same TextView)
+
+(def text-eq-same (text-view-from text-eq-same-bytes text-eq-same-bytes-len))
+
+(claim text-eq-different TextView)
+
+(def
+  text-eq-different
+  (text-view-from text-eq-different-bytes text-eq-different-bytes-len))
+
+(claim text-eq-short TextView)
+
+(def text-eq-short (text-view-from text-eq-short-bytes text-eq-short-bytes-len))
+
+(claim text-eq-empty-left TextView)
+
+(def text-eq-empty-left (text-view-from text-eq-left-bytes (u64 0)))
+
+(claim text-eq-empty-right TextView)
+
+(def text-eq-empty-right (text-view-from text-eq-different-bytes (u64 0)))
+
+(claim text-eq-same-result (Eff HostIO HostIO Bool))
+
+(def text-eq-same-result (text-eq HostIO text-eq-left text-eq-same))
+
+(claim text-eq-different-result (Eff HostIO HostIO Bool))
+
+(def text-eq-different-result (text-eq HostIO text-eq-left text-eq-different))
+
+(claim text-eq-short-result (Eff HostIO HostIO Bool))
+
+(def text-eq-short-result (text-eq HostIO text-eq-left text-eq-short))
+
+(claim text-eq-empty-result (Eff HostIO HostIO Bool))
+
+(def text-eq-empty-result (text-eq HostIO text-eq-empty-left text-eq-empty-right))
+
+(claim text-eq-test (Eff HostIO HostIO Bool))
+
+(def
+  text-eq-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    Bool
+    Bool
+    text-eq-same-result
+    (fn
+      ((same 1 Bool))
+      (bind
+        HostIO
+        HostIO
+        HostIO
+        Bool
+        Bool
+        text-eq-different-result
+        (fn
+          ((different 1 Bool))
+          (bind
+            HostIO
+            HostIO
+            HostIO
+            Bool
+            Bool
+            text-eq-short-result
+            (fn
+              ((short 1 Bool))
+              (bind
+                HostIO
+                HostIO
+                HostIO
+                Bool
+                Bool
+                text-eq-empty-result
+                (fn
+                  ((empty 1 Bool))
+                  (pure
+                    HostIO
+                    Bool
+                    (bool-and
+                      same
+                      (bool-and (bool-not different) (bool-and (bool-not short) empty)))))))))))))

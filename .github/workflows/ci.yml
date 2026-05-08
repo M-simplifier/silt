@@ -18,6 +18,7 @@ on:
       - "scripts/verify-hosted-exit.sh"
       - "scripts/verify-hosted-file-read.sh"
       - "scripts/verify-hosted-file-write.sh"
+      - "scripts/verify-text-eq.sh"
       - "scripts/verify-text-view-helpers.sh"
       - "scripts/verify-stdlib-hosted-seed.sh"
       - "scripts/verify-x86_64-elf-backend.sh"
@@ -84,6 +85,9 @@ jobs:
 
       - name: Verify hosted file read
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-file-read.sh
+
+      - name: Verify text equality
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-eq.sh
 
       - name: Verify text view helpers
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-view-helpers.sh

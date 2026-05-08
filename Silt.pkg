@@ -70,4 +70,14 @@
       stdlib/hosted.silt
       examples/hosted-hello.silt
       test/fixtures/stdlib/stdlib-tests.silt)
-    (entry stdlib-test)))
+    (entry stdlib-test))
+  (test
+    text-eq-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/text-eq.silt)
+    (entry text-eq-test)))
