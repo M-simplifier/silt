@@ -15,6 +15,7 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - `static-bytes` / `static-cell` / `static-value` でrodata、bss、section-backed objectを書く
 - 現在のS式source subsetを `fmt` / `fmt --check` でcanonicalに扱う
 - 単一local packageの `Silt.pkg` から、no-argument hosted entryを `build` / `run` / `test` する
+- 標準ライブラリseedとして、checker/normalizer-backedな `Option` / `Result` / `List`、`U8` / `Ptr U8` 上の `ByteSlice` / `TextView`、first-orderなhosted byte output境界を使う
 
 これらはSiltの型検査、正規化、layout検査、数量チェックによって支えられます。たとえば、`Ptr U64` と `Ptr BootInfo` は同じ機械表現になり得ますが、Siltの型では区別されます。`layout` のフィールドは、宣言したサイズ、アラインメント、オフセットに従って扱われます。
 
@@ -37,6 +38,7 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - module/import system
 - package ecosystem、dependency resolution、workspace、lockfile
 - hosted CLI args、環境変数、file IO、general hosted IO
+- generic ADTのruntime representation
 - indexed inductive families
 - 完全なtotality checking
 - 汎用文字列、配列、dynamic slice

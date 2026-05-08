@@ -1,0 +1,20 @@
+; Hosted application seed using stdlib byte/text/IO surfaces.
+
+(static-bytes hosted-hello-bytes
+  ((u8 83)
+   (u8 73)
+   (u8 76)
+   (u8 84)
+   (u8 10)))
+
+(claim hosted-hello-slice ByteSlice)
+(def hosted-hello-slice
+  (byte-slice-from hosted-hello-bytes hosted-hello-bytes-len))
+
+(claim hosted-hello-text TextView)
+(def hosted-hello-text
+  (text-from-bytes hosted-hello-slice))
+
+(claim hosted-hello-main (Eff HostIO HostIO Unit))
+(def hosted-hello-main
+  (host-write-text5 hosted-hello-text))

@@ -1,0 +1,31 @@
+; TextView is a byte view with an explicit unchecked text boundary.
+; No UTF-8 validation or string literal surface is claimed yet.
+
+(layout TextView 16 8
+  ((base (Ptr U8) 0)
+   (len U64 8)))
+
+(claim text-view-from (Pi ((base (Ptr U8)) (len U64)) TextView))
+(def text-view-from
+  (fn ((base (Ptr U8)) (len U64))
+    (layout-values TextView base len)))
+
+(claim text-from-bytes (Pi ((bytes ByteSlice)) TextView))
+(def text-from-bytes
+  (fn ((bytes ByteSlice))
+    (text-view-from (byte-slice-base bytes) (byte-slice-len bytes))))
+
+(claim text-base (Pi ((text TextView)) (Ptr U8)))
+(def text-base
+  (fn ((text TextView))
+    (field TextView base text)))
+
+(claim text-len (Pi ((text TextView)) U64))
+(def text-len
+  (fn ((text TextView))
+    (field TextView len text)))
+
+(claim text-byte-at (Pi ((text TextView) (index U64)) (Ptr U8)))
+(def text-byte-at
+  (fn ((text TextView) (index U64))
+    (ptr-step U8 (text-base text) index)))

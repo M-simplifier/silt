@@ -143,6 +143,11 @@ renderHarness :: PackageTargetKind -> Name -> EntryReturn -> String
 renderHarness kind entry ret =
   unlines
     ( [ "#include <stdint.h>"
+      , "#include <stdio.h>"
+      , ""
+      , "uint8_t silt_host_put_byte(uint8_t byte) {"
+      , "  return putchar((int)byte) == EOF ? 1u : 0u;"
+      , "}"
       , ""
       , cReturnType ret ++ " " ++ cSymbolName entry ++ "(void);"
       , ""

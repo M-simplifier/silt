@@ -1,0 +1,78 @@
+; Silt core library seed.
+; Generic data here is checker/normalizer-backed. Runtime representation for
+; generic ADTs is intentionally not claimed yet.
+
+(claim bool-and (Pi ((left Bool) (right Bool)) Bool))
+(def bool-and
+  (fn ((left Bool) (right Bool))
+    (match left
+      ((False) False)
+      ((True) right))))
+
+(claim bool-or (Pi ((left Bool) (right Bool)) Bool))
+(def bool-or
+  (fn ((left Bool) (right Bool))
+    (match left
+      ((False) right)
+      ((True) True))))
+
+(claim bool-not (Pi ((value Bool)) Bool))
+(def bool-not
+  (fn ((value Bool))
+    (match value
+      ((False) True)
+      ((True) False))))
+
+(data Option ((A 0 Type))
+  (None)
+  (Some A))
+
+(claim option-is-some (Pi ((A 0 Type) (value (Option A))) Bool))
+(def option-is-some
+  (fn ((A 0 Type) (value (Option A)))
+    (match value
+      ((None) False)
+      ((Some inner) True))))
+
+(claim option-unwrap-or (Pi ((A 0 Type) (fallback A) (value (Option A))) A))
+(def option-unwrap-or
+  (fn ((A 0 Type) (fallback A) (value (Option A)))
+    (match value
+      ((None) fallback)
+      ((Some inner) inner))))
+
+(data Result ((E 0 Type) (A 0 Type))
+  (Err E)
+  (Ok A))
+
+(claim result-is-ok (Pi ((E 0 Type) (A 0 Type) (value (Result E A))) Bool))
+(def result-is-ok
+  (fn ((E 0 Type) (A 0 Type) (value (Result E A)))
+    (match value
+      ((Err err) False)
+      ((Ok inner) True))))
+
+(claim result-unwrap-or (Pi ((E 0 Type) (A 0 Type) (fallback A) (value (Result E A))) A))
+(def result-unwrap-or
+  (fn ((E 0 Type) (A 0 Type) (fallback A) (value (Result E A)))
+    (match value
+      ((Err err) fallback)
+      ((Ok inner) inner))))
+
+(data List ((A 0 Type))
+  (Nil)
+  (Cons A (List A)))
+
+(claim list-is-empty (Pi ((A 0 Type) (value (List A))) Bool))
+(def list-is-empty
+  (fn ((A 0 Type) (value (List A)))
+    (match value
+      ((Nil) True)
+      ((Cons head tail) False))))
+
+(claim list-head-or (Pi ((A 0 Type) (fallback A) (value (List A))) A))
+(def list-head-or
+  (fn ((A 0 Type) (fallback A) (value (List A)))
+    (match value
+      ((Nil) fallback)
+      ((Cons head tail) head))))
