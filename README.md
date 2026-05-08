@@ -59,7 +59,8 @@ production kernel.
 - QEMU-observed Limine smoke paths, including HHDM/Memmap response reads, a
   bounded live frame-pool alloc/free cell update, and an allocator handoff
   marker.
-- A conservative standard-library seed with explicit byte/text views, including
+- A conservative standard-library seed with checker/normalizer-backed
+  `Option` / `Result` / `List` helpers and explicit byte/text views, including
   empty/take/drop helpers plus byte-wise equality and prefix checks.
 - A single-local-package `Silt.pkg` spine with `silt build [TARGET]`,
   `silt run [TARGET] [-- ARG...]`, and `silt test [TARGET]` for explicit

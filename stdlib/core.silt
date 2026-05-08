@@ -1,78 +1,153 @@
 ; Silt core library seed.
+
 ; Generic data here is checker/normalizer-backed. Runtime representation for
+
 ; generic ADTs is intentionally not claimed yet.
 
 (claim bool-and (Pi ((left Bool) (right Bool)) Bool))
-(def bool-and
-  (fn ((left Bool) (right Bool))
-    (match left
-      ((False) False)
-      ((True) right))))
+
+(def
+  bool-and
+  (fn ((left Bool) (right Bool)) (match left ((False) False) ((True) right))))
 
 (claim bool-or (Pi ((left Bool) (right Bool)) Bool))
-(def bool-or
-  (fn ((left Bool) (right Bool))
-    (match left
-      ((False) right)
-      ((True) True))))
+
+(def bool-or (fn ((left Bool) (right Bool)) (match left ((False) right) ((True) True))))
 
 (claim bool-not (Pi ((value Bool)) Bool))
-(def bool-not
-  (fn ((value Bool))
-    (match value
-      ((False) True)
-      ((True) False))))
 
-(data Option ((A 0 Type))
-  (None)
-  (Some A))
+(def bool-not (fn ((value Bool)) (match value ((False) True) ((True) False))))
+
+(data Option ((A 0 Type)) (None) (Some A))
 
 (claim option-is-some (Pi ((A 0 Type) (value (Option A))) Bool))
-(def option-is-some
-  (fn ((A 0 Type) (value (Option A)))
-    (match value
-      ((None) False)
-      ((Some inner) True))))
+
+(def
+  option-is-some
+  (fn ((A 0 Type) (value (Option A))) (match value ((None) False) ((Some inner) True))))
 
 (claim option-unwrap-or (Pi ((A 0 Type) (fallback A) (value (Option A))) A))
-(def option-unwrap-or
-  (fn ((A 0 Type) (fallback A) (value (Option A)))
-    (match value
-      ((None) fallback)
-      ((Some inner) inner))))
 
-(data Result ((E 0 Type) (A 0 Type))
-  (Err E)
-  (Ok A))
+(def
+  option-unwrap-or
+  (fn
+    ((A 0 Type) (fallback A) (value (Option A)))
+    (match value ((None) fallback) ((Some inner) inner))))
+
+(claim
+  option-map
+  (Pi ((A 0 Type) (B 0 Type) (f (Pi ((value A)) B)) (value (Option A))) (Option B)))
+
+(def
+  option-map
+  (fn
+    ((A 0 Type) (B 0 Type) (f (Pi ((value A)) B)) (value (Option A)))
+    (match value ((None) (None B)) ((Some inner) (Some B (f inner))))))
+
+(claim
+  option-and-then
+  (Pi
+    ((A 0 Type) (B 0 Type) (f (Pi ((value A)) (Option B))) (value (Option A)))
+    (Option B)))
+
+(def
+  option-and-then
+  (fn
+    ((A 0 Type) (B 0 Type) (f (Pi ((value A)) (Option B))) (value (Option A)))
+    (match value ((None) (None B)) ((Some inner) (f inner)))))
+
+(data Result ((E 0 Type) (A 0 Type)) (Err E) (Ok A))
 
 (claim result-is-ok (Pi ((E 0 Type) (A 0 Type) (value (Result E A))) Bool))
-(def result-is-ok
-  (fn ((E 0 Type) (A 0 Type) (value (Result E A)))
-    (match value
-      ((Err err) False)
-      ((Ok inner) True))))
 
-(claim result-unwrap-or (Pi ((E 0 Type) (A 0 Type) (fallback A) (value (Result E A))) A))
-(def result-unwrap-or
-  (fn ((E 0 Type) (A 0 Type) (fallback A) (value (Result E A)))
-    (match value
-      ((Err err) fallback)
-      ((Ok inner) inner))))
+(def
+  result-is-ok
+  (fn
+    ((E 0 Type) (A 0 Type) (value (Result E A)))
+    (match value ((Err err) False) ((Ok inner) True))))
 
-(data List ((A 0 Type))
-  (Nil)
-  (Cons A (List A)))
+(claim
+  result-unwrap-or
+  (Pi ((E 0 Type) (A 0 Type) (fallback A) (value (Result E A))) A))
+
+(def
+  result-unwrap-or
+  (fn
+    ((E 0 Type) (A 0 Type) (fallback A) (value (Result E A)))
+    (match value ((Err err) fallback) ((Ok inner) inner))))
+
+(claim result-error-or (Pi ((E 0 Type) (A 0 Type) (fallback E) (value (Result E A))) E))
+
+(def
+  result-error-or
+  (fn
+    ((E 0 Type) (A 0 Type) (fallback E) (value (Result E A)))
+    (match value ((Err err) err) ((Ok inner) fallback))))
+
+(claim
+  result-map
+  (Pi
+    ((E 0 Type) (A 0 Type) (B 0 Type) (f (Pi ((value A)) B)) (value (Result E A)))
+    (Result E B)))
+
+(def
+  result-map
+  (fn
+    ((E 0 Type) (A 0 Type) (B 0 Type) (f (Pi ((value A)) B)) (value (Result E A)))
+    (match value ((Err err) (Err E B err)) ((Ok inner) (Ok E B (f inner))))))
+
+(claim
+  result-map-err
+  (Pi
+    ((E 0 Type) (F 0 Type) (A 0 Type) (f (Pi ((err E)) F)) (value (Result E A)))
+    (Result F A)))
+
+(def
+  result-map-err
+  (fn
+    ((E 0 Type) (F 0 Type) (A 0 Type) (f (Pi ((err E)) F)) (value (Result E A)))
+    (match value ((Err err) (Err F A (f err))) ((Ok inner) (Ok F A inner)))))
+
+(claim
+  result-and-then
+  (Pi
+    ((E 0 Type)
+     (A 0 Type)
+     (B 0 Type)
+     (f (Pi ((value A)) (Result E B)))
+     (value (Result E A)))
+    (Result E B)))
+
+(def
+  result-and-then
+  (fn
+    ((E 0 Type)
+     (A 0 Type)
+     (B 0 Type)
+     (f (Pi ((value A)) (Result E B)))
+     (value (Result E A)))
+    (match value ((Err err) (Err E B err)) ((Ok inner) (f inner)))))
+
+(data List ((A 0 Type)) (Nil) (Cons A (List A)))
 
 (claim list-is-empty (Pi ((A 0 Type) (value (List A))) Bool))
-(def list-is-empty
-  (fn ((A 0 Type) (value (List A)))
-    (match value
-      ((Nil) True)
-      ((Cons head tail) False))))
+
+(def
+  list-is-empty
+  (fn ((A 0 Type) (value (List A))) (match value ((Nil) True) ((Cons head tail) False))))
 
 (claim list-head-or (Pi ((A 0 Type) (fallback A) (value (List A))) A))
-(def list-head-or
-  (fn ((A 0 Type) (fallback A) (value (List A)))
-    (match value
-      ((Nil) fallback)
-      ((Cons head tail) head))))
+
+(def
+  list-head-or
+  (fn
+    ((A 0 Type) (fallback A) (value (List A)))
+    (match value ((Nil) fallback) ((Cons head tail) head))))
+
+(claim list-tail-or (Pi ((A 0 Type) (fallback (List A)) (value (List A))) (List A)))
+
+(def
+  list-tail-or
+  (fn
+    ((A 0 Type) (fallback (List A)) (value (List A)))
+    (match value ((Nil) fallback) ((Cons head tail) tail))))

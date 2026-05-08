@@ -24,7 +24,8 @@ Silt currently demonstrates:
   no-argument hosted entry functions, plus `silt run [TARGET] -- ARG...`
   forwarding and exit status propagation through the hosted package harness
 - a conservative standard-library seed with checker/normalizer-backed
-  `Option`, `Result`, and `List` helpers; explicit `ByteSlice` and `TextView`
+  `Option`, `Result`, and `List` helpers, including map/and-then-style
+  combinators for `Option` and `Result`; explicit `ByteSlice` and `TextView`
   views over `U8` / `Ptr U8`; bounded pure view helpers for empty checks,
   `take`, and `drop`; byte-wise equality through `byte-slice-eq` and
   `text-eq`; prefix checks through `byte-slice-starts-with` and
@@ -72,6 +73,7 @@ scripts/verify-hosted-env.sh
 scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
+scripts/verify-stdlib-core-combinators.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-view-helpers.sh
@@ -104,7 +106,7 @@ Silt does not currently claim:
   signals, stdout/stderr abstractions, general hosted IO, environment
   enumeration or mutation, or package argument policy beyond
   `silt run [TARGET] -- ARG...`
-- runtime representation for generic ADTs
+- runtime representation for generic ADTs or general closure conversion
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline

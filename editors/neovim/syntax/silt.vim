@@ -20,8 +20,11 @@ syntax keyword siltForm
       \ host-env-base host-env-has host-env-len host-env-present host-env-text
       \ host-file-read-base host-file-read-len host-file-write-bytes
       \ host-put-byte host-read-file host-seq host-write-file
-      \ host-write-text let-layout let-load-layout load match nat-case nat-elim pure
-      \ ptr-add ptr-field ptr-from-addr ptr-step ptr-to-addr size-of
+      \ host-write-text let-layout let-load-layout list-head-or list-is-empty
+      \ list-tail-or load match nat-case nat-elim pure
+      \ option-and-then option-is-some option-map option-unwrap-or
+      \ ptr-add ptr-field ptr-from-addr ptr-step ptr-to-addr result-and-then
+      \ result-error-or result-is-ok result-map result-map-err result-unwrap-or size-of
       \ store store-field store-fields the u8 u8-eq u8-to-u64 u64
       \ text-base text-byte-at text-drop text-from-bytes text-is-empty
       \ text-eq text-len text-starts-with text-take text-view-from
