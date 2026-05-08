@@ -40,13 +40,15 @@ production kernel.
   parser/checker diagnostics.
 - Lightweight Neovim filetype and syntax files for the current surface.
 - A single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
-  no-argument hosted entries.
+  no-argument hosted entry functions, plus `silt run [TARGET] -- ARG...`
+  forwarding through the hosted package harness.
 - A conservative standard-library seed: checker/normalizer-backed `Option`,
   `Result`, and `List` helpers, byte/text view types over `U8` and `Ptr U8`,
   an explicit `Nat` / `U64` bridge, and a first-order hosted text-output path
-  that lowers through `nat-elim` to a C loop.
-- A root package example, `hosted-hello`, that builds and runs through the
-  package spine.
+  that lowers through `nat-elim` to a C loop, plus explicit hosted
+  process-argument text views.
+- Root package examples, `hosted-hello` and `hosted-echo`, that build and run
+  through the package spine.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
@@ -65,6 +67,7 @@ scripts/verify-platform-tools.sh
 scripts/verify-editor-tools.sh
 scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
+scripts/verify-hosted-args.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh

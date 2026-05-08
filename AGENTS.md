@@ -31,7 +31,8 @@ x86_64 ELF, Limine/QEMU smoke checks, typed static storage, and a one-frame
 allocator handoff case study with a bounded live frame-pool cell update. It
 also has early platform tooling: canonical formatting, lint through
 formatter/parser/checker facts, a single-local-package hosted CLI spine, a
-hosted stdlib seed, and lightweight Neovim filetype/syntax files.
+hosted stdlib seed with text output and process-argument reads, and lightweight
+Neovim filetype/syntax files.
 
 Silt is not a production compiler, package ecosystem, mature editor/LSP
 platform, self-hosted compiler, finished operating system, general allocator,
@@ -91,6 +92,7 @@ scripts/verify-platform-tools.sh
 scripts/verify-editor-tools.sh
 scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
+scripts/verify-hosted-args.sh
 ```
 
 For backend, ABI, target, or boot bridge changes, add the relevant verifier:

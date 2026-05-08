@@ -8,6 +8,15 @@
       stdlib/hosted.silt
       examples/hosted-hello.silt)
     (entry hosted-hello-main))
+  (bin hosted-echo
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-echo.silt)
+    (entry hosted-echo-main))
   (test stdlib-test
     (sources
       stdlib/core.silt

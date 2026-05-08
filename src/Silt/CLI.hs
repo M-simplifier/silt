@@ -27,9 +27,13 @@ main = do
     ["build", target] ->
       buildPackage (Just target)
     ["run"] ->
-      runPackage Nothing
+      runPackage Nothing []
     ["run", target] ->
-      runPackage (Just target)
+      runPackage (Just target) []
+    ("run" : "--" : programArgs) ->
+      runPackage Nothing programArgs
+    ("run" : target : "--" : programArgs) ->
+      runPackage (Just target) programArgs
     ["test"] ->
       testPackage
     ["parse", path] -> do
@@ -122,7 +126,7 @@ usage =
     , "Usage:"
     , "  silt version"
     , "  silt build [TARGET]"
-    , "  silt run [TARGET]"
+    , "  silt run [TARGET] [-- ARG...]"
     , "  silt test"
     , "  silt sexpr FILE"
     , "  silt fmt FILE"
