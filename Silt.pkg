@@ -2,6 +2,7 @@
   (bin hosted-hello
     (sources
       stdlib/core.silt
+      stdlib/nat.silt
       stdlib/bytes.silt
       stdlib/text.silt
       stdlib/hosted.silt
@@ -10,6 +11,7 @@
   (test stdlib-test
     (sources
       stdlib/core.silt
+      stdlib/nat.silt
       stdlib/bytes.silt
       stdlib/text.silt
       stdlib/hosted.silt

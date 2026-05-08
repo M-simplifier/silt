@@ -21,7 +21,9 @@ Silt currently demonstrates:
   no-argument hosted entries
 - a conservative standard-library seed with checker/normalizer-backed
   `Option`, `Result`, and `List` helpers; explicit `ByteSlice` and `TextView`
-  views over `U8` / `Ptr U8`; and a first-order hosted byte-output boundary
+  views over `U8` / `Ptr U8`; an explicit `Nat` / `U64` bridge; and a
+  first-order hosted text-output path that lowers through `nat-elim` to a C
+  loop
 - a root `hosted-hello` package example that compiles and prints through the
   hosted package harness
 - ABI, target, and boot contract checks for the current x86_64 and Limine

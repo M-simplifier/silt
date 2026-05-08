@@ -40,7 +40,8 @@ production kernel.
   no-argument hosted entries.
 - A conservative standard-library seed: checker/normalizer-backed `Option`,
   `Result`, and `List` helpers, byte/text view types over `U8` and `Ptr U8`,
-  and a first-order hosted byte-output boundary.
+  an explicit `Nat` / `U64` bridge, and a first-order hosted text-output path
+  that lowers through `nat-elim` to a C loop.
 - A root package example, `hosted-hello`, that builds and runs through the
   package spine.
 - Freestanding C emission for the supported first-order subset.

@@ -30,18 +30,25 @@
       (fn ((byte 1 U8))
         (host-write-byte byte)))))
 
+(claim host-write-text-n (Pi ((count Nat) (text TextView)) (Eff HostIO HostIO Unit)))
+(def host-write-text-n
+  (fn ((count Nat) (text TextView))
+    (nat-elim (Eff HostIO HostIO Unit)
+      (pure HostIO Unit tt)
+      (fn ((index Nat) (rec (Eff HostIO HostIO Unit)))
+        (host-seq
+          rec
+          (host-write-byte-at (text-base text) (nat-to-u64 index))))
+      count)))
+
+(claim host-write-text (Pi ((text TextView)) (Eff HostIO HostIO Unit)))
+(def host-write-text
+  (fn ((text TextView))
+    (host-write-text-n (u64-to-nat (text-len text)) text)))
+
 (claim host-write-text5 (Pi ((text TextView)) (Eff HostIO HostIO Unit)))
 (def host-write-text5
   (fn ((text TextView))
     (match (u64-eq (text-len text) (u64 5))
       ((False) (pure HostIO Unit tt))
-      ((True)
-        (host-seq
-          (host-write-byte-at (text-base text) (u64 0))
-          (host-seq
-            (host-write-byte-at (text-base text) (u64 1))
-            (host-seq
-              (host-write-byte-at (text-base text) (u64 2))
-              (host-seq
-                (host-write-byte-at (text-base text) (u64 3))
-                (host-write-byte-at (text-base text) (u64 4))))))))))
+      ((True) (host-write-text text)))))
