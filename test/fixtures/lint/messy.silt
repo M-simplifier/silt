@@ -1,0 +1,2 @@
+(claim id(Pi((A 0 Type)(x A))A))
+(def id(fn((A 0 Type)(x A))x))

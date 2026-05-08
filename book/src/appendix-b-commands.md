@@ -24,6 +24,15 @@ cabal run silt -- fmt --check test/fixtures/format/clean.silt
 
 `fmt` は、現在のS式source subsetをcanonicalな形に整形します。`--check` は入力がすでにその形かどうかだけを確認します。
 
+## linter / editor files
+
+```bash
+cabal run silt -- lint test/fixtures/lint/clean.silt
+scripts/verify-editor-tools.sh
+```
+
+`lint` は、canonical formatting、source bundle parsing、checker diagnosticsをまとめて確認します。`editors/neovim/` には、現在のpublic surface向けの軽量なfiletype/syntax fileがあります。これはLSP、semantic highlighting、formatter adapter、package-manager pluginではありません。
+
 ## 型検査
 
 ```bash
@@ -60,6 +69,7 @@ cabal run silt -- boot-contracts examples/limine.silt
 cabal test all
 scripts/verify-stage0-backend.sh
 scripts/verify-platform-tools.sh
+scripts/verify-editor-tools.sh
 scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-freestanding-backend.sh

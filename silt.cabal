@@ -33,6 +33,7 @@ executable silt
       Silt.Codegen.C
       Silt.Elab
       Silt.Format
+      Silt.Lint
       Silt.Package
       Silt.Parse
       Silt.Source
@@ -48,6 +49,7 @@ test-suite silt-test
       Silt.Codegen.C
       Silt.Elab
       Silt.Format
+      Silt.Lint
       Silt.Package
       Silt.Parse
       Silt.Source

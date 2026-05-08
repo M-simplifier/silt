@@ -1,0 +1,3 @@
+(claim bad U64)
+
+(def bad True)

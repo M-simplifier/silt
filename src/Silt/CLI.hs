@@ -8,6 +8,7 @@ import Silt.Codegen.C
   )
 import Silt.Elab (CheckedDecl (..), checkProgram, normalizeDefinition, renderCheckedDecl)
 import Silt.Format (formatSExprSource)
+import Silt.Lint (lintProgramPaths, renderLintDiagnostic)
 import Silt.Parse (parseSExprs)
 import Silt.Source (readProgramBundle)
 import Silt.Syntax (Name, Program (..), prettyDecl)
@@ -46,6 +47,13 @@ main = do
     ("fmt" : "--check" : paths) | not (null paths) -> do
       results <- mapM formatCheck paths
       if and results then pure () else exitFailure
+    ("lint" : paths) | not (null paths) && "--" `notElem` paths -> do
+      diagnostics <- lintProgramPaths paths
+      case diagnostics of
+        [] -> putStrLn ("Lint passed for " ++ show (length paths) ++ " source file(s).")
+        _ -> do
+          mapM_ (hPutStrLn stderr . renderLintDiagnostic) diagnostics
+          exitFailure
     ("check" : paths) | not (null paths) && "--" `notElem` paths -> do
       program <- loadProgramBundle paths
       checked <- either die pure (checkProgram program)
@@ -119,6 +127,7 @@ usage =
     , "  silt sexpr FILE"
     , "  silt fmt FILE"
     , "  silt fmt --check FILE..."
+    , "  silt lint FILE..."
     , "  silt parse FILE"
     , "  top-level (include relative-file.silt) is expanded for all commands except sexpr and fmt"
     , "  silt check FILE..."
