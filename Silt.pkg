@@ -1,0 +1,18 @@
+(package silt-platform
+  (bin hosted-hello
+    (sources
+      stdlib/core.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-hello.silt)
+    (entry hosted-hello-main))
+  (test stdlib-test
+    (sources
+      stdlib/core.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-hello.silt
+      test/fixtures/stdlib/stdlib-tests.silt)
+    (entry stdlib-test)))

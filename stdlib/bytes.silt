@@ -1,0 +1,25 @@
+; Byte-level library seed over the existing U8 / Ptr U8 substrate.
+
+(layout ByteSlice 16 8
+  ((base (Ptr U8) 0)
+   (len U64 8)))
+
+(claim byte-slice-from (Pi ((base (Ptr U8)) (len U64)) ByteSlice))
+(def byte-slice-from
+  (fn ((base (Ptr U8)) (len U64))
+    (layout-values ByteSlice base len)))
+
+(claim byte-slice-base (Pi ((slice ByteSlice)) (Ptr U8)))
+(def byte-slice-base
+  (fn ((slice ByteSlice))
+    (field ByteSlice base slice)))
+
+(claim byte-slice-len (Pi ((slice ByteSlice)) U64))
+(def byte-slice-len
+  (fn ((slice ByteSlice))
+    (field ByteSlice len slice)))
+
+(claim byte-slice-at (Pi ((slice ByteSlice) (index U64)) (Ptr U8)))
+(def byte-slice-at
+  (fn ((slice ByteSlice) (index U64))
+    (ptr-step U8 (byte-slice-base slice) index)))

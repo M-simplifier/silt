@@ -19,6 +19,11 @@ Silt currently demonstrates:
 - a canonical formatter/checker for the current S-expression source subset
 - a single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
   no-argument hosted entries
+- a conservative standard-library seed with checker/normalizer-backed
+  `Option`, `Result`, and `List` helpers; explicit `ByteSlice` and `TextView`
+  views over `U8` / `Ptr U8`; and a first-order hosted byte-output boundary
+- a root `hosted-hello` package example that compiles and prints through the
+  hosted package harness
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -42,6 +47,7 @@ cabal run silt -- norm examples/limine.silt kernel-allocator-handoff-sample-read
 cabal run silt -- norm examples/limine.silt kernel-frame-pool-live-restored-sample-ready
 scripts/verify-platform-tools.sh
 scripts/verify-package-spine.sh
+scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
@@ -65,6 +71,7 @@ Silt does not currently claim:
 - a module/import system beyond the current source include convenience
 - a package ecosystem, dependencies, workspaces, or lockfiles
 - hosted CLI args, environment access, files, or general hosted IO
+- runtime representation for generic ADTs
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline

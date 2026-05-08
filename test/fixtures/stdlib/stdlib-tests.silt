@@ -1,0 +1,25 @@
+(claim stdlib-option-sample U64)
+(def stdlib-option-sample
+  (option-unwrap-or U64 (u64 0) (Some U64 (u64 42))))
+
+(claim stdlib-result-sample U64)
+(def stdlib-result-sample
+  (result-unwrap-or Bool U64 (u64 0) (Ok Bool U64 (u64 7))))
+
+(claim stdlib-list-sample U64)
+(def stdlib-list-sample
+  (list-head-or U64 (u64 0) (Cons U64 (u64 9) (Nil U64))))
+
+(claim stdlib-text-len-sample U64)
+(def stdlib-text-len-sample
+  (text-len hosted-hello-text))
+
+(claim stdlib-test Bool)
+(def stdlib-test
+  (bool-and
+    (u64-eq stdlib-option-sample (u64 42))
+    (bool-and
+      (u64-eq stdlib-result-sample (u64 7))
+      (bool-and
+        (u64-eq stdlib-list-sample (u64 9))
+        (u64-eq stdlib-text-len-sample (u64 5))))))

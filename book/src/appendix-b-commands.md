@@ -8,9 +8,12 @@
 cabal run silt -- build
 cabal run silt -- run
 cabal run silt -- test
+cabal run silt -- build hosted-hello
+cabal run silt -- run hosted-hello
+cabal run silt -- test stdlib-test
 ```
 
-これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entryに限られます。dependency、workspace、lockfile、CLI args、環境変数、file IOはまだclaimしません。
+これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entryに限られます。root packageには、stdlib seedを使って `SILT` を出力する `hosted-hello` と、stdlibの正規化例を確認する `stdlib-test` が含まれます。dependency、workspace、lockfile、CLI args、環境変数、file IOはまだclaimしません。
 
 ## formatter
 
@@ -58,6 +61,7 @@ cabal test all
 scripts/verify-stage0-backend.sh
 scripts/verify-platform-tools.sh
 scripts/verify-package-spine.sh
+scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh

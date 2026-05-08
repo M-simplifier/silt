@@ -38,6 +38,11 @@ production kernel.
 - A canonical formatter/checker for the current S-expression source subset.
 - A single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
   no-argument hosted entries.
+- A conservative standard-library seed: checker/normalizer-backed `Option`,
+  `Result`, and `List` helpers, byte/text view types over `U8` and `Ptr U8`,
+  and a first-order hosted byte-output boundary.
+- A root package example, `hosted-hello`, that builds and runs through the
+  package spine.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
@@ -54,6 +59,7 @@ cabal run silt -- norm examples/limine.silt kernel-allocator-handoff-sample-read
 cabal run silt -- emit-freestanding-c examples/limine.silt limine-entry
 scripts/verify-platform-tools.sh
 scripts/verify-package-spine.sh
+scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh

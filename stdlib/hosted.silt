@@ -1,0 +1,47 @@
+; Hosted IO seed.
+; The package harness supplies silt_host_put_byte for hosted examples.
+
+(data HostIO ())
+
+(extern host-put-byte (Pi ((byte U8)) (Eff HostIO HostIO Unit)) silt_host_put_byte)
+
+(claim host-seq
+  (Pi ((first 1 (Eff HostIO HostIO Unit))
+       (second 1 (Eff HostIO HostIO Unit)))
+      (Eff HostIO HostIO Unit)))
+(def host-seq
+  (fn ((first 1 (Eff HostIO HostIO Unit))
+       (second 1 (Eff HostIO HostIO Unit)))
+    (bind HostIO HostIO HostIO Unit Unit first
+      (fn ((done 1 Unit))
+        (let ((ignored 0 done))
+          second)))))
+
+(claim host-write-byte (Pi ((byte U8)) (Eff HostIO HostIO Unit)))
+(def host-write-byte
+  (fn ((byte U8))
+    (host-put-byte byte)))
+
+(claim host-write-byte-at (Pi ((base (Ptr U8)) (index U64)) (Eff HostIO HostIO Unit)))
+(def host-write-byte-at
+  (fn ((base (Ptr U8)) (index U64))
+    (bind HostIO HostIO HostIO U8 Unit
+      (load HostIO U8 (ptr-step U8 base index))
+      (fn ((byte 1 U8))
+        (host-write-byte byte)))))
+
+(claim host-write-text5 (Pi ((text TextView)) (Eff HostIO HostIO Unit)))
+(def host-write-text5
+  (fn ((text TextView))
+    (match (u64-eq (text-len text) (u64 5))
+      ((False) (pure HostIO Unit tt))
+      ((True)
+        (host-seq
+          (host-write-byte-at (text-base text) (u64 0))
+          (host-seq
+            (host-write-byte-at (text-base text) (u64 1))
+            (host-seq
+              (host-write-byte-at (text-base text) (u64 2))
+              (host-seq
+                (host-write-byte-at (text-base text) (u64 3))
+                (host-write-byte-at (text-base text) (u64 4))))))))))
