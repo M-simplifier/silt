@@ -1,0 +1,25 @@
+; Hosted exit-status example.
+
+; The package harness maps a bin entry's U64 result to the process status.
+
+(claim hosted-exit-code (Eff HostIO HostIO U64))
+
+(def
+  hosted-exit-code
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (pure
+        HostIO
+        U64
+        (match (u64-lte (u64 2) count) ((False) (u64 2)) ((True) (u64 0)))))))
+
+(claim hosted-exit-main (Eff HostIO HostIO U64))
+
+(def hosted-exit-main hosted-exit-code)
