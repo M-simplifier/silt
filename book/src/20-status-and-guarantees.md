@@ -14,6 +14,8 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - `layout` でサイズ、アラインメント、フィールドオフセットを持つruntime-backed型を書く
 - `static-bytes` / `static-cell` / `static-value` でrodata、bss、section-backed objectを書く
 - 現在のS式source subsetを `fmt` / `fmt --check` でcanonicalに扱う
+- `lint` でcanonical formatting、source bundle parsing、checker diagnosticsをまとめて確認する
+- `editors/neovim/` の軽量filetype/syntax fileで現在のsurfaceを編集する
 - 単一local packageの `Silt.pkg` から、no-argument hosted entryを `build` / `run` / `test` する
 - 標準ライブラリseedとして、checker/normalizer-backedな `Option` / `Result` / `List`、`U8` / `Ptr U8` 上の `ByteSlice` / `TextView`、`Nat` / `U64` の明示bridge、`nat-elim` からC loopへ落ちるfirst-orderなhosted text output境界を使う
 
@@ -37,6 +39,7 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - マクロ
 - module/import system
 - package ecosystem、dependency resolution、workspace、lockfile
+- 成熟したLSP/editor tooling、semantic highlighting、formatter-on-save連携
 - hosted CLI args、環境変数、file IO、general hosted IO
 - generic ADTのruntime representation
 - indexed inductive families

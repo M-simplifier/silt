@@ -28,10 +28,14 @@ accident.
 Silt is a public experimental stage0 research compiler. The current claim is
 narrow: Silt can typecheck and lower an implemented subset that reaches
 x86_64 ELF, Limine/QEMU smoke checks, typed static storage, and a one-frame
-allocator handoff case study with a bounded live frame-pool cell update.
+allocator handoff case study with a bounded live frame-pool cell update. It
+also has early platform tooling: canonical formatting, lint through
+formatter/parser/checker facts, a single-local-package hosted CLI spine, a
+hosted stdlib seed, and lightweight Neovim filetype/syntax files.
 
-Silt is not a production compiler, package ecosystem, self-hosted compiler,
-finished operating system, general allocator, or end-to-end verified compiler.
+Silt is not a production compiler, package ecosystem, mature editor/LSP
+platform, self-hosted compiler, finished operating system, general allocator,
+or end-to-end verified compiler.
 
 ## Goal-Driven Work
 
@@ -77,6 +81,16 @@ For parser, checker, or language changes:
 ```bash
 cabal test all
 git diff --check
+```
+
+For platform tooling, package, stdlib, or editor-surface changes, add the
+relevant verifier:
+
+```bash
+scripts/verify-platform-tools.sh
+scripts/verify-editor-tools.sh
+scripts/verify-package-spine.sh
+scripts/verify-stdlib-hosted-seed.sh
 ```
 
 For backend, ABI, target, or boot bridge changes, add the relevant verifier:

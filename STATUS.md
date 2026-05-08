@@ -17,6 +17,9 @@ Silt currently demonstrates:
   `layout`, `static-bytes`, `static-cell`, and `static-value`
 - freestanding C emission for supported first-order definitions
 - a canonical formatter/checker for the current S-expression source subset
+- a lint spine that combines canonical formatting checks with source-bundle
+  parsing and checker diagnostics
+- lightweight Neovim filetype and syntax files for the current public surface
 - a single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
   no-argument hosted entries
 - a conservative standard-library seed with checker/normalizer-backed
@@ -48,6 +51,7 @@ cabal run silt -- check examples/limine.silt
 cabal run silt -- norm examples/limine.silt kernel-allocator-handoff-sample-ready
 cabal run silt -- norm examples/limine.silt kernel-frame-pool-live-restored-sample-ready
 scripts/verify-platform-tools.sh
+scripts/verify-editor-tools.sh
 scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-stage0-backend.sh
@@ -72,6 +76,8 @@ Silt does not currently claim:
 - a macro system
 - a module/import system beyond the current source include convenience
 - a package ecosystem, dependencies, workspaces, or lockfiles
+- mature LSP/editor tooling, semantic highlighting, or formatter-on-save
+  integration
 - hosted CLI args, environment access, files, or general hosted IO
 - runtime representation for generic ADTs
 - indexed inductive families

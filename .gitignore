@@ -27,6 +27,8 @@
 !/scripts/**
 !/support/
 !/support/**
+!/editors/
+!/editors/**
 
 # Public Silt Book and its publication workflow.
 !/.github/

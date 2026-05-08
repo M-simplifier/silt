@@ -36,6 +36,9 @@ production kernel.
 - `static-bytes`, `static-cell`, and `static-value` for checked rodata, bss, and
   section-backed objects.
 - A canonical formatter/checker for the current S-expression source subset.
+- A language-aware lint spine that combines canonical formatting checks with
+  parser/checker diagnostics.
+- Lightweight Neovim filetype and syntax files for the current surface.
 - A single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
   no-argument hosted entries.
 - A conservative standard-library seed: checker/normalizer-backed `Option`,
@@ -59,6 +62,7 @@ cabal run silt -- check examples/limine.silt
 cabal run silt -- norm examples/limine.silt kernel-allocator-handoff-sample-ready
 cabal run silt -- emit-freestanding-c examples/limine.silt limine-entry
 scripts/verify-platform-tools.sh
+scripts/verify-editor-tools.sh
 scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-stage0-backend.sh
