@@ -1,0 +1,87 @@
+; Pure byte/text view helpers over explicit pointer and length pairs.
+
+; This does not claim dynamic strings, UTF-8 validation, or allocation.
+
+(claim text-view-base (Ptr U8))
+
+(def text-view-base (ptr-from-addr U8 (addr 4096)))
+
+(claim text-view-bytes ByteSlice)
+
+(def text-view-bytes (byte-slice-from text-view-base (u64 9)))
+
+(claim text-view-sample TextView)
+
+(def text-view-sample (text-from-bytes text-view-bytes))
+
+(claim text-view-sample-len U64)
+
+(def text-view-sample-len (text-len text-view-sample))
+
+(claim byte-view-is-empty Bool)
+
+(def byte-view-is-empty (byte-slice-is-empty (byte-slice-from text-view-base (u64 0))))
+
+(claim text-view-is-empty Bool)
+
+(def text-view-is-empty (text-is-empty (text-view-from text-view-base (u64 0))))
+
+(claim byte-view-take-len U64)
+
+(def byte-view-take-len (byte-slice-len (byte-slice-take text-view-bytes (u64 4))))
+
+(claim byte-view-take-too-far-len U64)
+
+(def
+  byte-view-take-too-far-len
+  (byte-slice-len (byte-slice-take text-view-bytes (u64 40))))
+
+(claim byte-view-drop-len U64)
+
+(def byte-view-drop-len (byte-slice-len (byte-slice-drop text-view-bytes (u64 4))))
+
+(claim byte-view-drop-base Addr)
+
+(def
+  byte-view-drop-base
+  (ptr-to-addr U8 (byte-slice-base (byte-slice-drop text-view-bytes (u64 4)))))
+
+(claim byte-view-drop-too-far-len U64)
+
+(def
+  byte-view-drop-too-far-len
+  (byte-slice-len (byte-slice-drop text-view-bytes (u64 40))))
+
+(claim byte-view-drop-too-far-base Addr)
+
+(def
+  byte-view-drop-too-far-base
+  (ptr-to-addr U8 (byte-slice-base (byte-slice-drop text-view-bytes (u64 40)))))
+
+(claim text-view-take-len U64)
+
+(def text-view-take-len (text-len (text-take text-view-sample (u64 4))))
+
+(claim text-view-take-too-far-len U64)
+
+(def text-view-take-too-far-len (text-len (text-take text-view-sample (u64 40))))
+
+(claim text-view-drop-len U64)
+
+(def text-view-drop-len (text-len (text-drop text-view-sample (u64 4))))
+
+(claim text-view-drop-base Addr)
+
+(def
+  text-view-drop-base
+  (ptr-to-addr U8 (text-base (text-drop text-view-sample (u64 4)))))
+
+(claim text-view-drop-too-far-len U64)
+
+(def text-view-drop-too-far-len (text-len (text-drop text-view-sample (u64 40))))
+
+(claim text-view-drop-too-far-base Addr)
+
+(def
+  text-view-drop-too-far-base
+  (ptr-to-addr U8 (text-base (text-drop text-view-sample (u64 40)))))
