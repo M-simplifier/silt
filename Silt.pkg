@@ -50,6 +50,16 @@
       stdlib/hosted.silt
       examples/hosted-write-file.silt)
     (entry hosted-write-file-main))
+  (bin
+    hosted-cat
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-cat.silt)
+    (entry hosted-cat-main))
   (test
     stdlib-test
     (sources

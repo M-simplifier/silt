@@ -37,6 +37,13 @@
     (Eff HostIO HostIO Bool))
   silt_host_file_write_bytes)
 
+(extern
+  host-file-read-base
+  (Pi ((path-base (Ptr U8)) (path-len U64)) (Eff HostIO HostIO (Ptr U8)))
+  silt_host_file_read_base)
+
+(extern host-file-read-len (Eff HostIO HostIO U64) silt_host_file_read_len)
+
 (claim
   host-seq
   (Pi
@@ -171,3 +178,27 @@
       (text-len path)
       (text-base body)
       (text-len body))))
+
+(claim host-read-file (Pi ((path TextView)) (Eff HostIO HostIO TextView)))
+
+(def
+  host-read-file
+  (fn
+    ((path TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      (Ptr U8)
+      TextView
+      (host-file-read-base (text-base path) (text-len path))
+      (fn
+        ((base 1 (Ptr U8)))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          U64
+          TextView
+          host-file-read-len
+          (fn ((len 1 U64)) (pure HostIO TextView (text-view-from base len))))))))
