@@ -94,6 +94,7 @@ scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-hosted-args.sh
 scripts/verify-hosted-env.sh
+scripts/verify-text-view-helpers.sh
 ```
 
 For backend, ABI, target, or boot bridge changes, add the relevant verifier:

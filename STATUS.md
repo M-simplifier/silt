@@ -25,10 +25,11 @@ Silt currently demonstrates:
   forwarding through the hosted package harness
 - a conservative standard-library seed with checker/normalizer-backed
   `Option`, `Result`, and `List` helpers; explicit `ByteSlice` and `TextView`
-  views over `U8` / `Ptr U8`; an explicit `Nat` / `U64` bridge; and a
-  first-order hosted text-output path that lowers through `nat-elim` to a C
-  loop; and explicit hosted process-argument count/base/length boundaries with
-  a `host-arg-text` view constructor; and explicit hosted environment
+  views over `U8` / `Ptr U8`; bounded pure view helpers for empty checks,
+  `take`, and `drop`; an explicit `Nat` / `U64` bridge; and a first-order
+  hosted text-output path that lowers through `nat-elim` to a C loop; and
+  explicit hosted process-argument count/base/length boundaries with a
+  `host-arg-text` view constructor; and explicit hosted environment
   presence/base/length boundaries with `host-env-has` and `host-env-text`
 - root `hosted-hello`, `hosted-echo`, and `hosted-env` package examples that
   compile, run, and print through the hosted package harness
@@ -59,6 +60,7 @@ scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-hosted-args.sh
 scripts/verify-hosted-env.sh
+scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh

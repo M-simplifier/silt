@@ -1,25 +1,57 @@
 ; Byte-level library seed over the existing U8 / Ptr U8 substrate.
 
-(layout ByteSlice 16 8
-  ((base (Ptr U8) 0)
-   (len U64 8)))
+(layout ByteSlice 16 8 ((base (Ptr U8) 0) (len U64 8)))
 
 (claim byte-slice-from (Pi ((base (Ptr U8)) (len U64)) ByteSlice))
-(def byte-slice-from
-  (fn ((base (Ptr U8)) (len U64))
-    (layout-values ByteSlice base len)))
+
+(def
+  byte-slice-from
+  (fn ((base (Ptr U8)) (len U64)) (layout-values ByteSlice base len)))
 
 (claim byte-slice-base (Pi ((slice ByteSlice)) (Ptr U8)))
-(def byte-slice-base
-  (fn ((slice ByteSlice))
-    (field ByteSlice base slice)))
+
+(def byte-slice-base (fn ((slice ByteSlice)) (field ByteSlice base slice)))
 
 (claim byte-slice-len (Pi ((slice ByteSlice)) U64))
-(def byte-slice-len
-  (fn ((slice ByteSlice))
-    (field ByteSlice len slice)))
+
+(def byte-slice-len (fn ((slice ByteSlice)) (field ByteSlice len slice)))
 
 (claim byte-slice-at (Pi ((slice ByteSlice) (index U64)) (Ptr U8)))
-(def byte-slice-at
-  (fn ((slice ByteSlice) (index U64))
-    (ptr-step U8 (byte-slice-base slice) index)))
+
+(def
+  byte-slice-at
+  (fn ((slice ByteSlice) (index U64)) (ptr-step U8 (byte-slice-base slice) index)))
+
+(claim byte-slice-is-empty (Pi ((slice ByteSlice)) Bool))
+
+(def
+  byte-slice-is-empty
+  (fn ((slice ByteSlice)) (u64-eq (byte-slice-len slice) (u64 0))))
+
+(claim byte-slice-take (Pi ((slice ByteSlice) (count U64)) ByteSlice))
+
+(def
+  byte-slice-take
+  (fn
+    ((slice ByteSlice) (count U64))
+    (match
+      (u64-lte count (byte-slice-len slice))
+      ((False) slice)
+      ((True) (byte-slice-from (byte-slice-base slice) count)))))
+
+(claim byte-slice-drop (Pi ((slice ByteSlice) (count U64)) ByteSlice))
+
+(def
+  byte-slice-drop
+  (fn
+    ((slice ByteSlice) (count U64))
+    (match
+      (u64-lte count (byte-slice-len slice))
+      ((False)
+       (byte-slice-from
+         (ptr-step U8 (byte-slice-base slice) (byte-slice-len slice))
+         (u64 0)))
+      ((True)
+       (byte-slice-from
+         (ptr-step U8 (byte-slice-base slice) count)
+         (u64-sub (byte-slice-len slice) count))))))
