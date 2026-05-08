@@ -39,7 +39,7 @@ if ! grep -Fq 'silt_static_text_eq_left_bytes' <<<"$text_eq_c"; then
   exit 1
 fi
 
-test_output="$("$silt_bin" test)"
+test_output="$("$silt_bin" test text-eq-test)"
 if ! grep -Fq 'PASS [text-eq-test]' <<<"$test_output"; then
   echo "silt test did not run text-eq-test successfully" >&2
   echo "$test_output" >&2

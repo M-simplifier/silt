@@ -49,6 +49,8 @@ Silt currently demonstrates:
 - a bounded live frame-pool cell update inside the Limine path: seed state is
   stored, loaded, updated to an allocated state, stored again, restored through
   a free transition, and QEMU observes the final readiness marker
+- a single-local-package `Silt.pkg` command spine with `build`, `run`, and
+  `test`, including selected package test execution through `silt test TARGET`
 
 ## Current Evidence
 

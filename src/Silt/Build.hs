@@ -47,12 +47,10 @@ runPackage maybeTargetName programArgs = do
   exitCode <- rawSystem output programArgs
   exitWith exitCode
 
-testPackage :: IO ()
-testPackage = do
+testPackage :: Maybe Name -> IO ()
+testPackage maybeTargetName = do
   (root, package) <- loadPackage
-  let testTargets = packageTargetsOfKind PackageTest package
-  when (null testTargets) $
-    die "package has no test targets"
+  testTargets <- either die pure (selectTestTargets maybeTargetName package)
   results <-
     forM testTargets $ \target -> do
       output <- buildPackageTarget root target
@@ -88,6 +86,22 @@ selectBuildTarget maybeTargetName package =
     Just name ->
       case [target | target <- packageTargets package, packageTargetName target == name] of
         [target] -> Right target
+        [] -> Left ("unknown package target: " ++ name)
+        _ -> Left ("ambiguous package target: " ++ name)
+
+selectTestTargets :: Maybe Name -> Package -> Either String [PackageTarget]
+selectTestTargets maybeTargetName package =
+  case maybeTargetName of
+    Nothing ->
+      let testTargets = packageTargetsOfKind PackageTest package
+       in if null testTargets
+            then Left "package has no test targets"
+            else Right testTargets
+    Just name ->
+      case [target | target <- packageTargets package, packageTargetName target == name] of
+        [target]
+          | packageTargetKind target == PackageTest -> Right [target]
+          | otherwise -> Left ("package target is not a test: " ++ name)
         [] -> Left ("unknown package target: " ++ name)
         _ -> Left ("ambiguous package target: " ++ name)
 
