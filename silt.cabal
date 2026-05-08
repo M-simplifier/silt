@@ -19,16 +19,21 @@ common common-options
   build-depends:
       base >=4.18 && <5
     , containers
+    , directory
     , filepath
+    , process
 
 executable silt
   import:           common-options
   hs-source-dirs:   app, src
   main-is:          Main.hs
   other-modules:
+      Silt.Build
       Silt.CLI
       Silt.Codegen.C
       Silt.Elab
+      Silt.Format
+      Silt.Package
       Silt.Parse
       Silt.Source
       Silt.Syntax
@@ -39,8 +44,11 @@ test-suite silt-test
   hs-source-dirs:   test, src
   main-is:          Spec.hs
   other-modules:
+      Silt.Build
       Silt.Codegen.C
       Silt.Elab
+      Silt.Format
+      Silt.Package
       Silt.Parse
       Silt.Source
       Silt.Syntax

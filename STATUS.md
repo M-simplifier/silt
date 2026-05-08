@@ -16,6 +16,9 @@ Silt currently demonstrates:
 - low-level runtime representations through `U8`, `U64`, `Addr`, `Ptr A`,
   `layout`, `static-bytes`, `static-cell`, and `static-value`
 - freestanding C emission for supported first-order definitions
+- a canonical formatter/checker for the current S-expression source subset
+- a single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
+  no-argument hosted entries
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -37,6 +40,8 @@ cabal test all
 cabal run silt -- check examples/limine.silt
 cabal run silt -- norm examples/limine.silt kernel-allocator-handoff-sample-ready
 cabal run silt -- norm examples/limine.silt kernel-frame-pool-live-restored-sample-ready
+scripts/verify-platform-tools.sh
+scripts/verify-package-spine.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
@@ -58,6 +63,8 @@ Silt does not currently claim:
 - production readiness
 - a macro system
 - a module/import system beyond the current source include convenience
+- a package ecosystem, dependencies, workspaces, or lockfiles
+- hosted CLI args, environment access, files, or general hosted IO
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline

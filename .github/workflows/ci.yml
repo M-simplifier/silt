@@ -10,6 +10,8 @@ on:
       - "examples/**"
       - "scripts/verify-stage0-backend.sh"
       - "scripts/verify-freestanding-backend.sh"
+      - "scripts/verify-package-spine.sh"
+      - "scripts/verify-platform-tools.sh"
       - "scripts/verify-x86_64-elf-backend.sh"
       - "scripts/verify-limine-bridge.sh"
       - "support/**"
@@ -46,6 +48,12 @@ jobs:
 
       - name: Run test suite
         run: cabal test all
+
+      - name: Verify platform tools
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-platform-tools.sh
+
+      - name: Verify package spine
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-package-spine.sh
 
       - name: Verify hosted backend
         run: scripts/verify-stage0-backend.sh

@@ -1,0 +1,7 @@
+(package bad
+  (bin duplicate
+    (sources src/main.silt)
+    (entry app-main))
+  (test duplicate
+    (sources tests/main.silt)
+    (entry duplicate-test)))

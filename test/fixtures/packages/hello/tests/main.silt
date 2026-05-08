@@ -1,0 +1,2 @@
+(claim hello-test Bool)
+(def hello-test True)

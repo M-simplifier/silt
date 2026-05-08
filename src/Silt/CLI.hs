@@ -1,4 +1,5 @@
 module Silt.CLI (main) where
+import Silt.Build (buildPackage, runPackage, testPackage)
 import Silt.Codegen.C
   ( emitDefinitionC
   , emitDefinitionFreestandingC
@@ -6,11 +7,13 @@ import Silt.Codegen.C
   , emitDefinitionsFreestandingC
   )
 import Silt.Elab (CheckedDecl (..), checkProgram, normalizeDefinition, renderCheckedDecl)
+import Silt.Format (formatSExprSource)
 import Silt.Parse (parseSExprs)
 import Silt.Source (readProgramBundle)
 import Silt.Syntax (Name, Program (..), prettyDecl)
 import System.Environment (getArgs)
-import System.Exit (die)
+import System.Exit (die, exitFailure)
+import System.IO (hPutStrLn, stderr)
 
 main :: IO ()
 main = do
@@ -18,6 +21,16 @@ main = do
   case args of
     ["version"] ->
       putStrLn "silt stage0 0.1.0.0"
+    ["build"] ->
+      buildPackage Nothing
+    ["build", target] ->
+      buildPackage (Just target)
+    ["run"] ->
+      runPackage Nothing
+    ["run", target] ->
+      runPackage (Just target)
+    ["test"] ->
+      testPackage
     ["parse", path] -> do
       Program decls <- loadProgramBundle [path]
       mapM_ (putStrLn . prettyDecl) decls
@@ -26,6 +39,13 @@ main = do
       case parseSExprs input of
         Left err -> die err
         Right sexprs -> mapM_ print sexprs
+    ["fmt", path] -> do
+      input <- readFile path
+      output <- either die pure (formatSExprSource input)
+      putStr output
+    ("fmt" : "--check" : paths) | not (null paths) -> do
+      results <- mapM formatCheck paths
+      if and results then pure () else exitFailure
     ("check" : paths) | not (null paths) && "--" `notElem` paths -> do
       program <- loadProgramBundle paths
       checked <- either die pure (checkProgram program)
@@ -93,9 +113,14 @@ usage =
     , ""
     , "Usage:"
     , "  silt version"
+    , "  silt build [TARGET]"
+    , "  silt run [TARGET]"
+    , "  silt test"
     , "  silt sexpr FILE"
+    , "  silt fmt FILE"
+    , "  silt fmt --check FILE..."
     , "  silt parse FILE"
-    , "  top-level (include relative-file.silt) is expanded for all commands except sexpr"
+    , "  top-level (include relative-file.silt) is expanded for all commands except sexpr and fmt"
     , "  silt check FILE..."
     , "  silt abi-contracts FILE..."
     , "  silt target-contracts FILE..."
@@ -115,6 +140,19 @@ usage =
 loadProgramBundle :: [FilePath] -> IO Program
 loadProgramBundle paths =
   readProgramBundle paths >>= either die pure
+
+formatCheck :: FilePath -> IO Bool
+formatCheck path = do
+  input <- readFile path
+  case formatSExprSource input of
+    Left err -> do
+      hPutStrLn stderr (path ++ ": " ++ err)
+      pure False
+    Right output
+      | input == output -> pure True
+      | otherwise -> do
+          hPutStrLn stderr (path ++ ": needs formatting")
+          pure False
 
 splitSourcesAndNames :: [String] -> Maybe ([FilePath], [Name])
 splitSourcesAndNames args =

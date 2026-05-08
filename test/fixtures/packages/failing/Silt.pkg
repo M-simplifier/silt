@@ -1,0 +1,4 @@
+(package failing
+  (test failing-test
+    (sources tests/main.silt)
+    (entry failing-test)))

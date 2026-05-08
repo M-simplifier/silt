@@ -2,6 +2,25 @@
 
 この付録は、本文で使った主要コマンドをまとめたものです。Siltを読むときは、`check`、`norm`、生成、検証を分けて使います。
 
+## package spine
+
+```bash
+cabal run silt -- build
+cabal run silt -- run
+cabal run silt -- test
+```
+
+これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entryに限られます。dependency、workspace、lockfile、CLI args、環境変数、file IOはまだclaimしません。
+
+## formatter
+
+```bash
+cabal run silt -- fmt examples/data.silt
+cabal run silt -- fmt --check test/fixtures/format/clean.silt
+```
+
+`fmt` は、現在のS式source subsetをcanonicalな形に整形します。`--check` は入力がすでにその形かどうかだけを確認します。
+
 ## 型検査
 
 ```bash
@@ -37,6 +56,8 @@ cabal run silt -- boot-contracts examples/limine.silt
 ```bash
 cabal test all
 scripts/verify-stage0-backend.sh
+scripts/verify-platform-tools.sh
+scripts/verify-package-spine.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
