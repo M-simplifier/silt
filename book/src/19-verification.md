@@ -37,6 +37,7 @@ scripts/verify-hosted-env.sh
 scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
+scripts/verify-text-eq.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh

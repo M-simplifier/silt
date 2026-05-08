@@ -44,14 +44,15 @@ production kernel.
   forwarding and exit status propagation through the hosted package harness.
 - A conservative standard-library seed: checker/normalizer-backed `Option`,
   `Result`, and `List` helpers, byte/text view types over `U8` and `Ptr U8`,
-  bounded pure view helpers for empty/take/drop, an explicit `Nat` / `U64`
-  bridge, and a first-order hosted text-output path that lowers through
+  bounded pure view helpers for empty/take/drop, byte-wise equality through
+  `byte-slice-eq` / `text-eq`, an explicit `Nat` / `U64` bridge, and a
+  first-order hosted text-output path that lowers through
   `nat-elim` to a C loop, plus explicit hosted process-argument and environment
   text views, first-order hosted file-write over explicit `TextView` path/body
   values, and first-order hosted file-read into an explicit `TextView`.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, and `hosted-cat`, that build and run
-  through the package spine.
+  through the package spine, plus `text-eq-test` as a package test target.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
@@ -75,6 +76,7 @@ scripts/verify-hosted-env.sh
 scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
+scripts/verify-text-eq.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh

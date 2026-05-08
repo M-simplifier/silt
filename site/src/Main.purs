@@ -44,7 +44,7 @@ page =
                 [ el "p" [ cls "section-lede" ]
                     [ text "Silt is public as a research compiler with executable evidence. The long-term direction is large; the public contract is smaller and sharper." ]
                 , el "div" [ cls "boundary-grid" ]
-                    [ fact "Checks" "S-expressions, Pi types, quantities, effect states, layout values, static objects."
+                    [ fact "Checks" "S-expressions, Pi types, quantities, effect states, layout values, static objects, byte/text views."
                     , fact "Emits" "Freestanding C for the supported first-order low-level subset."
                     , fact "Links" "x86_64 ELF and Limine artifacts through checked target and boot contracts."
                     , fact "Observes" "QEMU smoke markers for serial paths, panic paths, boot facts, and allocator handoff."
@@ -193,6 +193,7 @@ scripts/verify-hosted-env.sh
 scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
+scripts/verify-text-eq.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh

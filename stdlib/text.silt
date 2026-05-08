@@ -51,3 +51,14 @@
     ((text TextView) (count U64))
     (text-from-bytes
       (byte-slice-drop (byte-slice-from (text-base text) (text-len text)) count))))
+
+(claim text-eq (Pi ((cap 0 Type) (left TextView) (right TextView)) (Eff cap cap Bool)))
+
+(def
+  text-eq
+  (fn
+    ((cap 0 Type) (left TextView) (right TextView))
+    (byte-slice-eq
+      cap
+      (byte-slice-from (text-base left) (text-len left))
+      (byte-slice-from (text-base right) (text-len right)))))

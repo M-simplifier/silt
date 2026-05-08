@@ -55,3 +55,54 @@
        (byte-slice-from
          (ptr-step U8 (byte-slice-base slice) count)
          (u64-sub (byte-slice-len slice) count))))))
+
+(claim
+  byte-slice-eq
+  (Pi ((cap 0 Type) (left ByteSlice) (right ByteSlice)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-eq
+  (fn
+    ((cap 0 Type) (left ByteSlice) (right ByteSlice))
+    (match
+      (u64-eq (byte-slice-len left) (byte-slice-len right))
+      ((False) (pure cap Bool False))
+      ((True)
+       (nat-elim
+         (Eff cap cap Bool)
+         (pure cap Bool True)
+         (fn
+           ((index Nat) (rec (Eff cap cap Bool)))
+           (bind
+             cap
+             cap
+             cap
+             Bool
+             Bool
+             rec
+             (fn
+               ((previous 1 Bool))
+               (match
+                 previous
+                 ((False) (pure cap Bool False))
+                 ((True)
+                  (bind
+                    cap
+                    cap
+                    cap
+                    U8
+                    Bool
+                    (load cap U8 (byte-slice-at left (nat-to-u64 index)))
+                    (fn
+                      ((left-byte 1 U8))
+                      (bind
+                        cap
+                        cap
+                        cap
+                        U8
+                        Bool
+                        (load cap U8 (byte-slice-at right (nat-to-u64 index)))
+                        (fn
+                          ((right-byte 1 U8))
+                          (pure cap Bool (u8-eq left-byte right-byte)))))))))))
+         (u64-to-nat (byte-slice-len left)))))))
