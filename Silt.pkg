@@ -1,5 +1,7 @@
-(package silt-platform
-  (bin hosted-hello
+(package
+  silt-platform
+  (bin
+    hosted-hello
     (sources
       stdlib/core.silt
       stdlib/nat.silt
@@ -8,7 +10,8 @@
       stdlib/hosted.silt
       examples/hosted-hello.silt)
     (entry hosted-hello-main))
-  (bin hosted-echo
+  (bin
+    hosted-echo
     (sources
       stdlib/core.silt
       stdlib/nat.silt
@@ -17,7 +20,8 @@
       stdlib/hosted.silt
       examples/hosted-echo.silt)
     (entry hosted-echo-main))
-  (bin hosted-env
+  (bin
+    hosted-env
     (sources
       stdlib/core.silt
       stdlib/nat.silt
@@ -26,7 +30,18 @@
       stdlib/hosted.silt
       examples/hosted-env.silt)
     (entry hosted-env-main))
-  (test stdlib-test
+  (bin
+    hosted-exit
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-exit.silt)
+    (entry hosted-exit-main))
+  (test
+    stdlib-test
     (sources
       stdlib/core.silt
       stdlib/nat.silt

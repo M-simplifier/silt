@@ -22,7 +22,7 @@ Silt currently demonstrates:
 - lightweight Neovim filetype and syntax files for the current public surface
 - a single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
   no-argument hosted entry functions, plus `silt run [TARGET] -- ARG...`
-  forwarding through the hosted package harness
+  forwarding and exit status propagation through the hosted package harness
 - a conservative standard-library seed with checker/normalizer-backed
   `Option`, `Result`, and `List` helpers; explicit `ByteSlice` and `TextView`
   views over `U8` / `Ptr U8`; bounded pure view helpers for empty checks,
@@ -31,8 +31,9 @@ Silt currently demonstrates:
   explicit hosted process-argument count/base/length boundaries with a
   `host-arg-text` view constructor; and explicit hosted environment
   presence/base/length boundaries with `host-env-has` and `host-env-text`
-- root `hosted-hello`, `hosted-echo`, and `hosted-env` package examples that
-  compile, run, and print through the hosted package harness
+- root `hosted-hello`, `hosted-echo`, `hosted-env`, and `hosted-exit` package
+  examples that compile, run, print through the hosted package harness, and
+  exercise process status where relevant
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -60,6 +61,7 @@ scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-hosted-args.sh
 scripts/verify-hosted-env.sh
+scripts/verify-hosted-exit.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
@@ -85,8 +87,9 @@ Silt does not currently claim:
 - a package ecosystem, dependencies, workspaces, or lockfiles
 - mature LSP/editor tooling, semantic highlighting, or formatter-on-save
   integration
-- file IO, process exit control, general hosted IO, environment enumeration or
-  mutation, or package argument policy beyond `silt run [TARGET] -- ARG...`
+- file IO, process spawning, signals, stdout/stderr abstractions, general
+  hosted IO, environment enumeration or mutation, or package argument policy
+  beyond `silt run [TARGET] -- ARG...`
 - runtime representation for generic ADTs
 - indexed inductive families
 - complete totality checking

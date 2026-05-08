@@ -94,6 +94,7 @@ scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-hosted-args.sh
 scripts/verify-hosted-env.sh
+scripts/verify-hosted-exit.sh
 scripts/verify-text-view-helpers.sh
 ```
 

@@ -14,10 +14,12 @@ cabal run silt -- build hosted-echo
 cabal run silt -- run hosted-echo -- SILT_ARG
 cabal run silt -- build hosted-env
 SILT_HOSTED_ENV=SILT_ENV_VALUE cabal run silt -- run hosted-env
+cabal run silt -- build hosted-exit
+cabal run silt -- run hosted-exit -- ok
 cabal run silt -- test stdlib-test
 ```
 
-これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entry function、`silt run [TARGET] -- ARG...` によるhosted process argumentの受け渡し、そして名前を指定した単一のenvironment lookupに限られます。root packageには、stdlib seedの `TextView` と `host-write-text` で `SILT` を出力する `hosted-hello`、`argv[1]` を出力する `hosted-echo`、`SILT_HOSTED_ENV` を出力する `hosted-env`、stdlibの正規化例を確認する `stdlib-test` が含まれます。dependency、workspace、lockfile、environment enumeration/mutation、file IO、process exit control、general hosted IOはまだclaimしません。
+これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entry function、`silt run [TARGET] -- ARG...` によるhosted process argumentの受け渡し、名前を指定した単一のenvironment lookup、そしてbin entryの結果をprocess statusとして伝播することに限られます。root packageには、stdlib seedの `TextView` と `host-write-text` で `SILT` を出力する `hosted-hello`、`argv[1]` を出力する `hosted-echo`、`SILT_HOSTED_ENV` を出力する `hosted-env`、`argv[1]` の有無をprocess statusで返す `hosted-exit`、stdlibの正規化例を確認する `stdlib-test` が含まれます。dependency、workspace、lockfile、environment enumeration/mutation、file IO、process spawning、signals、stdout/stderr abstraction、general hosted IOはまだclaimしません。
 
 ## formatter
 
@@ -78,6 +80,7 @@ scripts/verify-package-spine.sh
 scripts/verify-stdlib-hosted-seed.sh
 scripts/verify-hosted-args.sh
 scripts/verify-hosted-env.sh
+scripts/verify-hosted-exit.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh

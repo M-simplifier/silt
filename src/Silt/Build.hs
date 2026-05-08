@@ -7,9 +7,9 @@ module Silt.Build
 import Control.Monad (forM, when)
 import System.Directory (createDirectoryIfMissing, doesFileExist)
 import System.Environment (lookupEnv)
-import System.Exit (ExitCode (..), die, exitFailure)
+import System.Exit (ExitCode (..), die, exitFailure, exitWith)
 import System.FilePath ((</>), takeDirectory)
-import System.Process (callProcess, readProcessWithExitCode)
+import System.Process (callProcess, rawSystem, readProcessWithExitCode)
 import Silt.Codegen.C (cSymbolName, emitDefinitionsC)
 import Silt.Elab (normalizeDefinitionTerm)
 import Silt.Package
@@ -44,7 +44,8 @@ runPackage maybeTargetName programArgs = do
   (root, package) <- loadPackage
   target <- either die pure (selectBuildTarget maybeTargetName package)
   output <- buildPackageTarget root target
-  callProcess output programArgs
+  exitCode <- rawSystem output programArgs
+  exitWith exitCode
 
 testPackage :: IO ()
 testPackage = do
