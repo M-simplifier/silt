@@ -40,6 +40,16 @@
       stdlib/hosted.silt
       examples/hosted-exit.silt)
     (entry hosted-exit-main))
+  (bin
+    hosted-write-file
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-write-file.silt)
+    (entry hosted-write-file-main))
   (test
     stdlib-test
     (sources

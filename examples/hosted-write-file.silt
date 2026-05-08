@@ -1,0 +1,41 @@
+; Hosted file-write example.
+
+; This writes a fixed TextView to the path in argv[1].
+
+(static-bytes
+  hosted-write-file-body-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95) (u8 70) (u8 73) (u8 76) (u8 69) (u8 10)))
+
+(claim hosted-write-file-body-slice ByteSlice)
+
+(def
+  hosted-write-file-body-slice
+  (byte-slice-from hosted-write-file-body-bytes hosted-write-file-body-bytes-len))
+
+(claim hosted-write-file-body-text TextView)
+
+(def hosted-write-file-body-text (text-from-bytes hosted-write-file-body-slice))
+
+(claim hosted-write-file-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-write-file-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    TextView
+    U64
+    (host-arg-text (u64 1))
+    (fn
+      ((path 1 TextView))
+      (bind
+        HostIO
+        HostIO
+        HostIO
+        Bool
+        U64
+        (host-write-file path hosted-write-file-body-text)
+        (fn
+          ((written 1 Bool))
+          (pure HostIO U64 (match written ((False) (u64 3)) ((True) (u64 0)))))))))

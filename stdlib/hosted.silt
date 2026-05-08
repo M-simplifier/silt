@@ -1,87 +1,173 @@
 ; Hosted IO seed.
+
 ; The package harness supplies the silt_host_* boundaries for hosted examples.
 
 (data HostIO ())
 
 (extern host-put-byte (Pi ((byte U8)) (Eff HostIO HostIO Unit)) silt_host_put_byte)
-(extern host-arg-count (Eff HostIO HostIO U64) silt_host_arg_count)
-(extern host-arg-base (Pi ((index U64)) (Eff HostIO HostIO (Ptr U8))) silt_host_arg_base)
-(extern host-arg-len (Pi ((index U64)) (Eff HostIO HostIO U64)) silt_host_arg_len)
-(extern host-env-present (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO Bool)) silt_host_env_present)
-(extern host-env-base (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO (Ptr U8))) silt_host_env_base)
-(extern host-env-len (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO U64)) silt_host_env_len)
 
-(claim host-seq
-  (Pi ((first 1 (Eff HostIO HostIO Unit))
-       (second 1 (Eff HostIO HostIO Unit)))
-      (Eff HostIO HostIO Unit)))
-(def host-seq
-  (fn ((first 1 (Eff HostIO HostIO Unit))
-       (second 1 (Eff HostIO HostIO Unit)))
-    (bind HostIO HostIO HostIO Unit Unit first
-      (fn ((done 1 Unit))
-        (let ((ignored 0 done))
-          second)))))
+(extern host-arg-count (Eff HostIO HostIO U64) silt_host_arg_count)
+
+(extern
+  host-arg-base
+  (Pi ((index U64)) (Eff HostIO HostIO (Ptr U8)))
+  silt_host_arg_base)
+
+(extern host-arg-len (Pi ((index U64)) (Eff HostIO HostIO U64)) silt_host_arg_len)
+
+(extern
+  host-env-present
+  (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO Bool))
+  silt_host_env_present)
+
+(extern
+  host-env-base
+  (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO (Ptr U8)))
+  silt_host_env_base)
+
+(extern
+  host-env-len
+  (Pi ((name-base (Ptr U8)) (name-len U64)) (Eff HostIO HostIO U64))
+  silt_host_env_len)
+
+(extern
+  host-file-write-bytes
+  (Pi
+    ((path-base (Ptr U8)) (path-len U64) (body-base (Ptr U8)) (body-len U64))
+    (Eff HostIO HostIO Bool))
+  silt_host_file_write_bytes)
+
+(claim
+  host-seq
+  (Pi
+    ((first 1 (Eff HostIO HostIO Unit)) (second 1 (Eff HostIO HostIO Unit)))
+    (Eff HostIO HostIO Unit)))
+
+(def
+  host-seq
+  (fn
+    ((first 1 (Eff HostIO HostIO Unit)) (second 1 (Eff HostIO HostIO Unit)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Unit
+      Unit
+      first
+      (fn ((done 1 Unit)) (let ((ignored 0 done)) second)))))
 
 (claim host-write-byte (Pi ((byte U8)) (Eff HostIO HostIO Unit)))
-(def host-write-byte
-  (fn ((byte U8))
-    (host-put-byte byte)))
+
+(def host-write-byte (fn ((byte U8)) (host-put-byte byte)))
 
 (claim host-write-byte-at (Pi ((base (Ptr U8)) (index U64)) (Eff HostIO HostIO Unit)))
-(def host-write-byte-at
-  (fn ((base (Ptr U8)) (index U64))
-    (bind HostIO HostIO HostIO U8 Unit
+
+(def
+  host-write-byte-at
+  (fn
+    ((base (Ptr U8)) (index U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      U8
+      Unit
       (load HostIO U8 (ptr-step U8 base index))
-      (fn ((byte 1 U8))
-        (host-write-byte byte)))))
+      (fn ((byte 1 U8)) (host-write-byte byte)))))
 
 (claim host-write-text-n (Pi ((count Nat) (text TextView)) (Eff HostIO HostIO Unit)))
-(def host-write-text-n
-  (fn ((count Nat) (text TextView))
-    (nat-elim (Eff HostIO HostIO Unit)
+
+(def
+  host-write-text-n
+  (fn
+    ((count Nat) (text TextView))
+    (nat-elim
+      (Eff HostIO HostIO Unit)
       (pure HostIO Unit tt)
-      (fn ((index Nat) (rec (Eff HostIO HostIO Unit)))
-        (host-seq
-          rec
-          (host-write-byte-at (text-base text) (nat-to-u64 index))))
+      (fn
+        ((index Nat) (rec (Eff HostIO HostIO Unit)))
+        (host-seq rec (host-write-byte-at (text-base text) (nat-to-u64 index))))
       count)))
 
 (claim host-write-text (Pi ((text TextView)) (Eff HostIO HostIO Unit)))
-(def host-write-text
-  (fn ((text TextView))
-    (host-write-text-n (u64-to-nat (text-len text)) text)))
+
+(def
+  host-write-text
+  (fn ((text TextView)) (host-write-text-n (u64-to-nat (text-len text)) text)))
 
 (claim host-write-text5 (Pi ((text TextView)) (Eff HostIO HostIO Unit)))
-(def host-write-text5
-  (fn ((text TextView))
-    (match (u64-eq (text-len text) (u64 5))
+
+(def
+  host-write-text5
+  (fn
+    ((text TextView))
+    (match
+      (u64-eq (text-len text) (u64 5))
       ((False) (pure HostIO Unit tt))
       ((True) (host-write-text text)))))
 
 (claim host-arg-text (Pi ((index U64)) (Eff HostIO HostIO TextView)))
-(def host-arg-text
-  (fn ((index U64))
-    (bind HostIO HostIO HostIO (Ptr U8) TextView
+
+(def
+  host-arg-text
+  (fn
+    ((index U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      (Ptr U8)
+      TextView
       (host-arg-base index)
-      (fn ((base 1 (Ptr U8)))
-        (bind HostIO HostIO HostIO U64 TextView
+      (fn
+        ((base 1 (Ptr U8)))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          U64
+          TextView
           (host-arg-len index)
-          (fn ((len 1 U64))
-            (pure HostIO TextView (text-view-from base len))))))))
+          (fn ((len 1 U64)) (pure HostIO TextView (text-view-from base len))))))))
 
 (claim host-env-has (Pi ((name TextView)) (Eff HostIO HostIO Bool)))
-(def host-env-has
-  (fn ((name TextView))
-    (host-env-present (text-base name) (text-len name))))
+
+(def
+  host-env-has
+  (fn ((name TextView)) (host-env-present (text-base name) (text-len name))))
 
 (claim host-env-text (Pi ((name TextView)) (Eff HostIO HostIO TextView)))
-(def host-env-text
-  (fn ((name TextView))
-    (bind HostIO HostIO HostIO (Ptr U8) TextView
+
+(def
+  host-env-text
+  (fn
+    ((name TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      (Ptr U8)
+      TextView
       (host-env-base (text-base name) (text-len name))
-      (fn ((base 1 (Ptr U8)))
-        (bind HostIO HostIO HostIO U64 TextView
+      (fn
+        ((base 1 (Ptr U8)))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          U64
+          TextView
           (host-env-len (text-base name) (text-len name))
-          (fn ((len 1 U64))
-            (pure HostIO TextView (text-view-from base len))))))))
+          (fn ((len 1 U64)) (pure HostIO TextView (text-view-from base len))))))))
+
+(claim host-write-file (Pi ((path TextView) (body TextView)) (Eff HostIO HostIO Bool)))
+
+(def
+  host-write-file
+  (fn
+    ((path TextView) (body TextView))
+    (host-file-write-bytes
+      (text-base path)
+      (text-len path)
+      (text-base body)
+      (text-len body))))
