@@ -62,3 +62,16 @@
       cap
       (byte-slice-from (text-base left) (text-len left))
       (byte-slice-from (text-base right) (text-len right)))))
+
+(claim
+  text-starts-with
+  (Pi ((cap 0 Type) (text TextView) (prefix TextView)) (Eff cap cap Bool)))
+
+(def
+  text-starts-with
+  (fn
+    ((cap 0 Type) (text TextView) (prefix TextView))
+    (byte-slice-starts-with
+      cap
+      (byte-slice-from (text-base text) (text-len text))
+      (byte-slice-from (text-base prefix) (text-len prefix)))))

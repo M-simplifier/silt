@@ -102,6 +102,7 @@ cabal run silt -- build hosted-hello
 cabal run silt -- run hosted-echo -- SILT_ARG
 cabal run silt -- test
 cabal run silt -- test text-eq-test
+cabal run silt -- test text-prefix-test
 ```
 
 ## QEMU smoke

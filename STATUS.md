@@ -27,7 +27,8 @@ Silt currently demonstrates:
   `Option`, `Result`, and `List` helpers; explicit `ByteSlice` and `TextView`
   views over `U8` / `Ptr U8`; bounded pure view helpers for empty checks,
   `take`, and `drop`; byte-wise equality through `byte-slice-eq` and
-  `text-eq`; an explicit `Nat` / `U64` bridge; and a first-order hosted
+  `text-eq`; prefix checks through `byte-slice-starts-with` and
+  `text-starts-with`; an explicit `Nat` / `U64` bridge; and a first-order hosted
   text-output path that lowers through `nat-elim` to a C loop; and explicit
   hosted process-argument count/base/length boundaries with a
   `host-arg-text` view constructor; and explicit hosted environment
@@ -37,7 +38,8 @@ Silt currently demonstrates:
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`, and
   `hosted-write-file` and `hosted-cat` package examples that compile, run,
   print, read, or write through the hosted package harness, and exercise
-  process status where relevant, plus `text-eq-test` as a package test target
+  process status where relevant, plus `text-eq-test` and `text-prefix-test` as
+  package test targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -71,6 +73,7 @@ scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
 scripts/verify-text-eq.sh
+scripts/verify-text-prefix.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh

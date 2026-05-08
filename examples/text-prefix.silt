@@ -1,0 +1,137 @@
+; Text prefix example over explicit byte-backed views.
+
+; This does not claim UTF-8 validation, substring search, dynamic strings, or allocation.
+
+(static-bytes text-prefix-subject-bytes ((u8 83) (u8 73) (u8 76) (u8 84)))
+
+(static-bytes text-prefix-short-bytes ((u8 83) (u8 73)))
+
+(static-bytes text-prefix-exact-bytes ((u8 83) (u8 73) (u8 76) (u8 84)))
+
+(static-bytes text-prefix-different-bytes ((u8 83) (u8 65)))
+
+(static-bytes text-prefix-long-bytes ((u8 83) (u8 73) (u8 76) (u8 84) (u8 88)))
+
+(claim text-prefix-subject TextView)
+
+(def
+  text-prefix-subject
+  (text-view-from text-prefix-subject-bytes text-prefix-subject-bytes-len))
+
+(claim text-prefix-short TextView)
+
+(def
+  text-prefix-short
+  (text-view-from text-prefix-short-bytes text-prefix-short-bytes-len))
+
+(claim text-prefix-exact TextView)
+
+(def
+  text-prefix-exact
+  (text-view-from text-prefix-exact-bytes text-prefix-exact-bytes-len))
+
+(claim text-prefix-different TextView)
+
+(def
+  text-prefix-different
+  (text-view-from text-prefix-different-bytes text-prefix-different-bytes-len))
+
+(claim text-prefix-long TextView)
+
+(def
+  text-prefix-long
+  (text-view-from text-prefix-long-bytes text-prefix-long-bytes-len))
+
+(claim text-prefix-empty TextView)
+
+(def text-prefix-empty (text-view-from text-prefix-subject-bytes (u64 0)))
+
+(claim text-prefix-short-result (Eff HostIO HostIO Bool))
+
+(def
+  text-prefix-short-result
+  (text-starts-with HostIO text-prefix-subject text-prefix-short))
+
+(claim text-prefix-exact-result (Eff HostIO HostIO Bool))
+
+(def
+  text-prefix-exact-result
+  (text-starts-with HostIO text-prefix-subject text-prefix-exact))
+
+(claim text-prefix-different-result (Eff HostIO HostIO Bool))
+
+(def
+  text-prefix-different-result
+  (text-starts-with HostIO text-prefix-subject text-prefix-different))
+
+(claim text-prefix-long-result (Eff HostIO HostIO Bool))
+
+(def
+  text-prefix-long-result
+  (text-starts-with HostIO text-prefix-subject text-prefix-long))
+
+(claim text-prefix-empty-result (Eff HostIO HostIO Bool))
+
+(def
+  text-prefix-empty-result
+  (text-starts-with HostIO text-prefix-subject text-prefix-empty))
+
+(claim text-prefix-test (Eff HostIO HostIO Bool))
+
+(def
+  text-prefix-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    Bool
+    Bool
+    text-prefix-short-result
+    (fn
+      ((short 1 Bool))
+      (bind
+        HostIO
+        HostIO
+        HostIO
+        Bool
+        Bool
+        text-prefix-exact-result
+        (fn
+          ((exact 1 Bool))
+          (bind
+            HostIO
+            HostIO
+            HostIO
+            Bool
+            Bool
+            text-prefix-different-result
+            (fn
+              ((different 1 Bool))
+              (bind
+                HostIO
+                HostIO
+                HostIO
+                Bool
+                Bool
+                text-prefix-long-result
+                (fn
+                  ((long 1 Bool))
+                  (bind
+                    HostIO
+                    HostIO
+                    HostIO
+                    Bool
+                    Bool
+                    text-prefix-empty-result
+                    (fn
+                      ((empty 1 Bool))
+                      (pure
+                        HostIO
+                        Bool
+                        (bool-and
+                          short
+                          (bool-and
+                            exact
+                            (bool-and
+                              (bool-not different)
+                              (bool-and (bool-not long) empty))))))))))))))))
