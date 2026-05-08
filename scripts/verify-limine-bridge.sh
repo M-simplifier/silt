@@ -120,6 +120,11 @@ if ! grep -Fq 'static const uint8_t silt_static_limine_frame_free_list_seed_ok_b
   exit 1
 fi
 
+if ! grep -Fq 'static const uint8_t silt_static_limine_frame_pool_live_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 80u, 79u, 79u, 76u, 95u, 76u, 73u, 86u, 69u, 95u, 79u, 75u, 33u, 33u, 10u};' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the live frame-pool marker as static rodata bytes" >&2
+  exit 1
+fi
+
 if ! grep -Fq 'static const uint8_t silt_static_limine_frame_alloc_one_ok_bytes[20] __attribute__((section(".rodata.silt"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 79u, 78u, 69u, 95u, 79u, 75u, 33u, 33u, 10u};' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the frame alloc-one marker as static rodata bytes" >&2
   exit 1
@@ -222,6 +227,11 @@ fi
 
 if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_free_list_seed[64] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not emit the typed kernel frame free-list seed static cell in bss" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'static uint8_t silt_cell_limine_kernel_frame_pool_live_state[72] __attribute__((section(".bss.silt"), aligned(8)));' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not emit the typed live frame-pool static cell in bss" >&2
   exit 1
 fi
 
@@ -430,6 +440,16 @@ if ! grep -Fq 'silt_layout_KernelFrameFreeListSeed seed_' "$TMPDIR/limine.c"; th
   exit 1
 fi
 
+if ! grep -Fq '(*((silt_layout_KernelFramePoolLiveState*)(((uintptr_t)&silt_cell_limine_kernel_frame_pool_live_state[0])))) =' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not store KernelFramePoolLiveState through the static cell pointer" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_layout_KernelFramePoolLiveState restored_' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not load the restored KernelFramePoolLiveState back through the static cell pointer" >&2
+  exit 1
+fi
+
 if ! grep -Fq '(*((silt_layout_KernelFrameAllocOneState*)(((uintptr_t)&silt_cell_limine_kernel_frame_alloc_one_state[0])))) =' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not store KernelFrameAllocOneState through the static cell pointer" >&2
   exit 1
@@ -607,6 +627,11 @@ fi
 
 if ! grep -Fq 'silt_static_limine_frame_free_list_seed_ok_bytes[0]' "$TMPDIR/limine.c"; then
   echo "generated Limine entry does not take the frame free-list seed marker pointer from static bytes" >&2
+  exit 1
+fi
+
+if ! grep -Fq 'silt_static_limine_frame_pool_live_ok_bytes[0]' "$TMPDIR/limine.c"; then
+  echo "generated Limine entry does not take the live frame-pool marker pointer from static bytes" >&2
   exit 1
 fi
 

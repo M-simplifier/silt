@@ -28,7 +28,7 @@ accident.
 Silt is a public experimental stage0 research compiler. The current claim is
 narrow: Silt can typecheck and lower an implemented subset that reaches
 x86_64 ELF, Limine/QEMU smoke checks, typed static storage, and a one-frame
-allocator handoff case study.
+allocator handoff case study with a bounded live frame-pool cell update.
 
 Silt is not a production compiler, package ecosystem, self-hosted compiler,
 finished operating system, general allocator, or end-to-end verified compiler.

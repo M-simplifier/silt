@@ -189,6 +189,17 @@
    (same-frame U64 80)
    (handoff-ready U64 88)))
 
+(layout KernelFramePoolLiveState 72 8
+  ((reserved-base U64 0)
+   (next-free-base U64 8)
+   (next-free-direct-base U64 16)
+   (reserved-count U64 24)
+   (free-count U64 32)
+   (last-allocated-base U64 40)
+   (last-allocated-direct-base U64 48)
+   (phase U64 56)
+   (ready U64 64)))
+
 (static-cell limine-boot-state BootState)
 (static-cell limine-boot-info BootInfo)
 (static-cell limine-kernel-span KernelBootSpan)
@@ -210,6 +221,7 @@
 (static-cell limine-kernel-frame-allocator-semantics-state KernelFrameAllocatorSemanticsState)
 (static-cell limine-kernel-frame-lease KernelFrameLease)
 (static-cell limine-kernel-allocator-handoff KernelAllocatorHandoff)
+(static-cell limine-kernel-frame-pool-live-state KernelFramePoolLiveState)
 
 (data KernelDone ())
 
@@ -467,6 +479,20 @@
 (claim serial-write-frame-free-list-seed-ok (Eff SerialReady SerialReady Unit))
 (def serial-write-frame-free-list-seed-ok
   (serial-write-slice20 limine-frame-free-list-seed-ok-slice))
+
+(static-bytes limine-frame-pool-live-ok-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
+   (u8 80) (u8 79) (u8 79) (u8 76) (u8 95)
+   (u8 76) (u8 73) (u8 86) (u8 69) (u8 95)
+   (u8 79) (u8 75) (u8 33) (u8 33) (u8 10)))
+
+(claim limine-frame-pool-live-ok-slice SerialSlice)
+(def limine-frame-pool-live-ok-slice
+  (layout-values SerialSlice limine-frame-pool-live-ok-bytes limine-frame-pool-live-ok-bytes-len))
+
+(claim serial-write-frame-pool-live-ok (Eff SerialReady SerialReady Unit))
+(def serial-write-frame-pool-live-ok
+  (serial-write-slice20 limine-frame-pool-live-ok-slice))
 
 (static-bytes limine-frame-alloc-one-ok-bytes
   ((u8 83) (u8 73) (u8 76) (u8 84) (u8 95)
@@ -1754,6 +1780,261 @@
 (def kernel-frame-free-list-seed-sample-ready
   (kernel-frame-free-list-seed-ready kernel-frame-free-list-seed-sample))
 
+(claim kernel-frame-pool-phase-seeded U64)
+(def kernel-frame-pool-phase-seeded
+  (u64 0))
+
+(claim kernel-frame-pool-phase-allocated U64)
+(def kernel-frame-pool-phase-allocated
+  (u64 1))
+
+(claim kernel-frame-pool-phase-freed U64)
+(def kernel-frame-pool-phase-freed
+  (u64 2))
+
+(claim kernel-frame-pool-live-ready-word
+  (Pi ((seed KernelFrameFreeListSeed))
+      U64))
+(def kernel-frame-pool-live-ready-word
+  (fn ((seed KernelFrameFreeListSeed))
+    (kernel-bool-word (kernel-frame-free-list-seed-ready seed))))
+
+(claim kernel-frame-pool-live-state-from-free-list-seed
+  (Pi ((seed KernelFrameFreeListSeed))
+      KernelFramePoolLiveState))
+(def kernel-frame-pool-live-state-from-free-list-seed
+  (fn ((seed KernelFrameFreeListSeed))
+    (layout-values KernelFramePoolLiveState
+      (kernel-frame-free-list-seed-reserved-base seed)
+      (kernel-frame-free-list-seed-free-base seed)
+      (kernel-frame-free-list-seed-free-direct-base seed)
+      (kernel-frame-free-list-seed-reserved-count seed)
+      (kernel-frame-free-list-seed-free-count seed)
+      (u64 0)
+      (u64 0)
+      kernel-frame-pool-phase-seeded
+      (kernel-frame-pool-live-ready-word seed))))
+
+(claim kernel-frame-pool-live-reserved-base
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-reserved-base
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState reserved-base state)))
+
+(claim kernel-frame-pool-live-next-free-base
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-next-free-base
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState next-free-base state)))
+
+(claim kernel-frame-pool-live-next-free-direct-base
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-next-free-direct-base
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState next-free-direct-base state)))
+
+(claim kernel-frame-pool-live-reserved-count
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-reserved-count
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState reserved-count state)))
+
+(claim kernel-frame-pool-live-free-count
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-free-count
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState free-count state)))
+
+(claim kernel-frame-pool-live-last-allocated-base
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-last-allocated-base
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState last-allocated-base state)))
+
+(claim kernel-frame-pool-live-last-allocated-direct-base
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-last-allocated-direct-base
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState last-allocated-direct-base state)))
+
+(claim kernel-frame-pool-live-phase
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-phase
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState phase state)))
+
+(claim kernel-frame-pool-live-ready-flag
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-ready-flag
+  (fn ((state KernelFramePoolLiveState))
+    (field KernelFramePoolLiveState ready state)))
+
+(claim kernel-frame-pool-live-seeded-ready
+  (Pi ((state KernelFramePoolLiveState))
+      Bool))
+(def kernel-frame-pool-live-seeded-ready
+  (fn ((state KernelFramePoolLiveState))
+    (match (u64-eq (kernel-frame-pool-live-ready-flag state) (u64 1))
+      ((True)
+        (match (u64-eq (kernel-frame-pool-live-phase state) kernel-frame-pool-phase-seeded)
+          ((True)
+            (match (u64-eq (kernel-frame-pool-live-reserved-count state) kernel-frame-reserved-count)
+              ((True)
+                (match (u64-lt (u64 0) (kernel-frame-pool-live-free-count state))
+                  ((True)
+                    (match (u64-lt
+                             (kernel-frame-pool-live-reserved-base state)
+                             (kernel-frame-pool-live-next-free-base state))
+                      ((True)
+                        (u64-lt
+                          (kernel-frame-pool-live-next-free-base state)
+                          (kernel-frame-pool-live-next-free-direct-base state)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-pool-live-alloc-ready-word
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-alloc-ready-word
+  (fn ((state KernelFramePoolLiveState))
+    (kernel-bool-word (kernel-frame-pool-live-seeded-ready state))))
+
+(claim kernel-frame-pool-live-alloc-one
+  (Pi ((state KernelFramePoolLiveState))
+      KernelFramePoolLiveState))
+(def kernel-frame-pool-live-alloc-one
+  (fn ((state KernelFramePoolLiveState))
+    (layout-values KernelFramePoolLiveState
+      (kernel-frame-pool-live-reserved-base state)
+      (u64-add (kernel-frame-pool-live-next-free-base state) (u64 4096))
+      (u64-add (kernel-frame-pool-live-next-free-direct-base state) (u64 4096))
+      (u64-add (kernel-frame-pool-live-reserved-count state) kernel-frame-reserved-count)
+      (u64-sub (kernel-frame-pool-live-free-count state) kernel-frame-reserved-count)
+      (kernel-frame-pool-live-next-free-base state)
+      (kernel-frame-pool-live-next-free-direct-base state)
+      kernel-frame-pool-phase-allocated
+      (kernel-frame-pool-live-alloc-ready-word state))))
+
+(claim kernel-frame-pool-live-allocated-ready
+  (Pi ((state KernelFramePoolLiveState))
+      Bool))
+(def kernel-frame-pool-live-allocated-ready
+  (fn ((state KernelFramePoolLiveState))
+    (match (u64-eq (kernel-frame-pool-live-ready-flag state) (u64 1))
+      ((True)
+        (match (u64-eq (kernel-frame-pool-live-phase state) kernel-frame-pool-phase-allocated)
+          ((True)
+            (match (u64-eq
+                     (kernel-frame-pool-live-next-free-base state)
+                     (u64-add (kernel-frame-pool-live-last-allocated-base state) (u64 4096)))
+              ((True)
+                (match (u64-eq
+                         (kernel-frame-pool-live-next-free-direct-base state)
+                         (u64-add (kernel-frame-pool-live-last-allocated-direct-base state) (u64 4096)))
+                  ((True)
+                    (match (u64-lt
+                             (kernel-frame-pool-live-last-allocated-base state)
+                             (kernel-frame-pool-live-last-allocated-direct-base state))
+                      ((True)
+                        (u64-lt
+                          kernel-frame-reserved-count
+                          (kernel-frame-pool-live-reserved-count state)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-pool-live-free-ready-word
+  (Pi ((state KernelFramePoolLiveState))
+      U64))
+(def kernel-frame-pool-live-free-ready-word
+  (fn ((state KernelFramePoolLiveState))
+    (kernel-bool-word (kernel-frame-pool-live-allocated-ready state))))
+
+(claim kernel-frame-pool-live-free-one
+  (Pi ((state KernelFramePoolLiveState))
+      KernelFramePoolLiveState))
+(def kernel-frame-pool-live-free-one
+  (fn ((state KernelFramePoolLiveState))
+    (layout-values KernelFramePoolLiveState
+      (kernel-frame-pool-live-reserved-base state)
+      (kernel-frame-pool-live-last-allocated-base state)
+      (kernel-frame-pool-live-last-allocated-direct-base state)
+      (u64-sub (kernel-frame-pool-live-reserved-count state) kernel-frame-reserved-count)
+      (u64-add (kernel-frame-pool-live-free-count state) kernel-frame-reserved-count)
+      (kernel-frame-pool-live-last-allocated-base state)
+      (kernel-frame-pool-live-last-allocated-direct-base state)
+      kernel-frame-pool-phase-freed
+      (kernel-frame-pool-live-free-ready-word state))))
+
+(claim kernel-frame-pool-live-restored-ready
+  (Pi ((state KernelFramePoolLiveState))
+      Bool))
+(def kernel-frame-pool-live-restored-ready
+  (fn ((state KernelFramePoolLiveState))
+    (match (u64-eq (kernel-frame-pool-live-ready-flag state) (u64 1))
+      ((True)
+        (match (u64-eq (kernel-frame-pool-live-phase state) kernel-frame-pool-phase-freed)
+          ((True)
+            (match (u64-eq (kernel-frame-pool-live-reserved-count state) kernel-frame-reserved-count)
+              ((True)
+                (match (u64-lt (u64 0) (kernel-frame-pool-live-free-count state))
+                  ((True)
+                    (match (u64-eq
+                             (kernel-frame-pool-live-next-free-base state)
+                             (kernel-frame-pool-live-last-allocated-base state))
+                      ((True)
+                        (match (u64-eq
+                                 (kernel-frame-pool-live-next-free-direct-base state)
+                                 (kernel-frame-pool-live-last-allocated-direct-base state))
+                          ((True)
+                            (u64-lt
+                              (kernel-frame-pool-live-last-allocated-base state)
+                              (kernel-frame-pool-live-last-allocated-direct-base state)))
+                          ((False) False)))
+                      ((False) False)))
+                  ((False) False)))
+              ((False) False)))
+          ((False) False)))
+      ((False) False))))
+
+(claim kernel-frame-pool-live-seeded-sample KernelFramePoolLiveState)
+(def kernel-frame-pool-live-seeded-sample
+  (kernel-frame-pool-live-state-from-free-list-seed kernel-frame-free-list-seed-sample))
+
+(claim kernel-frame-pool-live-seeded-sample-ready Bool)
+(def kernel-frame-pool-live-seeded-sample-ready
+  (kernel-frame-pool-live-seeded-ready kernel-frame-pool-live-seeded-sample))
+
+(claim kernel-frame-pool-live-allocated-sample KernelFramePoolLiveState)
+(def kernel-frame-pool-live-allocated-sample
+  (kernel-frame-pool-live-alloc-one kernel-frame-pool-live-seeded-sample))
+
+(claim kernel-frame-pool-live-allocated-sample-ready Bool)
+(def kernel-frame-pool-live-allocated-sample-ready
+  (kernel-frame-pool-live-allocated-ready kernel-frame-pool-live-allocated-sample))
+
+(claim kernel-frame-pool-live-restored-sample KernelFramePoolLiveState)
+(def kernel-frame-pool-live-restored-sample
+  (kernel-frame-pool-live-free-one kernel-frame-pool-live-allocated-sample))
+
+(claim kernel-frame-pool-live-restored-sample-ready Bool)
+(def kernel-frame-pool-live-restored-sample-ready
+  (kernel-frame-pool-live-restored-ready kernel-frame-pool-live-restored-sample))
+
 (claim kernel-frame-alloc-one-ready-word
   (Pi ((seed KernelFrameFreeListSeed))
       U64))
@@ -2956,6 +3237,94 @@
             (fn ((state 1 KernelFrameAllocOneState))
               (limine-kernel-frame-alloc-one-state-check-and-report state))))))))
 
+(claim limine-kernel-frame-pool-live-restored-check-and-report
+  (Pi ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-pool-live-restored-check-and-report
+  (fn ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+    (match (kernel-frame-pool-live-restored-ready state)
+      ((True)
+        (io-seq SerialReady SerialReady SerialReady
+          serial-write-frame-pool-live-ok
+          (limine-kernel-frame-alloc-one-state-store-and-report seed)))
+      ((False) (qemu-debug-exit SerialReady SerialReady (u64 19))))))
+
+(claim limine-kernel-frame-pool-live-free-store-and-report
+  (Pi ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-pool-live-free-store-and-report
+  (fn ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFramePoolLiveState
+        limine-kernel-frame-pool-live-state
+        (kernel-frame-pool-live-free-one state))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFramePoolLiveState Unit
+            (load SerialReady KernelFramePoolLiveState limine-kernel-frame-pool-live-state)
+            (fn ((restored 1 KernelFramePoolLiveState))
+              (limine-kernel-frame-pool-live-restored-check-and-report seed restored))))))))
+
+(claim limine-kernel-frame-pool-live-allocated-check-and-report
+  (Pi ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-pool-live-allocated-check-and-report
+  (fn ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+    (match (kernel-frame-pool-live-allocated-ready state)
+      ((True) (limine-kernel-frame-pool-live-free-store-and-report seed state))
+      ((False) (qemu-debug-exit SerialReady SerialReady (u64 19))))))
+
+(claim limine-kernel-frame-pool-live-alloc-store-and-report
+  (Pi ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-pool-live-alloc-store-and-report
+  (fn ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFramePoolLiveState
+        limine-kernel-frame-pool-live-state
+        (kernel-frame-pool-live-alloc-one state))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFramePoolLiveState Unit
+            (load SerialReady KernelFramePoolLiveState limine-kernel-frame-pool-live-state)
+            (fn ((allocated 1 KernelFramePoolLiveState))
+              (limine-kernel-frame-pool-live-allocated-check-and-report seed allocated))))))))
+
+(claim limine-kernel-frame-pool-live-seeded-check-and-report
+  (Pi ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-pool-live-seeded-check-and-report
+  (fn ((seed KernelFrameFreeListSeed)
+       (state KernelFramePoolLiveState))
+    (match (kernel-frame-pool-live-seeded-ready state)
+      ((True) (limine-kernel-frame-pool-live-alloc-store-and-report seed state))
+      ((False) (qemu-debug-exit SerialReady SerialReady (u64 19))))))
+
+(claim limine-kernel-frame-pool-live-state-store-and-report
+  (Pi ((seed KernelFrameFreeListSeed))
+      (Eff SerialReady SerialReady Unit)))
+(def limine-kernel-frame-pool-live-state-store-and-report
+  (fn ((seed KernelFrameFreeListSeed))
+    (bind SerialReady SerialReady SerialReady Unit Unit
+      (store SerialReady SerialReady KernelFramePoolLiveState
+        limine-kernel-frame-pool-live-state
+        (kernel-frame-pool-live-state-from-free-list-seed seed))
+      (fn ((stored 1 Unit))
+        (let ((ignored-stored 0 stored))
+          (bind SerialReady SerialReady SerialReady KernelFramePoolLiveState Unit
+            (load SerialReady KernelFramePoolLiveState limine-kernel-frame-pool-live-state)
+            (fn ((state 1 KernelFramePoolLiveState))
+              (limine-kernel-frame-pool-live-seeded-check-and-report seed state))))))))
+
 (claim limine-kernel-frame-free-list-seed-check-and-report
   (Pi ((seed KernelFrameFreeListSeed))
       (Eff SerialReady SerialReady Unit)))
@@ -2965,7 +3334,7 @@
       ((True)
         (io-seq SerialReady SerialReady SerialReady
           serial-write-frame-free-list-seed-ok
-          (limine-kernel-frame-alloc-one-state-store-and-report seed)))
+          (limine-kernel-frame-pool-live-state-store-and-report seed)))
       ((False) (pure SerialReady Unit tt)))))
 
 (claim limine-kernel-frame-free-list-seed-store-and-report

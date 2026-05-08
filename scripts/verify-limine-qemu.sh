@@ -223,6 +223,12 @@ if ! grep -Fq "SILT_FLIST_SEED_OK!" "$SERIAL_LOG"; then
   exit 1
 fi
 
+if ! grep -Fq "SILT_POOL_LIVE_OK!!" "$SERIAL_LOG"; then
+  echo "QEMU serial log did not contain the Silt live frame-pool marker" >&2
+  sed -n '1,120p' "$SERIAL_LOG" >&2
+  exit 1
+fi
+
 if ! grep -Fq "SILT_ALLOC_ONE_OK!!" "$SERIAL_LOG"; then
   echo "QEMU serial log did not contain the Silt frame alloc-one marker" >&2
   sed -n '1,120p' "$SERIAL_LOG" >&2
