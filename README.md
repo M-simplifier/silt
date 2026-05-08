@@ -20,6 +20,7 @@ emission, self-hosting, or a production kernel.
 - Silt Book: <https://m-simplifier.github.io/silt/book/>
 - Current status and claim boundary: [STATUS.md](STATUS.md)
 - Contribution and support policy: [CONTRIBUTING.md](CONTRIBUTING.md)
+- AI/operator workflow guide: [AGENTS.md](AGENTS.md)
 
 ## What Works Today
 
