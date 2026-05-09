@@ -1,0 +1,222 @@
+; Hosted CLI pressure example.
+
+; Usage: hosted-size-report INPUT EXPECTED_LEN OUTPUT
+
+; The program reads INPUT, parses EXPECTED_LEN as ASCII decimal U64, writes the
+
+; actual byte length to OUTPUT and stdout, then returns 0 on match.
+
+(static-cell hosted-size-report-file-buffer AsciiDecimalU64Buffer)
+
+(static-cell hosted-size-report-stdout-buffer AsciiDecimalU64Buffer)
+
+(claim hosted-size-report-ok U64)
+
+(def hosted-size-report-ok (u64 0))
+
+(claim hosted-size-report-missing-args U64)
+
+(def hosted-size-report-missing-args (u64 2))
+
+(claim hosted-size-report-write-failed U64)
+
+(def hosted-size-report-write-failed (u64 3))
+
+(claim hosted-size-report-invalid-expected U64)
+
+(def hosted-size-report-invalid-expected (u64 4))
+
+(claim hosted-size-report-mismatch U64)
+
+(def hosted-size-report-mismatch (u64 5))
+
+(claim hosted-size-report-read-failed U64)
+
+(def hosted-size-report-read-failed (u64 6))
+
+(claim hosted-size-report-status (Pi ((expected U64) (actual U64)) U64))
+
+(def
+  hosted-size-report-status
+  (fn
+    ((expected U64) (actual U64))
+    (match
+      (u64-eq expected actual)
+      ((False) hosted-size-report-mismatch)
+      ((True) hosted-size-report-ok))))
+
+(claim
+  hosted-size-report-evaluate
+  (Pi
+    ((expected-base (Ptr U8))
+     (expected-len U64)
+     (output-base (Ptr U8))
+     (output-len U64)
+     (actual-len U64))
+    (Eff HostIO HostIO U64)))
+
+(def
+  hosted-size-report-evaluate
+  (fn
+    ((expected-base (Ptr U8))
+     (expected-len U64)
+     (output-base (Ptr U8))
+     (output-len U64)
+     (actual-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      AsciiDecimalU64
+      U64
+      (text-parse-ascii-u64 HostIO (text-view-from expected-base expected-len))
+      (fn
+        ((parsed 1 AsciiDecimalU64))
+        (let-layout
+          AsciiDecimalU64
+          ((valid expected-valid) (value expected-value))
+          parsed
+          (match
+            expected-valid
+            ((False) (pure HostIO U64 hosted-size-report-invalid-expected))
+            ((True)
+             (bind
+               HostIO
+               HostIO
+               HostIO
+               TextView
+               U64
+               (ascii-decimal-u64-format-into
+                 HostIO
+                 hosted-size-report-file-buffer
+                 actual-len)
+               (fn
+                 ((file-text 1 TextView))
+                 (bind
+                   HostIO
+                   HostIO
+                   HostIO
+                   Bool
+                   U64
+                   (host-write-file (text-view-from output-base output-len) file-text)
+                   (fn
+                     ((written 1 Bool))
+                     (match
+                       written
+                       ((False) (pure HostIO U64 hosted-size-report-write-failed))
+                       ((True)
+                        (bind
+                          HostIO
+                          HostIO
+                          HostIO
+                          TextView
+                          U64
+                          (ascii-decimal-u64-format-into
+                            HostIO
+                            hosted-size-report-stdout-buffer
+                            actual-len)
+                          (fn
+                            ((stdout-text 1 TextView))
+                            (bind
+                              HostIO
+                              HostIO
+                              HostIO
+                              Unit
+                              U64
+                              (host-write-text stdout-text)
+                              (fn
+                                ((done 1 Unit))
+                                (let
+                                  ((ignored 0 done))
+                                  (pure
+                                    HostIO
+                                    U64
+                                    (hosted-size-report-status
+                                      expected-value
+                                      actual-len))))))))))))))))))))
+
+(claim hosted-size-report-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-size-report-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (match
+        (u64-eq count (u64 4))
+        ((False) (pure HostIO U64 hosted-size-report-missing-args))
+        ((True)
+         (bind
+           HostIO
+           HostIO
+           HostIO
+           TextView
+           U64
+           (host-arg-text (u64 1))
+           (fn
+             ((input-path 1 TextView))
+             (bind
+               HostIO
+               HostIO
+               HostIO
+               TextView
+               U64
+               (host-arg-text (u64 2))
+               (fn
+                 ((expected-text 1 TextView))
+                 (let-layout
+                   TextView
+                   ((base expected-base) (len expected-len))
+                   expected-text
+                   (bind
+                     HostIO
+                     HostIO
+                     HostIO
+                     TextView
+                     U64
+                     (host-arg-text (u64 3))
+                     (fn
+                       ((output-path 1 TextView))
+                       (let-layout
+                         TextView
+                         ((base output-base) (len output-len))
+                         output-path
+                         (bind
+                           HostIO
+                           HostIO
+                           HostIO
+                           TextView
+                           U64
+                           (host-read-file input-path)
+                           (fn
+                             ((body 1 TextView))
+                             (let-layout
+                               TextView
+                               ((base 0 ignored-body-base) (len actual-len))
+                               body
+                               (bind
+                                 HostIO
+                                 HostIO
+                                 HostIO
+                                 Bool
+                                 U64
+                                 host-read-file-ok
+                                 (fn
+                                   ((read-ok 1 Bool))
+                                   (match
+                                     read-ok
+                                     ((False)
+                                      (pure HostIO U64 hosted-size-report-read-failed))
+                                     ((True)
+                                      (hosted-size-report-evaluate
+                                        expected-base
+                                        expected-len
+                                        output-base
+                                        output-len
+                                        actual-len)))))))))))))))))))))

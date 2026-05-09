@@ -33,8 +33,9 @@ syntax keyword siltForm
       \ byte-slice-parse-ascii-u64 byte-slice-starts-with byte-slice-take
       \ host-arg-base host-arg-count host-arg-len host-arg-text
       \ host-env-base host-env-has host-env-len host-env-present host-env-text
-      \ host-file-read-base host-file-read-len host-file-write-bytes
-      \ host-put-byte host-read-file host-seq host-write-file
+      \ host-file-read-base host-file-read-len host-file-read-ok
+      \ host-file-write-bytes host-put-byte host-read-file host-read-file-ok
+      \ host-seq host-write-file
       \ host-write-text let-layout let-load-layout list-head-or list-is-empty
       \ list-tail-or load match nat-case nat-elim pure
       \ option-and-then option-is-some option-map option-unwrap-or

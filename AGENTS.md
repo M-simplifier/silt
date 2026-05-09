@@ -33,7 +33,8 @@ also has early platform tooling: canonical formatting, lint through
 formatter/parser/checker facts, a single-local-package hosted build/run/test
 CLI spine, hosted stdlib seed with byte/text, ASCII predicate, ASCII decimal
 parse/format, text output, process-argument reads, environment lookup,
-first-order file writes and reads, and lightweight Neovim filetype/syntax files.
+first-order file writes and reads with read-status observation, and lightweight
+Neovim filetype/syntax files.
 
 Silt is not a production compiler, package ecosystem, mature editor/LSP
 platform, self-hosted compiler, finished operating system, general allocator,
@@ -98,6 +99,7 @@ scripts/verify-hosted-env.sh
 scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
+scripts/verify-stdlib-core-combinators.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-text-prefix.sh
@@ -106,6 +108,7 @@ scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-decimal-u64.sh
 scripts/verify-ascii-decimal-u64-format.sh
+scripts/verify-hosted-size-report.sh
 ```
 
 For backend, ABI, target, or boot bridge changes, add the relevant verifier:

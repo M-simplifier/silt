@@ -60,6 +60,18 @@
       stdlib/hosted.silt
       examples/hosted-cat.silt)
     (entry hosted-cat-main))
+  (bin
+    hosted-size-report
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/ascii.silt
+      stdlib/ascii-decimal.silt
+      stdlib/hosted.silt
+      examples/hosted-size-report.silt)
+    (entry hosted-size-report-main))
   (test
     ascii-test
     (sources

@@ -19,6 +19,7 @@ on:
       - "scripts/verify-hosted-exit.sh"
       - "scripts/verify-hosted-file-read.sh"
       - "scripts/verify-hosted-file-write.sh"
+      - "scripts/verify-hosted-size-report.sh"
       - "scripts/verify-text-eq.sh"
       - "scripts/verify-text-prefix.sh"
       - "scripts/verify-text-suffix.sh"
@@ -93,6 +94,9 @@ jobs:
 
       - name: Verify hosted file read
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-file-read.sh
+
+      - name: Verify hosted size report
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-size-report.sh
 
       - name: Verify text equality
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-eq.sh

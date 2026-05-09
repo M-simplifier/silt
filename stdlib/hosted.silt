@@ -44,6 +44,8 @@
 
 (extern host-file-read-len (Eff HostIO HostIO U64) silt_host_file_read_len)
 
+(extern host-file-read-ok (Eff HostIO HostIO Bool) silt_host_file_read_ok)
+
 (claim
   host-seq
   (Pi
@@ -202,3 +204,7 @@
           TextView
           host-file-read-len
           (fn ((len 1 U64)) (pure HostIO TextView (text-view-from base len))))))))
+
+(claim host-read-file-ok (Eff HostIO HostIO Bool))
+
+(def host-read-file-ok host-file-read-ok)

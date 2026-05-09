@@ -44,7 +44,7 @@ page =
                 [ el "p" [ cls "section-lede" ]
                     [ text "Silt is public as a research compiler with executable evidence. The long-term direction is large; the public contract is smaller and sharper." ]
                 , el "div" [ cls "boundary-grid" ]
-                    [ fact "Checks" "S-expressions, Pi types, quantities, effect states, layout values, static objects, byte/text views."
+                    [ fact "Checks" "S-expressions, Pi types, quantities, effect states, layout values, static objects, byte/text views, and hosted package examples."
                     , fact "Emits" "Freestanding C for the supported first-order low-level subset."
                     , fact "Links" "x86_64 ELF and Limine artifacts through checked target and boot contracts."
                     , fact "Observes" "QEMU smoke markers for serial paths, panic paths, boot facts, and allocator handoff."
@@ -119,7 +119,7 @@ hero =
             , el "a" [ cls "button", attr "href" "https://github.com/M-simplifier/silt" ] [ text "View Source" ]
             ]
         , el "p" [ cls "status-line" ]
-            [ text "Stage0 today: checker, NbE equality, quantities, package/tooling spines, layout/memory/ABI seeds, freestanding C/ELF/Limine smoke paths." ]
+            [ text "Stage0 today: checker, NbE equality, quantities, package/tooling spines, hosted package targets, layout/memory/ABI seeds, and freestanding C/ELF/Limine smoke paths." ]
         ]
     , el "div" [ cls "hero-panel", attr "aria-label" "Silt verification example" ]
         [ codeBlock heroSnippet
@@ -198,6 +198,7 @@ scripts/verify-text-view-helpers.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
+scripts/verify-hosted-size-report.sh
 scripts/verify-limine-qemu-nix.sh"""
 
 css :: String
