@@ -57,19 +57,22 @@ production kernel.
   text-output path that lowers through `nat-elim` to a C loop, plus explicit
   hosted process-argument and environment text views, first-order hosted
   file-write over explicit `TextView` path/body values, and first-order hosted
-  file-read into an explicit `TextView`.
+  file-read into an explicit `TextView` with a narrow read-status observation.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
-  `hosted-exit`, `hosted-write-file`, and `hosted-cat`, that build and run
-  through the package spine, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `ascii-test`, `ascii-slice-test`,
-  `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
-  targets.
+  `hosted-exit`, `hosted-write-file`, `hosted-cat`, and
+  `hosted-size-report`, that build and run through the package spine, plus
+  `text-eq-test`, `text-prefix-test`, `text-suffix-test`, `ascii-test`,
+  `ascii-slice-test`, `ascii-decimal-u64-test`, and
+  `ascii-decimal-u64-format-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
 - QEMU-observed Limine smoke paths, including HHDM/Memmap response reads, a
   bounded live frame-pool alloc/free cell update, and an allocator handoff
   marker.
+- A hosted pressure-test bin, `hosted-size-report`, that combines process args,
+  file read plus read-status observation, ASCII decimal parse/format, file
+  write, stdout, and process status in one checked package target.
 
 ## Quick Checks
 
@@ -99,6 +102,7 @@ scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
+scripts/verify-hosted-size-report.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 ```

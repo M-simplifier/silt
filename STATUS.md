@@ -45,12 +45,12 @@ Silt currently demonstrates:
   constructor; and explicit hosted environment presence/base/length boundaries
   with `host-env-has` and `host-env-text`; and a first-order hosted file-write
   boundary through `host-write-file`; and a first-order hosted file-read
-  boundary through `host-read-file`
-- root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`, and
-  `hosted-write-file` and `hosted-cat` package examples that compile, run,
-  print, read, or write through the hosted package harness, and exercise
-  process status where relevant, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `ascii-test`, `ascii-slice-test`,
+  boundary through `host-read-file` with a narrow read-status observation
+- root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
+  `hosted-write-file`, `hosted-cat`, and `hosted-size-report` package examples
+  that compile, run, print, read, write, or report through the hosted package
+  harness, and exercise process status where relevant, plus `text-eq-test`,
+  `text-prefix-test`, `text-suffix-test`, `ascii-test`, `ascii-slice-test`,
   `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
   targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
@@ -66,6 +66,10 @@ Silt currently demonstrates:
   a free transition, and QEMU observes the final readiness marker
 - a single-local-package `Silt.pkg` command spine with `build`, `run`, and
   `test`, including selected package test execution through `silt test TARGET`
+- a hosted CLI pressure-test package target, `hosted-size-report`, that combines
+  process args, file read plus read-status observation, ASCII decimal
+  parse/format, file write, stdout, and process status in one checked runnable
+  example
 
 ## Current Evidence
 
@@ -98,6 +102,7 @@ scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
+scripts/verify-hosted-size-report.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 scripts/verify-public.sh
@@ -118,11 +123,11 @@ Silt does not currently claim:
 - a package ecosystem, dependencies, workspaces, or lockfiles
 - mature LSP/editor tooling, semantic highlighting, or formatter-on-save
   integration
-- append modes, directory operations, path libraries, missing-vs-empty file-read
-  error distinctions, allocator-backed Silt file buffers, process spawning,
-  signals, stdout/stderr abstractions, general hosted IO, environment
-  enumeration or mutation, or package argument policy beyond
-  `silt run [TARGET] -- ARG...`
+- append modes, directory operations, path libraries, rich file-read error
+  categories beyond the current success/failure status, allocator-backed Silt
+  file buffers, process spawning, signals, stdout/stderr abstractions, general
+  hosted IO, environment enumeration or mutation, or package argument policy
+  beyond `silt run [TARGET] -- ARG...`
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline
