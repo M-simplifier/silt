@@ -63,10 +63,10 @@ production kernel.
   wrapper, and explicit stderr byte/text diagnostics.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, and
-  `hosted-size-report`, that build and run through the package spine, plus
-  `text-eq-test`, `text-prefix-test`, `text-suffix-test`, `text-scan-test`,
-  `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
-  `ascii-decimal-u64-test`, and
+  `hosted-size-report` / `hosted-config-report`, that build and run through
+  the package spine, plus `text-eq-test`, `text-prefix-test`,
+  `text-suffix-test`, `text-scan-test`, `ascii-test`, `ascii-slice-test`,
+  `ascii-trim-test`, `ascii-decimal-u64-test`, and
   `ascii-decimal-u64-format-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
@@ -78,6 +78,10 @@ production kernel.
   a first-order file read result layout, ASCII decimal parse/format, file
   write, stdout, stderr diagnostics, and process status in one checked package
   target.
+- A hosted config-reading pressure-test bin, `hosted-config-report`, that reads
+  input and config files, splits a tiny `expected: N` ASCII config shape, trims
+  fields, checks the key, parses the expected length, and reports the actual
+  input length through file/stdout/status paths.
 
 ## Quick Checks
 
@@ -110,6 +114,7 @@ scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
 scripts/verify-hosted-size-report.sh
+scripts/verify-hosted-config-report.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 ```

@@ -121,6 +121,9 @@ grep -Fq '<h1>silt-platform</h1>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-size-report</code></td>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-size-report-main</code></td>' out/silt/doc/index.html
 grep -Fq '<code>examples/hosted-size-report.silt</code>' out/silt/doc/index.html
+grep -Fq '<td><code>hosted-config-report</code></td>' out/silt/doc/index.html
+grep -Fq '<td><code>hosted-config-report-main</code></td>' out/silt/doc/index.html
+grep -Fq '<code>examples/hosted-config-report.silt</code>' out/silt/doc/index.html
 
 (
   cd test/fixtures/packages/hello

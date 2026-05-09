@@ -1,0 +1,740 @@
+; Hosted config-reading CLI pressure example.
+
+; Usage: hosted-config-report INPUT CONFIG OUTPUT
+
+; CONFIG is a one-entry ASCII text file shaped like: expected: 8
+
+; The program reads INPUT and CONFIG, trims the split config fields, parses the
+
+; expected length as ASCII decimal U64, writes the actual byte length to OUTPUT
+
+; and stdout, returns 0 on match, and reports failure paths on stderr.
+
+(static-cell hosted-config-report-file-buffer AsciiDecimalU64Buffer)
+
+(static-cell hosted-config-report-stdout-buffer AsciiDecimalU64Buffer)
+
+(static-bytes
+  hosted-config-report-key-bytes
+  ((u8 101) (u8 120) (u8 112) (u8 101) (u8 99) (u8 116) (u8 101) (u8 100)))
+
+(static-bytes
+  hosted-config-report-usage-bytes
+  ((u8 117)
+   (u8 115)
+   (u8 97)
+   (u8 103)
+   (u8 101)
+   (u8 58)
+   (u8 32)
+   (u8 104)
+   (u8 111)
+   (u8 115)
+   (u8 116)
+   (u8 101)
+   (u8 100)
+   (u8 45)
+   (u8 99)
+   (u8 111)
+   (u8 110)
+   (u8 102)
+   (u8 105)
+   (u8 103)
+   (u8 45)
+   (u8 114)
+   (u8 101)
+   (u8 112)
+   (u8 111)
+   (u8 114)
+   (u8 116)
+   (u8 32)
+   (u8 73)
+   (u8 78)
+   (u8 80)
+   (u8 85)
+   (u8 84)
+   (u8 32)
+   (u8 67)
+   (u8 79)
+   (u8 78)
+   (u8 70)
+   (u8 73)
+   (u8 71)
+   (u8 32)
+   (u8 79)
+   (u8 85)
+   (u8 84)
+   (u8 80)
+   (u8 85)
+   (u8 84)
+   (u8 10)))
+
+(static-bytes
+  hosted-config-report-input-read-failed-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 105)
+   (u8 110)
+   (u8 112)
+   (u8 117)
+   (u8 116)
+   (u8 32)
+   (u8 114)
+   (u8 101)
+   (u8 97)
+   (u8 100)
+   (u8 32)
+   (u8 102)
+   (u8 97)
+   (u8 105)
+   (u8 108)
+   (u8 101)
+   (u8 100)
+   (u8 10)))
+
+(static-bytes
+  hosted-config-report-config-read-failed-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 99)
+   (u8 111)
+   (u8 110)
+   (u8 102)
+   (u8 105)
+   (u8 103)
+   (u8 32)
+   (u8 114)
+   (u8 101)
+   (u8 97)
+   (u8 100)
+   (u8 32)
+   (u8 102)
+   (u8 97)
+   (u8 105)
+   (u8 108)
+   (u8 101)
+   (u8 100)
+   (u8 10)))
+
+(static-bytes
+  hosted-config-report-invalid-config-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 105)
+   (u8 110)
+   (u8 118)
+   (u8 97)
+   (u8 108)
+   (u8 105)
+   (u8 100)
+   (u8 32)
+   (u8 99)
+   (u8 111)
+   (u8 110)
+   (u8 102)
+   (u8 105)
+   (u8 103)
+   (u8 10)))
+
+(static-bytes
+  hosted-config-report-invalid-config-key-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 105)
+   (u8 110)
+   (u8 118)
+   (u8 97)
+   (u8 108)
+   (u8 105)
+   (u8 100)
+   (u8 32)
+   (u8 99)
+   (u8 111)
+   (u8 110)
+   (u8 102)
+   (u8 105)
+   (u8 103)
+   (u8 32)
+   (u8 107)
+   (u8 101)
+   (u8 121)
+   (u8 10)))
+
+(static-bytes
+  hosted-config-report-invalid-expected-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 105)
+   (u8 110)
+   (u8 118)
+   (u8 97)
+   (u8 108)
+   (u8 105)
+   (u8 100)
+   (u8 32)
+   (u8 101)
+   (u8 120)
+   (u8 112)
+   (u8 101)
+   (u8 99)
+   (u8 116)
+   (u8 101)
+   (u8 100)
+   (u8 32)
+   (u8 108)
+   (u8 101)
+   (u8 110)
+   (u8 103)
+   (u8 116)
+   (u8 104)
+   (u8 10)))
+
+(static-bytes
+  hosted-config-report-write-failed-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 119)
+   (u8 114)
+   (u8 105)
+   (u8 116)
+   (u8 101)
+   (u8 32)
+   (u8 102)
+   (u8 97)
+   (u8 105)
+   (u8 108)
+   (u8 101)
+   (u8 100)
+   (u8 10)))
+
+(static-bytes
+  hosted-config-report-mismatch-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 108)
+   (u8 101)
+   (u8 110)
+   (u8 103)
+   (u8 116)
+   (u8 104)
+   (u8 32)
+   (u8 109)
+   (u8 105)
+   (u8 115)
+   (u8 109)
+   (u8 97)
+   (u8 116)
+   (u8 99)
+   (u8 104)
+   (u8 10)))
+
+(claim hosted-config-report-key-text TextView)
+
+(def
+  hosted-config-report-key-text
+  (text-view-from hosted-config-report-key-bytes hosted-config-report-key-bytes-len))
+
+(claim hosted-config-report-usage-text TextView)
+
+(def
+  hosted-config-report-usage-text
+  (text-view-from hosted-config-report-usage-bytes hosted-config-report-usage-bytes-len))
+
+(claim hosted-config-report-input-read-failed-text TextView)
+
+(def
+  hosted-config-report-input-read-failed-text
+  (text-view-from
+    hosted-config-report-input-read-failed-bytes
+    hosted-config-report-input-read-failed-bytes-len))
+
+(claim hosted-config-report-config-read-failed-text TextView)
+
+(def
+  hosted-config-report-config-read-failed-text
+  (text-view-from
+    hosted-config-report-config-read-failed-bytes
+    hosted-config-report-config-read-failed-bytes-len))
+
+(claim hosted-config-report-invalid-config-text TextView)
+
+(def
+  hosted-config-report-invalid-config-text
+  (text-view-from
+    hosted-config-report-invalid-config-bytes
+    hosted-config-report-invalid-config-bytes-len))
+
+(claim hosted-config-report-invalid-config-key-text TextView)
+
+(def
+  hosted-config-report-invalid-config-key-text
+  (text-view-from
+    hosted-config-report-invalid-config-key-bytes
+    hosted-config-report-invalid-config-key-bytes-len))
+
+(claim hosted-config-report-invalid-expected-text TextView)
+
+(def
+  hosted-config-report-invalid-expected-text
+  (text-view-from
+    hosted-config-report-invalid-expected-bytes
+    hosted-config-report-invalid-expected-bytes-len))
+
+(claim hosted-config-report-write-failed-text TextView)
+
+(def
+  hosted-config-report-write-failed-text
+  (text-view-from
+    hosted-config-report-write-failed-bytes
+    hosted-config-report-write-failed-bytes-len))
+
+(claim hosted-config-report-mismatch-text TextView)
+
+(def
+  hosted-config-report-mismatch-text
+  (text-view-from
+    hosted-config-report-mismatch-bytes
+    hosted-config-report-mismatch-bytes-len))
+
+(claim hosted-config-report-ok U64)
+
+(def hosted-config-report-ok (u64 0))
+
+(claim hosted-config-report-missing-args U64)
+
+(def hosted-config-report-missing-args (u64 2))
+
+(claim hosted-config-report-write-failed U64)
+
+(def hosted-config-report-write-failed (u64 3))
+
+(claim hosted-config-report-invalid-expected U64)
+
+(def hosted-config-report-invalid-expected (u64 4))
+
+(claim hosted-config-report-mismatch U64)
+
+(def hosted-config-report-mismatch (u64 5))
+
+(claim hosted-config-report-input-read-failed U64)
+
+(def hosted-config-report-input-read-failed (u64 6))
+
+(claim hosted-config-report-config-read-failed U64)
+
+(def hosted-config-report-config-read-failed (u64 7))
+
+(claim hosted-config-report-invalid-config U64)
+
+(def hosted-config-report-invalid-config (u64 8))
+
+(claim hosted-config-report-invalid-config-key U64)
+
+(def hosted-config-report-invalid-config-key (u64 9))
+
+(claim
+  hosted-config-report-diagnostic
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-config-report-diagnostic
+  (fn
+    ((message TextView) (status U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Unit
+      U64
+      (host-write-error-text message)
+      (fn ((done 1 Unit)) (let ((ignored 0 done)) (pure HostIO U64 status))))))
+
+(claim
+  hosted-config-report-finish-status
+  (Pi ((expected U64) (actual U64)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-config-report-finish-status
+  (fn
+    ((expected U64) (actual U64))
+    (match
+      (u64-eq expected actual)
+      ((False)
+       (hosted-config-report-diagnostic
+         hosted-config-report-mismatch-text
+         hosted-config-report-mismatch))
+      ((True) (pure HostIO U64 hosted-config-report-ok)))))
+
+(claim
+  hosted-config-report-evaluate
+  (Pi
+    ((expected U64) (output-base (Ptr U8)) (output-len U64) (actual-len U64))
+    (Eff HostIO HostIO U64)))
+
+(def
+  hosted-config-report-evaluate
+  (fn
+    ((expected U64) (output-base (Ptr U8)) (output-len U64) (actual-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextView
+      U64
+      (ascii-decimal-u64-format-into HostIO hosted-config-report-file-buffer actual-len)
+      (fn
+        ((file-text 1 TextView))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          U64
+          (host-write-file (text-view-from output-base output-len) file-text)
+          (fn
+            ((written 1 Bool))
+            (match
+              written
+              ((False)
+               (hosted-config-report-diagnostic
+                 hosted-config-report-write-failed-text
+                 hosted-config-report-write-failed))
+              ((True)
+               (bind
+                 HostIO
+                 HostIO
+                 HostIO
+                 TextView
+                 U64
+                 (ascii-decimal-u64-format-into
+                   HostIO
+                   hosted-config-report-stdout-buffer
+                   actual-len)
+                 (fn
+                   ((stdout-text 1 TextView))
+                   (bind
+                     HostIO
+                     HostIO
+                     HostIO
+                     Unit
+                     U64
+                     (host-write-text stdout-text)
+                     (fn
+                       ((done 1 Unit))
+                       (let
+                         ((ignored 0 done))
+                         (hosted-config-report-finish-status expected actual-len))))))))))))))
+
+(claim
+  hosted-config-report-parse-expected
+  (Pi
+    ((expected-text 1 TextView)
+     (output-base (Ptr U8))
+     (output-len U64)
+     (actual-len U64))
+    (Eff HostIO HostIO U64)))
+
+(def
+  hosted-config-report-parse-expected
+  (fn
+    ((expected-text 1 TextView)
+     (output-base (Ptr U8))
+     (output-len U64)
+     (actual-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      AsciiDecimalU64
+      U64
+      (text-parse-ascii-u64 HostIO expected-text)
+      (fn
+        ((parsed 1 AsciiDecimalU64))
+        (let-layout
+          AsciiDecimalU64
+          ((valid expected-valid) (value expected-value))
+          parsed
+          (match
+            expected-valid
+            ((False)
+             (hosted-config-report-diagnostic
+               hosted-config-report-invalid-expected-text
+               hosted-config-report-invalid-expected))
+            ((True)
+             (hosted-config-report-evaluate
+               expected-value
+               output-base
+               output-len
+               actual-len))))))))
+
+(claim
+  hosted-config-report-parse-config-value
+  (Pi
+    ((key-text 1 TextView)
+     (expected-text 1 TextView)
+     (output-base (Ptr U8))
+     (output-len U64)
+     (actual-len U64))
+    (Eff HostIO HostIO U64)))
+
+(def
+  hosted-config-report-parse-config-value
+  (fn
+    ((key-text 1 TextView)
+     (expected-text 1 TextView)
+     (output-base (Ptr U8))
+     (output-len U64)
+     (actual-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      U64
+      (text-eq HostIO key-text hosted-config-report-key-text)
+      (fn
+        ((key-matches 1 Bool))
+        (match
+          key-matches
+          ((False)
+           (hosted-config-report-diagnostic
+             hosted-config-report-invalid-config-key-text
+             hosted-config-report-invalid-config-key))
+          ((True)
+           (hosted-config-report-parse-expected
+             expected-text
+             output-base
+             output-len
+             actual-len)))))))
+
+(claim
+  hosted-config-report-parse-config-fields
+  (Pi
+    ((key-raw 1 TextView)
+     (expected-raw 1 TextView)
+     (output-base (Ptr U8))
+     (output-len U64)
+     (actual-len U64))
+    (Eff HostIO HostIO U64)))
+
+(def
+  hosted-config-report-parse-config-fields
+  (fn
+    ((key-raw 1 TextView)
+     (expected-raw 1 TextView)
+     (output-base (Ptr U8))
+     (output-len U64)
+     (actual-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextView
+      U64
+      (text-trim-ascii-whitespace HostIO key-raw)
+      (fn
+        ((key-text 1 TextView))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          TextView
+          U64
+          (text-trim-ascii-whitespace HostIO expected-raw)
+          (fn
+            ((expected-text 1 TextView))
+            (hosted-config-report-parse-config-value
+              key-text
+              expected-text
+              output-base
+              output-len
+              actual-len)))))))
+
+(claim
+  hosted-config-report-parse-config
+  (Pi
+    ((config 1 TextView) (output-base (Ptr U8)) (output-len U64) (actual-len U64))
+    (Eff HostIO HostIO U64)))
+
+(def
+  hosted-config-report-parse-config
+  (fn
+    ((config 1 TextView) (output-base (Ptr U8)) (output-len U64) (actual-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextSplitFirst
+      U64
+      (text-split-first-byte HostIO config (u8 58))
+      (fn
+        ((split 1 TextSplitFirst))
+        (let-layout
+          TextSplitFirst
+          ((found found) (before key-raw) (after expected-raw))
+          split
+          (match
+            found
+            ((False)
+             (hosted-config-report-diagnostic
+               hosted-config-report-invalid-config-text
+               hosted-config-report-invalid-config))
+            ((True)
+             (hosted-config-report-parse-config-fields
+               key-raw
+               expected-raw
+               output-base
+               output-len
+               actual-len))))))))
+
+(claim
+  hosted-config-report-read-config
+  (Pi
+    ((config-path 1 TextView) (output-base (Ptr U8)) (output-len U64) (actual-len U64))
+    (Eff HostIO HostIO U64)))
+
+(def
+  hosted-config-report-read-config
+  (fn
+    ((config-path 1 TextView) (output-base (Ptr U8)) (output-len U64) (actual-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      HostReadFileResult
+      U64
+      (host-read-file-result config-path)
+      (fn
+        ((config-result 1 HostReadFileResult))
+        (let-layout
+          HostReadFileResult
+          ((ok config-ok) (text config-body))
+          config-result
+          (match
+            config-ok
+            ((False)
+             (hosted-config-report-diagnostic
+               hosted-config-report-config-read-failed-text
+               hosted-config-report-config-read-failed))
+            ((True)
+             (hosted-config-report-parse-config
+               config-body
+               output-base
+               output-len
+               actual-len))))))))
+
+(claim hosted-config-report-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-config-report-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (match
+        (u64-eq count (u64 4))
+        ((False)
+         (hosted-config-report-diagnostic
+           hosted-config-report-usage-text
+           hosted-config-report-missing-args))
+        ((True)
+         (bind
+           HostIO
+           HostIO
+           HostIO
+           TextView
+           U64
+           (host-arg-text (u64 1))
+           (fn
+             ((input-path 1 TextView))
+             (bind
+               HostIO
+               HostIO
+               HostIO
+               TextView
+               U64
+               (host-arg-text (u64 2))
+               (fn
+                 ((config-path 1 TextView))
+                 (bind
+                   HostIO
+                   HostIO
+                   HostIO
+                   TextView
+                   U64
+                   (host-arg-text (u64 3))
+                   (fn
+                     ((output-path 1 TextView))
+                     (let-layout
+                       TextView
+                       ((base output-base) (len output-len))
+                       output-path
+                       (bind
+                         HostIO
+                         HostIO
+                         HostIO
+                         HostReadFileResult
+                         U64
+                         (host-read-file-result input-path)
+                         (fn
+                           ((input-result 1 HostReadFileResult))
+                           (let-layout
+                             HostReadFileResult
+                             ((ok input-ok) (text input-body))
+                             input-result
+                             (match
+                               input-ok
+                               ((False)
+                                (hosted-config-report-diagnostic
+                                  hosted-config-report-input-read-failed-text
+                                  hosted-config-report-input-read-failed))
+                               ((True)
+                                (let-layout
+                                  TextView
+                                  ((base 0 ignored-input-base) (len actual-len))
+                                  input-body
+                                  (hosted-config-report-read-config
+                                    config-path
+                                    output-base
+                                    output-len
+                                    actual-len)))))))))))))))))))

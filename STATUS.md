@@ -53,11 +53,12 @@ Silt currently demonstrates:
   a first-order `HostReadFileResult` body/status wrapper plus explicit stderr
   byte/text writers
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
-  `hosted-write-file`, `hosted-cat`, and `hosted-size-report` package examples
-  that compile, run, print, read, write, or report through the hosted package
-  harness, and exercise process status where relevant, plus `text-eq-test`,
-  `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `ascii-test`,
-  `ascii-slice-test`, `ascii-trim-test`, `ascii-decimal-u64-test`, and
+  `hosted-write-file`, `hosted-cat`, `hosted-size-report`, and
+  `hosted-config-report` package examples that compile, run, print, read,
+  write, or report through the hosted package harness, and exercise process
+  status where relevant, plus `text-eq-test`, `text-prefix-test`,
+  `text-suffix-test`, `text-scan-test`, `ascii-test`, `ascii-slice-test`,
+  `ascii-trim-test`, `ascii-decimal-u64-test`, and
   `ascii-decimal-u64-format-test` as package test targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
@@ -78,6 +79,11 @@ Silt currently demonstrates:
   process args, a first-order file read result layout, ASCII decimal
   parse/format, file write, stdout, stderr diagnostics, and process status in
   one checked runnable example
+- a hosted config-reading pressure-test package target,
+  `hosted-config-report`, that combines two file reads, first-byte text split,
+  ASCII whitespace trimming, static key comparison, ASCII decimal parse/format,
+  file write, stdout, stderr diagnostics, and process status in one checked
+  runnable example
 
 ## Current Evidence
 
@@ -113,6 +119,7 @@ scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
 scripts/verify-hosted-size-report.sh
+scripts/verify-hosted-config-report.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 scripts/verify-public.sh
@@ -155,6 +162,8 @@ Silt does not currently claim:
   narrow ASCII view helper, detailed parse-error categories, signed formatting,
   radix formatting, padding, alignment, locale formatting, or a general
   parser/formatter-combinator library
+- multi-entry config formats, generic CLI/config parsing, or a general hosted
+  app framework
 - a complete Limine or memory-map parser
 - a general allocator
 - a mutating free-list allocator
