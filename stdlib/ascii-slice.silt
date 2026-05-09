@@ -1,0 +1,185 @@
+; ASCII predicates over explicit byte and text views.
+
+; These helpers scan bytes only. They do not claim UTF-8 validation,
+
+; Unicode categories, locale-sensitive behavior, or allocation.
+
+(claim
+  byte-slice-all-ascii-digits
+  (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-all-ascii-digits
+  (fn
+    ((cap 0 Type) (bytes ByteSlice))
+    (nat-elim
+      (Eff cap cap Bool)
+      (pure cap Bool True)
+      (fn
+        ((index Nat) (rec (Eff cap cap Bool)))
+        (bind
+          cap
+          cap
+          cap
+          Bool
+          Bool
+          rec
+          (fn
+            ((previous 1 Bool))
+            (match
+              previous
+              ((False) (pure cap Bool False))
+              ((True)
+               (bind
+                 cap
+                 cap
+                 cap
+                 U8
+                 Bool
+                 (load cap U8 (byte-slice-at bytes (nat-to-u64 index)))
+                 (fn ((byte 1 U8)) (pure cap Bool (ascii-byte-is-digit byte)))))))))
+      (u64-to-nat (byte-slice-len bytes)))))
+
+(claim
+  byte-slice-all-ascii-alnum
+  (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-all-ascii-alnum
+  (fn
+    ((cap 0 Type) (bytes ByteSlice))
+    (nat-elim
+      (Eff cap cap Bool)
+      (pure cap Bool True)
+      (fn
+        ((index Nat) (rec (Eff cap cap Bool)))
+        (bind
+          cap
+          cap
+          cap
+          Bool
+          Bool
+          rec
+          (fn
+            ((previous 1 Bool))
+            (match
+              previous
+              ((False) (pure cap Bool False))
+              ((True)
+               (bind
+                 cap
+                 cap
+                 cap
+                 U8
+                 Bool
+                 (load cap U8 (byte-slice-at bytes (nat-to-u64 index)))
+                 (fn ((byte 1 U8)) (pure cap Bool (ascii-byte-is-alnum byte)))))))))
+      (u64-to-nat (byte-slice-len bytes)))))
+
+(claim
+  byte-slice-all-ascii-hex-digits
+  (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-all-ascii-hex-digits
+  (fn
+    ((cap 0 Type) (bytes ByteSlice))
+    (nat-elim
+      (Eff cap cap Bool)
+      (pure cap Bool True)
+      (fn
+        ((index Nat) (rec (Eff cap cap Bool)))
+        (bind
+          cap
+          cap
+          cap
+          Bool
+          Bool
+          rec
+          (fn
+            ((previous 1 Bool))
+            (match
+              previous
+              ((False) (pure cap Bool False))
+              ((True)
+               (bind
+                 cap
+                 cap
+                 cap
+                 U8
+                 Bool
+                 (load cap U8 (byte-slice-at bytes (nat-to-u64 index)))
+                 (fn ((byte 1 U8)) (pure cap Bool (ascii-byte-is-hex-digit byte)))))))))
+      (u64-to-nat (byte-slice-len bytes)))))
+
+(claim
+  byte-slice-all-ascii-whitespace
+  (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-all-ascii-whitespace
+  (fn
+    ((cap 0 Type) (bytes ByteSlice))
+    (nat-elim
+      (Eff cap cap Bool)
+      (pure cap Bool True)
+      (fn
+        ((index Nat) (rec (Eff cap cap Bool)))
+        (bind
+          cap
+          cap
+          cap
+          Bool
+          Bool
+          rec
+          (fn
+            ((previous 1 Bool))
+            (match
+              previous
+              ((False) (pure cap Bool False))
+              ((True)
+               (bind
+                 cap
+                 cap
+                 cap
+                 U8
+                 Bool
+                 (load cap U8 (byte-slice-at bytes (nat-to-u64 index)))
+                 (fn ((byte 1 U8)) (pure cap Bool (ascii-byte-is-whitespace byte)))))))))
+      (u64-to-nat (byte-slice-len bytes)))))
+
+(claim text-all-ascii-digits (Pi ((cap 0 Type) (text TextView)) (Eff cap cap Bool)))
+
+(def
+  text-all-ascii-digits
+  (fn
+    ((cap 0 Type) (text TextView))
+    (byte-slice-all-ascii-digits cap (byte-slice-from (text-base text) (text-len text)))))
+
+(claim text-all-ascii-alnum (Pi ((cap 0 Type) (text TextView)) (Eff cap cap Bool)))
+
+(def
+  text-all-ascii-alnum
+  (fn
+    ((cap 0 Type) (text TextView))
+    (byte-slice-all-ascii-alnum cap (byte-slice-from (text-base text) (text-len text)))))
+
+(claim text-all-ascii-hex-digits (Pi ((cap 0 Type) (text TextView)) (Eff cap cap Bool)))
+
+(def
+  text-all-ascii-hex-digits
+  (fn
+    ((cap 0 Type) (text TextView))
+    (byte-slice-all-ascii-hex-digits
+      cap
+      (byte-slice-from (text-base text) (text-len text)))))
+
+(claim text-all-ascii-whitespace (Pi ((cap 0 Type) (text TextView)) (Eff cap cap Bool)))
+
+(def
+  text-all-ascii-whitespace
+  (fn
+    ((cap 0 Type) (text TextView))
+    (byte-slice-all-ascii-whitespace
+      cap
+      (byte-slice-from (text-base text) (text-len text)))))

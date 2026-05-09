@@ -16,6 +16,8 @@ syntax keyword siltForm
       \ ascii-byte-is-alnum ascii-byte-is-alpha ascii-byte-is-digit
       \ ascii-byte-is-hex-digit ascii-byte-is-lower ascii-byte-is-space
       \ ascii-byte-is-upper ascii-byte-is-whitespace
+      \ byte-slice-all-ascii-alnum byte-slice-all-ascii-digits
+      \ byte-slice-all-ascii-hex-digits byte-slice-all-ascii-whitespace
       \ byte-slice-at byte-slice-base byte-slice-drop byte-slice-from
       \ byte-slice-ends-with byte-slice-eq byte-slice-is-empty byte-slice-len
       \ byte-slice-starts-with byte-slice-take
@@ -31,7 +33,8 @@ syntax keyword siltForm
       \ store store-field store-fields the u8 u8-eq u8-to-u64 u64
       \ text-base text-byte-at text-drop text-from-bytes text-is-empty
       \ text-ends-with text-eq text-len text-starts-with text-take
-      \ text-view-from
+      \ text-view-from text-all-ascii-alnum text-all-ascii-digits
+      \ text-all-ascii-hex-digits text-all-ascii-whitespace
       \ u64-add u64-and u64-div u64-eq u64-lt u64-lte u64-mul u64-or
       \ u64-rem u64-shl u64-shr u64-sub u64-to-nat u64-to-u8 u64-xor
       \ with-fields x86-in8 x86-out8

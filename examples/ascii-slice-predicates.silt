@@ -1,0 +1,386 @@
+; ASCII slice predicate examples over explicit byte-backed views.
+
+; Empty inputs are accepted by the all-* predicates. Use byte-slice-is-empty
+
+; or text-is-empty when a non-empty token is required.
+
+(static-bytes ascii-slice-digit-bytes ((u8 49) (u8 50) (u8 51) (u8 57)))
+
+(static-bytes ascii-slice-digit-mixed-bytes ((u8 49) (u8 50) (u8 65) (u8 51)))
+
+(static-bytes
+  ascii-slice-alnum-bytes
+  ((u8 83) (u8 105) (u8 108) (u8 116) (u8 52) (u8 50)))
+
+(static-bytes
+  ascii-slice-alnum-symbol-bytes
+  ((u8 83) (u8 105) (u8 108) (u8 116) (u8 45) (u8 52) (u8 50)))
+
+(static-bytes ascii-slice-hex-bytes ((u8 48) (u8 57) (u8 65) (u8 70) (u8 97) (u8 102)))
+
+(static-bytes ascii-slice-hex-mixed-bytes ((u8 48) (u8 57) (u8 71) (u8 102)))
+
+(static-bytes ascii-slice-whitespace-bytes ((u8 9) (u8 10) (u8 13) (u8 32)))
+
+(static-bytes ascii-slice-whitespace-letter-bytes ((u8 9) (u8 32) (u8 65)))
+
+(claim ascii-slice-digit-bytes-view ByteSlice)
+
+(def
+  ascii-slice-digit-bytes-view
+  (byte-slice-from ascii-slice-digit-bytes ascii-slice-digit-bytes-len))
+
+(claim ascii-slice-digit-mixed-view ByteSlice)
+
+(def
+  ascii-slice-digit-mixed-view
+  (byte-slice-from ascii-slice-digit-mixed-bytes ascii-slice-digit-mixed-bytes-len))
+
+(claim ascii-slice-alnum-bytes-view ByteSlice)
+
+(def
+  ascii-slice-alnum-bytes-view
+  (byte-slice-from ascii-slice-alnum-bytes ascii-slice-alnum-bytes-len))
+
+(claim ascii-slice-alnum-symbol-view ByteSlice)
+
+(def
+  ascii-slice-alnum-symbol-view
+  (byte-slice-from ascii-slice-alnum-symbol-bytes ascii-slice-alnum-symbol-bytes-len))
+
+(claim ascii-slice-hex-bytes-view ByteSlice)
+
+(def
+  ascii-slice-hex-bytes-view
+  (byte-slice-from ascii-slice-hex-bytes ascii-slice-hex-bytes-len))
+
+(claim ascii-slice-hex-mixed-view ByteSlice)
+
+(def
+  ascii-slice-hex-mixed-view
+  (byte-slice-from ascii-slice-hex-mixed-bytes ascii-slice-hex-mixed-bytes-len))
+
+(claim ascii-slice-whitespace-bytes-view ByteSlice)
+
+(def
+  ascii-slice-whitespace-bytes-view
+  (byte-slice-from ascii-slice-whitespace-bytes ascii-slice-whitespace-bytes-len))
+
+(claim ascii-slice-whitespace-letter-view ByteSlice)
+
+(def
+  ascii-slice-whitespace-letter-view
+  (byte-slice-from
+    ascii-slice-whitespace-letter-bytes
+    ascii-slice-whitespace-letter-bytes-len))
+
+(claim ascii-slice-empty-view ByteSlice)
+
+(def ascii-slice-empty-view (byte-slice-from ascii-slice-digit-bytes (u64 0)))
+
+(claim ascii-text-digit-view TextView)
+
+(def
+  ascii-text-digit-view
+  (text-view-from ascii-slice-digit-bytes ascii-slice-digit-bytes-len))
+
+(claim ascii-text-digit-mixed-view TextView)
+
+(def
+  ascii-text-digit-mixed-view
+  (text-view-from ascii-slice-digit-mixed-bytes ascii-slice-digit-mixed-bytes-len))
+
+(claim ascii-text-alnum-view TextView)
+
+(def
+  ascii-text-alnum-view
+  (text-view-from ascii-slice-alnum-bytes ascii-slice-alnum-bytes-len))
+
+(claim ascii-text-alnum-symbol-view TextView)
+
+(def
+  ascii-text-alnum-symbol-view
+  (text-view-from ascii-slice-alnum-symbol-bytes ascii-slice-alnum-symbol-bytes-len))
+
+(claim ascii-text-hex-view TextView)
+
+(def
+  ascii-text-hex-view
+  (text-view-from ascii-slice-hex-bytes ascii-slice-hex-bytes-len))
+
+(claim ascii-text-hex-mixed-view TextView)
+
+(def
+  ascii-text-hex-mixed-view
+  (text-view-from ascii-slice-hex-mixed-bytes ascii-slice-hex-mixed-bytes-len))
+
+(claim ascii-text-whitespace-view TextView)
+
+(def
+  ascii-text-whitespace-view
+  (text-view-from ascii-slice-whitespace-bytes ascii-slice-whitespace-bytes-len))
+
+(claim ascii-text-whitespace-letter-view TextView)
+
+(def
+  ascii-text-whitespace-letter-view
+  (text-view-from
+    ascii-slice-whitespace-letter-bytes
+    ascii-slice-whitespace-letter-bytes-len))
+
+(claim ascii-text-empty-view TextView)
+
+(def ascii-text-empty-view (text-view-from ascii-slice-digit-bytes (u64 0)))
+
+(claim ascii-slice-digits-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-digits-result
+  (byte-slice-all-ascii-digits HostIO ascii-slice-digit-bytes-view))
+
+(claim ascii-slice-digits-mixed-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-digits-mixed-result
+  (byte-slice-all-ascii-digits HostIO ascii-slice-digit-mixed-view))
+
+(claim ascii-slice-alnum-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-alnum-result
+  (byte-slice-all-ascii-alnum HostIO ascii-slice-alnum-bytes-view))
+
+(claim ascii-slice-alnum-symbol-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-alnum-symbol-result
+  (byte-slice-all-ascii-alnum HostIO ascii-slice-alnum-symbol-view))
+
+(claim ascii-slice-hex-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-hex-result
+  (byte-slice-all-ascii-hex-digits HostIO ascii-slice-hex-bytes-view))
+
+(claim ascii-slice-hex-mixed-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-hex-mixed-result
+  (byte-slice-all-ascii-hex-digits HostIO ascii-slice-hex-mixed-view))
+
+(claim ascii-slice-whitespace-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-whitespace-result
+  (byte-slice-all-ascii-whitespace HostIO ascii-slice-whitespace-bytes-view))
+
+(claim ascii-slice-whitespace-letter-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-whitespace-letter-result
+  (byte-slice-all-ascii-whitespace HostIO ascii-slice-whitespace-letter-view))
+
+(claim ascii-slice-empty-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-empty-result
+  (byte-slice-all-ascii-digits HostIO ascii-slice-empty-view))
+
+(claim ascii-slice-empty-alnum-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-empty-alnum-result
+  (byte-slice-all-ascii-alnum HostIO ascii-slice-empty-view))
+
+(claim ascii-slice-empty-hex-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-empty-hex-result
+  (byte-slice-all-ascii-hex-digits HostIO ascii-slice-empty-view))
+
+(claim ascii-slice-empty-whitespace-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-empty-whitespace-result
+  (byte-slice-all-ascii-whitespace HostIO ascii-slice-empty-view))
+
+(claim ascii-text-digits-result (Eff HostIO HostIO Bool))
+
+(def ascii-text-digits-result (text-all-ascii-digits HostIO ascii-text-digit-view))
+
+(claim ascii-text-digits-mixed-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-text-digits-mixed-result
+  (text-all-ascii-digits HostIO ascii-text-digit-mixed-view))
+
+(claim ascii-text-alnum-result (Eff HostIO HostIO Bool))
+
+(def ascii-text-alnum-result (text-all-ascii-alnum HostIO ascii-text-alnum-view))
+
+(claim ascii-text-alnum-symbol-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-text-alnum-symbol-result
+  (text-all-ascii-alnum HostIO ascii-text-alnum-symbol-view))
+
+(claim ascii-text-hex-result (Eff HostIO HostIO Bool))
+
+(def ascii-text-hex-result (text-all-ascii-hex-digits HostIO ascii-text-hex-view))
+
+(claim ascii-text-hex-mixed-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-text-hex-mixed-result
+  (text-all-ascii-hex-digits HostIO ascii-text-hex-mixed-view))
+
+(claim ascii-text-whitespace-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-text-whitespace-result
+  (text-all-ascii-whitespace HostIO ascii-text-whitespace-view))
+
+(claim ascii-text-whitespace-letter-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-text-whitespace-letter-result
+  (text-all-ascii-whitespace HostIO ascii-text-whitespace-letter-view))
+
+(claim ascii-text-empty-result (Eff HostIO HostIO Bool))
+
+(def ascii-text-empty-result (text-all-ascii-whitespace HostIO ascii-text-empty-view))
+
+(claim ascii-text-empty-digits-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-text-empty-digits-result
+  (text-all-ascii-digits HostIO ascii-text-empty-view))
+
+(claim ascii-text-empty-alnum-result (Eff HostIO HostIO Bool))
+
+(def ascii-text-empty-alnum-result (text-all-ascii-alnum HostIO ascii-text-empty-view))
+
+(claim ascii-text-empty-hex-result (Eff HostIO HostIO Bool))
+
+(def
+  ascii-text-empty-hex-result
+  (text-all-ascii-hex-digits HostIO ascii-text-empty-view))
+
+(claim
+  ascii-effect-and
+  (Pi
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-effect-and
+  (fn
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      left
+      (fn
+        ((left-value 1 Bool))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          Bool
+          right
+          (fn
+            ((right-value 1 Bool))
+            (pure HostIO Bool (bool-and left-value right-value))))))))
+
+(claim
+  ascii-effect-not
+  (Pi ((value 1 (Eff HostIO HostIO Bool))) (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-effect-not
+  (fn
+    ((value 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      value
+      (fn ((inner 1 Bool)) (pure HostIO Bool (bool-not inner))))))
+
+(claim ascii-slice-byte-empty-predicate-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-byte-empty-predicate-test
+  (ascii-effect-and
+    ascii-slice-empty-result
+    (ascii-effect-and
+      ascii-slice-empty-alnum-result
+      (ascii-effect-and
+        ascii-slice-empty-hex-result
+        ascii-slice-empty-whitespace-result))))
+
+(claim ascii-slice-text-empty-predicate-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-text-empty-predicate-test
+  (ascii-effect-and
+    ascii-text-empty-digits-result
+    (ascii-effect-and
+      ascii-text-empty-alnum-result
+      (ascii-effect-and ascii-text-empty-hex-result ascii-text-empty-result))))
+
+(claim ascii-slice-byte-predicate-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-byte-predicate-test
+  (ascii-effect-and
+    ascii-slice-digits-result
+    (ascii-effect-and
+      (ascii-effect-not ascii-slice-digits-mixed-result)
+      (ascii-effect-and
+        ascii-slice-alnum-result
+        (ascii-effect-and
+          (ascii-effect-not ascii-slice-alnum-symbol-result)
+          (ascii-effect-and
+            ascii-slice-hex-result
+            (ascii-effect-and
+              (ascii-effect-not ascii-slice-hex-mixed-result)
+              (ascii-effect-and
+                ascii-slice-whitespace-result
+                (ascii-effect-and
+                  (ascii-effect-not ascii-slice-whitespace-letter-result)
+                  ascii-slice-byte-empty-predicate-test)))))))))
+
+(claim ascii-slice-text-predicate-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-text-predicate-test
+  (ascii-effect-and
+    ascii-text-digits-result
+    (ascii-effect-and
+      (ascii-effect-not ascii-text-digits-mixed-result)
+      (ascii-effect-and
+        ascii-text-alnum-result
+        (ascii-effect-and
+          (ascii-effect-not ascii-text-alnum-symbol-result)
+          (ascii-effect-and
+            ascii-text-hex-result
+            (ascii-effect-and
+              (ascii-effect-not ascii-text-hex-mixed-result)
+              (ascii-effect-and
+                ascii-text-whitespace-result
+                (ascii-effect-and
+                  (ascii-effect-not ascii-text-whitespace-letter-result)
+                  ascii-slice-text-empty-predicate-test)))))))))
+
+(claim ascii-slice-predicate-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-slice-predicate-test
+  (ascii-effect-and ascii-slice-byte-predicate-test ascii-slice-text-predicate-test))

@@ -32,10 +32,12 @@ Silt currently demonstrates:
   `text-starts-with`; suffix checks through `byte-slice-ends-with` and
   `text-ends-with`; pure ASCII byte predicates over `U8` for digit,
   lower/upper alpha, alpha, alnum, hexadecimal digit, literal space, and ASCII
-  whitespace classification; an explicit `Nat` / `U64` bridge; and a
-  first-order hosted text-output path that lowers through `nat-elim` to a C
-  loop; and explicit hosted process-argument count/base/length boundaries with
-  a `host-arg-text` view constructor; and explicit hosted environment
+  whitespace classification; narrow all-ASCII slice/text predicates over
+  explicit `ByteSlice` / `TextView` values for all-digits, all-alnum,
+  all-hex-digits, and all-whitespace checks; an explicit `Nat` / `U64` bridge;
+  and a first-order hosted text-output path that lowers through `nat-elim` to a
+  C loop; and explicit hosted process-argument count/base/length boundaries
+  with a `host-arg-text` view constructor; and explicit hosted environment
   presence/base/length boundaries with `host-env-has` and `host-env-text`; and
   a first-order hosted file-write boundary through `host-write-file`; and a
   first-order hosted file-read boundary through `host-read-file`
@@ -43,7 +45,8 @@ Silt currently demonstrates:
   `hosted-write-file` and `hosted-cat` package examples that compile, run,
   print, read, or write through the hosted package harness, and exercise
   process status where relevant, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, and `ascii-test` as package test targets
+  `text-suffix-test`, `ascii-test`, and `ascii-slice-test` as package test
+  targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -81,6 +84,7 @@ scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
 scripts/verify-ascii-predicates.sh
+scripts/verify-ascii-slice-predicates.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
@@ -117,8 +121,8 @@ Silt does not currently claim:
 - runtime representation for generic ADTs or general closure conversion
 - Unicode categories, locale-sensitive behavior, case conversion, UTF-8
   validation, generic strings, arrays, dynamic slices, allocator-backed
-  byte/text buffers, substring/search/scanning APIs, collation, or
-  text-normalization APIs
+  byte/text buffers, substring/search/general scanning APIs beyond the current
+  narrow all-ASCII class checks, collation, or text-normalization APIs
 - a complete Limine or memory-map parser
 - a general allocator
 - a mutating free-list allocator
