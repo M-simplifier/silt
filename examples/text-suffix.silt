@@ -1,0 +1,137 @@
+; Text suffix example over explicit byte-backed views.
+
+; This does not claim UTF-8 validation, substring search, dynamic strings, or allocation.
+
+(static-bytes text-suffix-subject-bytes ((u8 83) (u8 73) (u8 76) (u8 84)))
+
+(static-bytes text-suffix-short-bytes ((u8 76) (u8 84)))
+
+(static-bytes text-suffix-exact-bytes ((u8 83) (u8 73) (u8 76) (u8 84)))
+
+(static-bytes text-suffix-different-bytes ((u8 83) (u8 73)))
+
+(static-bytes text-suffix-long-bytes ((u8 88) (u8 83) (u8 73) (u8 76) (u8 84)))
+
+(claim text-suffix-subject TextView)
+
+(def
+  text-suffix-subject
+  (text-view-from text-suffix-subject-bytes text-suffix-subject-bytes-len))
+
+(claim text-suffix-short TextView)
+
+(def
+  text-suffix-short
+  (text-view-from text-suffix-short-bytes text-suffix-short-bytes-len))
+
+(claim text-suffix-exact TextView)
+
+(def
+  text-suffix-exact
+  (text-view-from text-suffix-exact-bytes text-suffix-exact-bytes-len))
+
+(claim text-suffix-different TextView)
+
+(def
+  text-suffix-different
+  (text-view-from text-suffix-different-bytes text-suffix-different-bytes-len))
+
+(claim text-suffix-long TextView)
+
+(def
+  text-suffix-long
+  (text-view-from text-suffix-long-bytes text-suffix-long-bytes-len))
+
+(claim text-suffix-empty TextView)
+
+(def text-suffix-empty (text-view-from text-suffix-subject-bytes (u64 0)))
+
+(claim text-suffix-short-result (Eff HostIO HostIO Bool))
+
+(def
+  text-suffix-short-result
+  (text-ends-with HostIO text-suffix-subject text-suffix-short))
+
+(claim text-suffix-exact-result (Eff HostIO HostIO Bool))
+
+(def
+  text-suffix-exact-result
+  (text-ends-with HostIO text-suffix-subject text-suffix-exact))
+
+(claim text-suffix-different-result (Eff HostIO HostIO Bool))
+
+(def
+  text-suffix-different-result
+  (text-ends-with HostIO text-suffix-subject text-suffix-different))
+
+(claim text-suffix-long-result (Eff HostIO HostIO Bool))
+
+(def
+  text-suffix-long-result
+  (text-ends-with HostIO text-suffix-subject text-suffix-long))
+
+(claim text-suffix-empty-result (Eff HostIO HostIO Bool))
+
+(def
+  text-suffix-empty-result
+  (text-ends-with HostIO text-suffix-subject text-suffix-empty))
+
+(claim text-suffix-test (Eff HostIO HostIO Bool))
+
+(def
+  text-suffix-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    Bool
+    Bool
+    text-suffix-short-result
+    (fn
+      ((short 1 Bool))
+      (bind
+        HostIO
+        HostIO
+        HostIO
+        Bool
+        Bool
+        text-suffix-exact-result
+        (fn
+          ((exact 1 Bool))
+          (bind
+            HostIO
+            HostIO
+            HostIO
+            Bool
+            Bool
+            text-suffix-different-result
+            (fn
+              ((different 1 Bool))
+              (bind
+                HostIO
+                HostIO
+                HostIO
+                Bool
+                Bool
+                text-suffix-long-result
+                (fn
+                  ((long 1 Bool))
+                  (bind
+                    HostIO
+                    HostIO
+                    HostIO
+                    Bool
+                    Bool
+                    text-suffix-empty-result
+                    (fn
+                      ((empty 1 Bool))
+                      (pure
+                        HostIO
+                        Bool
+                        (bool-and
+                          short
+                          (bool-and
+                            exact
+                            (bool-and
+                              (bool-not different)
+                              (bool-and (bool-not long) empty))))))))))))))))

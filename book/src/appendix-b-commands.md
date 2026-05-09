@@ -23,7 +23,7 @@ cabal run silt -- run hosted-cat -- /tmp/silt-hosted-file.txt
 cabal run silt -- test
 ```
 
-これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entry function、`silt run [TARGET] -- ARG...` によるhosted process argumentの受け渡し、名前を指定した単一のenvironment lookup、bin entryの結果をprocess statusとして伝播すること、明示的な `TextView` path/bodyによるfirst-orderなhosted file write、明示的な `TextView` pathからhost-ownedな `TextView` へ読むfirst-orderなhosted file read、そして `byte-slice-eq` / `text-eq` によるbyte-wise equalityに限られます。root packageには、stdlib seedの `TextView` と `host-write-text` で `SILT` を出力する `hosted-hello`、`argv[1]` を出力する `hosted-echo`、`SILT_HOSTED_ENV` を出力する `hosted-env`、`argv[1]` の有無をprocess statusで返す `hosted-exit`、`argv[1]` のpathへ固定bodyを書く `hosted-write-file`、`argv[1]` のpathから読んだ内容をstdoutへ書く `hosted-cat`、stdlibの正規化例を確認する `stdlib-test`、静的byte-backed textの等価比較を確認する `text-eq-test` が含まれます。dependency、workspace、lockfile、environment enumeration/mutation、missing-vs-empty file-read error distinction、append mode、directory operation、path library、process spawning、signals、stdout/stderr abstraction、general hosted IO、UTF-8 validation、動的文字列、substring/search/scanning APIはまだclaimしません。
+これらはカレントディレクトリの `Silt.pkg` を読みます。現在のpublic claimは、単一local package、明示的な `bin` / `test` target、no-argument hosted entry function、`silt run [TARGET] -- ARG...` によるhosted process argumentの受け渡し、名前を指定した単一のenvironment lookup、bin entryの結果をprocess statusとして伝播すること、明示的な `TextView` path/bodyによるfirst-orderなhosted file write、明示的な `TextView` pathからhost-ownedな `TextView` へ読むfirst-orderなhosted file read、そして `ByteSlice` / `TextView` 上のbyte-wise equality、prefix check、suffix checkに限られます。root packageには、stdlib seedの `TextView` と `host-write-text` で `SILT` を出力する `hosted-hello`、`argv[1]` を出力する `hosted-echo`、`SILT_HOSTED_ENV` を出力する `hosted-env`、`argv[1]` の有無をprocess statusで返す `hosted-exit`、`argv[1]` のpathへ固定bodyを書く `hosted-write-file`、`argv[1]` のpathから読んだ内容をstdoutへ書く `hosted-cat`、stdlibの正規化例を確認する `stdlib-test`、静的byte-backed textの等価比較を確認する `text-eq-test`、prefixを確認する `text-prefix-test`、suffixを確認する `text-suffix-test` が含まれます。dependency、workspace、lockfile、environment enumeration/mutation、missing-vs-empty file-read error distinction、append mode、directory operation、path library、process spawning、signals、stdout/stderr abstraction、general hosted IO、UTF-8 validation、動的文字列、substring/search/scanning APIはまだclaimしません。
 
 ## formatter
 
@@ -88,6 +88,8 @@ scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
 scripts/verify-text-eq.sh
+scripts/verify-text-prefix.sh
+scripts/verify-text-suffix.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-freestanding-backend.sh
 scripts/verify-x86_64-elf-backend.sh
@@ -105,6 +107,7 @@ cabal run silt -- test
 cabal run silt -- test stdlib-test
 cabal run silt -- test text-eq-test
 cabal run silt -- test text-prefix-test
+cabal run silt -- test text-suffix-test
 ```
 
 ## QEMU smoke

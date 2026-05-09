@@ -45,8 +45,10 @@ production kernel.
 - A conservative standard-library seed: checker/normalizer-backed `Option`,
   `Result`, and `List` helpers, byte/text view types over `U8` and `Ptr U8`,
   bounded pure view helpers for empty/take/drop, byte-wise equality through
-  `byte-slice-eq` / `text-eq`, an explicit `Nat` / `U64` bridge, and a
-  first-order hosted text-output path that lowers through
+  `byte-slice-eq` / `text-eq`, prefix checks through `byte-slice-starts-with`
+  / `text-starts-with`, suffix checks through `byte-slice-ends-with` /
+  `text-ends-with`, an explicit `Nat` / `U64` bridge, and a first-order hosted
+  text-output path that lowers through
   `nat-elim` to a C loop, plus explicit hosted process-argument and environment
   text views, first-order hosted file-write over explicit `TextView` path/body
   values, and first-order hosted file-read into an explicit `TextView`.
