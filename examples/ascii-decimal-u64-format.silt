@@ -1,0 +1,180 @@
+; ASCII decimal U64 formatting examples over caller-provided fixed buffers.
+
+; This writes into explicit 20-byte buffers and returns TextView spans.
+
+(static-cell ascii-decimal-format-zero-buffer AsciiDecimalU64Buffer)
+
+(static-cell ascii-decimal-format-one-digit-buffer AsciiDecimalU64Buffer)
+
+(static-cell ascii-decimal-format-small-buffer AsciiDecimalU64Buffer)
+
+(static-cell ascii-decimal-format-max-buffer AsciiDecimalU64Buffer)
+
+(static-bytes ascii-decimal-format-zero-bytes ((u8 48)))
+
+(static-bytes ascii-decimal-format-one-digit-bytes ((u8 55)))
+
+(static-bytes
+  ascii-decimal-format-small-bytes
+  ((u8 49) (u8 50) (u8 51) (u8 52) (u8 53)))
+
+(static-bytes
+  ascii-decimal-format-max-bytes
+  ((u8 49)
+   (u8 56)
+   (u8 52)
+   (u8 52)
+   (u8 54)
+   (u8 55)
+   (u8 52)
+   (u8 52)
+   (u8 48)
+   (u8 55)
+   (u8 51)
+   (u8 55)
+   (u8 48)
+   (u8 57)
+   (u8 53)
+   (u8 53)
+   (u8 49)
+   (u8 54)
+   (u8 49)
+   (u8 53)))
+
+(claim ascii-decimal-format-zero-expected TextView)
+
+(def
+  ascii-decimal-format-zero-expected
+  (text-view-from ascii-decimal-format-zero-bytes ascii-decimal-format-zero-bytes-len))
+
+(claim ascii-decimal-format-one-digit-expected TextView)
+
+(def
+  ascii-decimal-format-one-digit-expected
+  (text-view-from
+    ascii-decimal-format-one-digit-bytes
+    ascii-decimal-format-one-digit-bytes-len))
+
+(claim ascii-decimal-format-small-expected TextView)
+
+(def
+  ascii-decimal-format-small-expected
+  (text-view-from ascii-decimal-format-small-bytes ascii-decimal-format-small-bytes-len))
+
+(claim ascii-decimal-format-max-expected TextView)
+
+(def
+  ascii-decimal-format-max-expected
+  (text-view-from ascii-decimal-format-max-bytes ascii-decimal-format-max-bytes-len))
+
+(claim ascii-decimal-format-full-state-should-not-write Bool)
+
+(def
+  ascii-decimal-format-full-state-should-not-write
+  (ascii-decimal-u64-format-should-write
+    (ascii-decimal-u64-format-state (u64 1) ascii-decimal-u64-buffer-capacity)))
+
+(claim ascii-decimal-format-full-state-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-format-full-state-test
+  (pure HostIO Bool (bool-not ascii-decimal-format-full-state-should-not-write)))
+
+(claim
+  ascii-decimal-format-effect-and
+  (Pi
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-decimal-format-effect-and
+  (fn
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      left
+      (fn
+        ((left-value 1 Bool))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          Bool
+          right
+          (fn
+            ((right-value 1 Bool))
+            (pure HostIO Bool (bool-and left-value right-value))))))))
+
+(claim
+  ascii-decimal-format-matches
+  (Pi
+    ((buffer (Ptr AsciiDecimalU64Buffer)) (value U64) (expected TextView))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-decimal-format-matches
+  (fn
+    ((buffer (Ptr AsciiDecimalU64Buffer)) (value U64) (expected TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextView
+      Bool
+      (ascii-decimal-u64-format-into HostIO buffer value)
+      (fn ((actual 1 TextView)) (text-eq HostIO actual expected)))))
+
+(claim ascii-decimal-format-zero-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-format-zero-test
+  (ascii-decimal-format-matches
+    ascii-decimal-format-zero-buffer
+    (u64 0)
+    ascii-decimal-format-zero-expected))
+
+(claim ascii-decimal-format-one-digit-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-format-one-digit-test
+  (ascii-decimal-format-matches
+    ascii-decimal-format-one-digit-buffer
+    (u64 7)
+    ascii-decimal-format-one-digit-expected))
+
+(claim ascii-decimal-format-small-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-format-small-test
+  (ascii-decimal-format-matches
+    ascii-decimal-format-small-buffer
+    (u64 12345)
+    ascii-decimal-format-small-expected))
+
+(claim ascii-decimal-format-max-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-format-max-test
+  (ascii-decimal-format-matches
+    ascii-decimal-format-max-buffer
+    (u64 18446744073709551615)
+    ascii-decimal-format-max-expected))
+
+(claim ascii-decimal-u64-format-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-u64-format-test
+  (ascii-decimal-format-effect-and
+    ascii-decimal-format-zero-test
+    (ascii-decimal-format-effect-and
+      ascii-decimal-format-one-digit-test
+      (ascii-decimal-format-effect-and
+        ascii-decimal-format-small-test
+        (ascii-decimal-format-effect-and
+          ascii-decimal-format-max-test
+          ascii-decimal-format-full-state-test)))))

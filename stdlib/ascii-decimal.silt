@@ -6,6 +6,33 @@
 
 (layout AsciiDecimalU64 16 8 ((valid Bool 0) (value U64 8)))
 
+(layout
+  AsciiDecimalU64Buffer
+  20
+  1
+  ((b0 U8 0)
+   (b1 U8 1)
+   (b2 U8 2)
+   (b3 U8 3)
+   (b4 U8 4)
+   (b5 U8 5)
+   (b6 U8 6)
+   (b7 U8 7)
+   (b8 U8 8)
+   (b9 U8 9)
+   (b10 U8 10)
+   (b11 U8 11)
+   (b12 U8 12)
+   (b13 U8 13)
+   (b14 U8 14)
+   (b15 U8 15)
+   (b16 U8 16)
+   (b17 U8 17)
+   (b18 U8 18)
+   (b19 U8 19)))
+
+(layout AsciiDecimalU64FormatState 16 8 ((remaining U64 0) (written U64 8)))
+
 (claim ascii-decimal-u64-result (Pi ((valid Bool) (value U64)) AsciiDecimalU64))
 
 (def
@@ -32,6 +59,10 @@
 
 (def ascii-decimal-u64-zero (ascii-decimal-u64-result True (u64 0)))
 
+(claim ascii-decimal-u64-buffer-capacity U64)
+
+(def ascii-decimal-u64-buffer-capacity (u64 20))
+
 (claim ascii-decimal-u64-max-div-10 U64)
 
 (def ascii-decimal-u64-max-div-10 (u64 1844674407370955161))
@@ -39,6 +70,64 @@
 (claim ascii-decimal-u64-max-last-digit U64)
 
 (def ascii-decimal-u64-max-last-digit (u64 5))
+
+(claim
+  ascii-decimal-u64-buffer-base
+  (Pi ((buffer (Ptr AsciiDecimalU64Buffer))) (Ptr U8)))
+
+(def
+  ascii-decimal-u64-buffer-base
+  (fn
+    ((buffer (Ptr AsciiDecimalU64Buffer)))
+    (ptr-field AsciiDecimalU64Buffer b0 buffer)))
+
+(claim
+  ascii-decimal-u64-format-state
+  (Pi ((remaining U64) (written U64)) AsciiDecimalU64FormatState))
+
+(def
+  ascii-decimal-u64-format-state
+  (fn
+    ((remaining U64) (written U64))
+    (layout-values AsciiDecimalU64FormatState remaining written)))
+
+(claim ascii-decimal-u64-format-remaining (Pi ((state AsciiDecimalU64FormatState)) U64))
+
+(def
+  ascii-decimal-u64-format-remaining
+  (fn
+    ((state AsciiDecimalU64FormatState))
+    (field AsciiDecimalU64FormatState remaining state)))
+
+(claim ascii-decimal-u64-format-written (Pi ((state AsciiDecimalU64FormatState)) U64))
+
+(def
+  ascii-decimal-u64-format-written
+  (fn
+    ((state AsciiDecimalU64FormatState))
+    (field AsciiDecimalU64FormatState written state)))
+
+(claim ascii-decimal-u64-format-initial (Pi ((value U64)) AsciiDecimalU64FormatState))
+
+(def
+  ascii-decimal-u64-format-initial
+  (fn ((value U64)) (ascii-decimal-u64-format-state value (u64 0))))
+
+(claim
+  ascii-decimal-u64-format-should-write
+  (Pi ((state AsciiDecimalU64FormatState)) Bool))
+
+(def
+  ascii-decimal-u64-format-should-write
+  (fn
+    ((state AsciiDecimalU64FormatState))
+    (bool-and
+      (u64-lt
+        (ascii-decimal-u64-format-written state)
+        ascii-decimal-u64-buffer-capacity)
+      (bool-or
+        (bool-not (u64-eq (ascii-decimal-u64-format-remaining state) (u64 0)))
+        (u64-eq (ascii-decimal-u64-format-written state) (u64 0))))))
 
 (claim ascii-byte-decimal-digit-value-unchecked (Pi ((byte U8)) U64))
 
@@ -91,6 +180,103 @@
                (u64-add
                  (u64-mul (ascii-decimal-u64-value current) (u64 10))
                  (ascii-byte-decimal-digit-value-unchecked byte)))))))))))
+
+(claim
+  ascii-decimal-u64-format-step
+  (Pi
+    ((cap 0 Type)
+     (buffer (Ptr AsciiDecimalU64Buffer))
+     (state AsciiDecimalU64FormatState))
+    (Eff cap cap AsciiDecimalU64FormatState)))
+
+(def
+  ascii-decimal-u64-format-step
+  (fn
+    ((cap 0 Type)
+     (buffer (Ptr AsciiDecimalU64Buffer))
+     (state AsciiDecimalU64FormatState))
+    (match
+      (ascii-decimal-u64-format-should-write state)
+      ((False) (pure cap AsciiDecimalU64FormatState state))
+      ((True)
+       (bind
+         cap
+         cap
+         cap
+         Unit
+         AsciiDecimalU64FormatState
+         (store
+           cap
+           cap
+           U8
+           (ptr-step
+             U8
+             (ascii-decimal-u64-buffer-base buffer)
+             (u64-sub
+               (u64-sub ascii-decimal-u64-buffer-capacity (u64 1))
+               (ascii-decimal-u64-format-written state)))
+           (u64-to-u8
+             (u64-add
+               (u64 48)
+               (u64-rem (ascii-decimal-u64-format-remaining state) (u64 10)))))
+         (fn
+           ((done 1 Unit))
+           (let
+             ((ignored 0 done))
+             (pure
+               cap
+               AsciiDecimalU64FormatState
+               (ascii-decimal-u64-format-state
+                 (u64-div (ascii-decimal-u64-format-remaining state) (u64 10))
+                 (u64-add (ascii-decimal-u64-format-written state) (u64 1)))))))))))
+
+(claim
+  ascii-decimal-u64-format-into
+  (Pi
+    ((cap 0 Type) (buffer (Ptr AsciiDecimalU64Buffer)) (value U64))
+    (Eff cap cap TextView)))
+
+(def
+  ascii-decimal-u64-format-into
+  (fn
+    ((cap 0 Type) (buffer (Ptr AsciiDecimalU64Buffer)) (value U64))
+    (bind
+      cap
+      cap
+      cap
+      AsciiDecimalU64FormatState
+      TextView
+      (nat-elim
+        (Eff cap cap AsciiDecimalU64FormatState)
+        (pure cap AsciiDecimalU64FormatState (ascii-decimal-u64-format-initial value))
+        (fn
+          ((index Nat) (rec (Eff cap cap AsciiDecimalU64FormatState)))
+          (bind
+            cap
+            cap
+            cap
+            AsciiDecimalU64FormatState
+            AsciiDecimalU64FormatState
+            rec
+            (fn
+              ((state 1 AsciiDecimalU64FormatState))
+              (ascii-decimal-u64-format-step cap buffer state))))
+        (u64-to-nat ascii-decimal-u64-buffer-capacity))
+      (fn
+        ((state 1 AsciiDecimalU64FormatState))
+        (let-layout
+          AsciiDecimalU64FormatState
+          ((remaining 0 ignored-remaining) (written written))
+          state
+          (pure
+            cap
+            TextView
+            (text-view-from
+              (ptr-step
+                U8
+                (ascii-decimal-u64-buffer-base buffer)
+                (u64-sub ascii-decimal-u64-buffer-capacity written))
+              written)))))))
 
 (claim ascii-decimal-u64-has-value (Pi ((result AsciiDecimalU64) (expected U64)) Bool))
 

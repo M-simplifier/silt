@@ -52,7 +52,8 @@ production kernel.
   hexadecimal, space, and whitespace classification, narrow all-ASCII slice/text
   predicates for digits, alnum, hexadecimal digits, and whitespace, a checked
   ASCII decimal `U64` parser with empty-input, non-digit, and overflow
-  rejection, an explicit `Nat` / `U64` bridge, and a first-order hosted
+  rejection, caller-buffer-based ASCII decimal `U64` formatting into an
+  explicit `TextView`, an explicit `Nat` / `U64` bridge, and a first-order hosted
   text-output path that lowers through `nat-elim` to a C loop, plus explicit
   hosted process-argument and environment text views, first-order hosted
   file-write over explicit `TextView` path/body values, and first-order hosted
@@ -60,8 +61,9 @@ production kernel.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, and `hosted-cat`, that build and run
   through the package spine, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `ascii-test`, `ascii-slice-test`, and
-  `ascii-decimal-u64-test` as package test targets.
+  `text-suffix-test`, `ascii-test`, `ascii-slice-test`,
+  `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
+  targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
@@ -91,6 +93,7 @@ scripts/verify-text-suffix.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-decimal-u64.sh
+scripts/verify-ascii-decimal-u64-format.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
