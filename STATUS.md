@@ -84,6 +84,10 @@ Silt currently demonstrates:
   ASCII whitespace trimming, static key comparison, ASCII decimal parse/format,
   file write, stdout, stderr diagnostics, and process status in one checked
   runnable example
+- a small hosted helper layer for diagnostic/status sequencing and
+  caller-buffer ASCII decimal writes to stdout or explicit file paths, used by
+  the hosted pressure-test examples without claiming a general hosted app
+  framework
 
 ## Current Evidence
 
@@ -160,8 +164,8 @@ Silt does not currently claim:
   whitespace trimming, collation, or text-normalization APIs
 - decimal signs, radix prefixes, separators, whitespace trimming beyond the
   narrow ASCII view helper, detailed parse-error categories, signed formatting,
-  radix formatting, padding, alignment, locale formatting, or a general
-  parser/formatter-combinator library
+  radix formatting, padding, alignment, locale formatting, generic decimal
+  output abstractions, or a general parser/formatter-combinator library
 - multi-entry config formats, generic CLI/config parsing, or a general hosted
   app framework
 - a complete Limine or memory-map parser

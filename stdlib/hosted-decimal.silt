@@ -1,0 +1,51 @@
+; Hosted decimal helpers.
+
+; These helpers keep caller-owned decimal buffers explicit while avoiding the
+
+; repeated format-then-write choreography in small hosted tools.
+
+(claim
+  host-format-u64-decimal
+  (Pi ((buffer (Ptr AsciiDecimalU64Buffer)) (value U64)) (Eff HostIO HostIO TextView)))
+
+(def
+  host-format-u64-decimal
+  (fn
+    ((buffer (Ptr AsciiDecimalU64Buffer)) (value U64))
+    (ascii-decimal-u64-format-into HostIO buffer value)))
+
+(claim
+  host-write-u64-decimal
+  (Pi ((buffer (Ptr AsciiDecimalU64Buffer)) (value U64)) (Eff HostIO HostIO Unit)))
+
+(def
+  host-write-u64-decimal
+  (fn
+    ((buffer (Ptr AsciiDecimalU64Buffer)) (value U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextView
+      Unit
+      (host-format-u64-decimal buffer value)
+      (fn ((text 1 TextView)) (host-write-text text)))))
+
+(claim
+  host-write-file-u64-decimal
+  (Pi
+    ((buffer (Ptr AsciiDecimalU64Buffer)) (path TextView) (value U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  host-write-file-u64-decimal
+  (fn
+    ((buffer (Ptr AsciiDecimalU64Buffer)) (path TextView) (value U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextView
+      Bool
+      (host-format-u64-decimal buffer value)
+      (fn ((text 1 TextView)) (host-write-file path text)))))

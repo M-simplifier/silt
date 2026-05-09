@@ -18,9 +18,13 @@ hosted_size_report_sources=(
   stdlib/ascii.silt
   stdlib/ascii-decimal.silt
   stdlib/hosted.silt
+  stdlib/hosted-decimal.silt
   examples/hosted-size-report.silt
 )
 
+grep -Fq 'host-status-with-error-text' examples/hosted-size-report.silt
+grep -Fq 'host-write-file-u64-decimal' examples/hosted-size-report.silt
+grep -Fq 'host-write-u64-decimal' examples/hosted-size-report.silt
 "$silt_bin" check "${hosted_size_report_sources[@]}" >/dev/null
 
 hosted_size_report_c="$("$silt_bin" emit-c-bundle "${hosted_size_report_sources[@]}" -- hosted-size-report-main)"

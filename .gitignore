@@ -21,6 +21,8 @@
 !/src/**
 !/test/
 !/test/**
+!/stdlib/
+!/stdlib/**
 !/examples/
 !/examples/**
 !/scripts/
