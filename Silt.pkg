@@ -80,6 +80,18 @@
       examples/ascii-slice-predicates.silt)
     (entry ascii-slice-predicate-test))
   (test
+    ascii-decimal-u64-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/ascii.silt
+      stdlib/ascii-decimal.silt
+      stdlib/hosted.silt
+      examples/ascii-decimal-u64.silt)
+    (entry ascii-decimal-u64-test))
+  (test
     stdlib-test
     (sources
       stdlib/core.silt

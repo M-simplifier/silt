@@ -1,0 +1,157 @@
+; ASCII decimal parsing into U64 over explicit byte and text views.
+
+; The valid flag covers lexical validity and U64 overflow. The value field is
+
+; meaningful only when valid is True.
+
+(layout AsciiDecimalU64 16 8 ((valid Bool 0) (value U64 8)))
+
+(claim ascii-decimal-u64-result (Pi ((valid Bool) (value U64)) AsciiDecimalU64))
+
+(def
+  ascii-decimal-u64-result
+  (fn ((valid Bool) (value U64)) (layout-values AsciiDecimalU64 valid value)))
+
+(claim ascii-decimal-u64-valid (Pi ((result AsciiDecimalU64)) Bool))
+
+(def
+  ascii-decimal-u64-valid
+  (fn ((result AsciiDecimalU64)) (field AsciiDecimalU64 valid result)))
+
+(claim ascii-decimal-u64-value (Pi ((result AsciiDecimalU64)) U64))
+
+(def
+  ascii-decimal-u64-value
+  (fn ((result AsciiDecimalU64)) (field AsciiDecimalU64 value result)))
+
+(claim ascii-decimal-u64-invalid AsciiDecimalU64)
+
+(def ascii-decimal-u64-invalid (ascii-decimal-u64-result False (u64 0)))
+
+(claim ascii-decimal-u64-zero AsciiDecimalU64)
+
+(def ascii-decimal-u64-zero (ascii-decimal-u64-result True (u64 0)))
+
+(claim ascii-decimal-u64-max-div-10 U64)
+
+(def ascii-decimal-u64-max-div-10 (u64 1844674407370955161))
+
+(claim ascii-decimal-u64-max-last-digit U64)
+
+(def ascii-decimal-u64-max-last-digit (u64 5))
+
+(claim ascii-byte-decimal-digit-value-unchecked (Pi ((byte U8)) U64))
+
+(def
+  ascii-byte-decimal-digit-value-unchecked
+  (fn ((byte U8)) (u64-sub (u8-to-u64 byte) (u64 48))))
+
+(claim ascii-decimal-u64-can-append (Pi ((value U64) (digit U64)) Bool))
+
+(def
+  ascii-decimal-u64-can-append
+  (fn
+    ((value U64) (digit U64))
+    (match
+      (u64-lte digit (u64 9))
+      ((False) False)
+      ((True)
+       (match
+         (u64-lt value ascii-decimal-u64-max-div-10)
+         ((True) True)
+         ((False)
+          (bool-and
+            (u64-eq value ascii-decimal-u64-max-div-10)
+            (u64-lte digit ascii-decimal-u64-max-last-digit))))))))
+
+(claim
+  ascii-decimal-u64-step
+  (Pi ((current AsciiDecimalU64) (byte U8)) AsciiDecimalU64))
+
+(def
+  ascii-decimal-u64-step
+  (fn
+    ((current AsciiDecimalU64) (byte U8))
+    (match
+      (ascii-decimal-u64-valid current)
+      ((False) ascii-decimal-u64-invalid)
+      ((True)
+       (match
+         (ascii-byte-is-digit byte)
+         ((False) ascii-decimal-u64-invalid)
+         ((True)
+          (match
+            (ascii-decimal-u64-can-append
+              (ascii-decimal-u64-value current)
+              (ascii-byte-decimal-digit-value-unchecked byte))
+            ((False) ascii-decimal-u64-invalid)
+            ((True)
+             (ascii-decimal-u64-result
+               True
+               (u64-add
+                 (u64-mul (ascii-decimal-u64-value current) (u64 10))
+                 (ascii-byte-decimal-digit-value-unchecked byte)))))))))))
+
+(claim ascii-decimal-u64-has-value (Pi ((result AsciiDecimalU64) (expected U64)) Bool))
+
+(def
+  ascii-decimal-u64-has-value
+  (fn
+    ((result AsciiDecimalU64) (expected U64))
+    (bool-and
+      (ascii-decimal-u64-valid result)
+      (u64-eq (ascii-decimal-u64-value result) expected))))
+
+(claim ascii-decimal-u64-is-invalid (Pi ((result AsciiDecimalU64)) Bool))
+
+(def
+  ascii-decimal-u64-is-invalid
+  (fn ((result AsciiDecimalU64)) (bool-not (ascii-decimal-u64-valid result))))
+
+(claim
+  byte-slice-parse-ascii-u64
+  (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap AsciiDecimalU64)))
+
+(def
+  byte-slice-parse-ascii-u64
+  (fn
+    ((cap 0 Type) (bytes ByteSlice))
+    (match
+      (byte-slice-is-empty bytes)
+      ((True) (pure cap AsciiDecimalU64 ascii-decimal-u64-invalid))
+      ((False)
+       (nat-elim
+         (Eff cap cap AsciiDecimalU64)
+         (pure cap AsciiDecimalU64 ascii-decimal-u64-zero)
+         (fn
+           ((index Nat) (rec (Eff cap cap AsciiDecimalU64)))
+           (bind
+             cap
+             cap
+             cap
+             AsciiDecimalU64
+             AsciiDecimalU64
+             rec
+             (fn
+               ((current 1 AsciiDecimalU64))
+               (bind
+                 cap
+                 cap
+                 cap
+                 U8
+                 AsciiDecimalU64
+                 (load cap U8 (byte-slice-at bytes (nat-to-u64 index)))
+                 (fn
+                   ((byte 1 U8))
+                   (pure cap AsciiDecimalU64 (ascii-decimal-u64-step current byte)))))))
+         (u64-to-nat (byte-slice-len bytes)))))))
+
+(claim
+  text-parse-ascii-u64
+  (Pi ((cap 0 Type) (text TextView)) (Eff cap cap AsciiDecimalU64)))
+
+(def
+  text-parse-ascii-u64
+  (fn
+    ((cap 0 Type) (text TextView))
+    (byte-slice-parse-ascii-u64 cap (byte-slice-from (text-base text) (text-len text)))))

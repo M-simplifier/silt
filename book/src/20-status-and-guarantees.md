@@ -16,8 +16,8 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - 現在のS式source subsetを `fmt` / `fmt --check` でcanonicalに扱う
 - `lint` でcanonical formatting、source bundle parsing、checker diagnosticsをまとめて確認する
 - `editors/neovim/` の軽量filetype/syntax fileで現在のsurfaceを編集する
-- 単一local packageの `Silt.pkg` から、no-argument hosted entry functionを `build` / `run` / `test` し、`run -- ARG...` でhosted process argumentを渡し、名前を指定した単一のenvironment lookupを行い、bin entryの結果をprocess statusとして外に返し、明示的な `TextView` path/bodyでfirst-orderなhosted file writeを行い、明示的な `TextView` pathからhost-ownedな `TextView` へfirst-orderなhosted file readを行い、`text-eq-test`、`text-prefix-test`、`text-suffix-test`、`ascii-test`、`ascii-slice-test` でbyte-backed text predicateとASCII predicateをpackage testとして確認する
-- 標準ライブラリseedとして、checker/normalizer-backedな `Option` / `Result` / `List` とmap/and-then系combinator、`U8` / `Ptr U8` 上の `ByteSlice` / `TextView`、boundedなempty/take/drop view helper、`byte-slice-eq` / `text-eq` によるbyte-wise equality、`byte-slice-starts-with` / `text-starts-with` によるprefix check、`byte-slice-ends-with` / `text-ends-with` によるsuffix check、`U8` 上のASCII byte predicate、explicitな `ByteSlice` / `TextView` 上の狭いall-ASCII class check、`Nat` / `U64` の明示bridge、`nat-elim` からC loopへ落ちるfirst-orderなhosted text output境界、明示的なhosted argument境界と `host-arg-text`、明示的なhosted environment境界と `host-env-text`、明示的なhosted file-write境界と `host-write-file`、そして明示的なhosted file-read境界と `host-read-file` を使う
+- 単一local packageの `Silt.pkg` から、no-argument hosted entry functionを `build` / `run` / `test` し、`run -- ARG...` でhosted process argumentを渡し、名前を指定した単一のenvironment lookupを行い、bin entryの結果をprocess statusとして外に返し、明示的な `TextView` path/bodyでfirst-orderなhosted file writeを行い、明示的な `TextView` pathからhost-ownedな `TextView` へfirst-orderなhosted file readを行い、`text-eq-test`、`text-prefix-test`、`text-suffix-test`、`ascii-test`、`ascii-slice-test`、`ascii-decimal-u64-test` でbyte-backed text predicate、ASCII predicate、ASCII decimal parseをpackage testとして確認する
+- 標準ライブラリseedとして、checker/normalizer-backedな `Option` / `Result` / `List` とmap/and-then系combinator、`U8` / `Ptr U8` 上の `ByteSlice` / `TextView`、boundedなempty/take/drop view helper、`byte-slice-eq` / `text-eq` によるbyte-wise equality、`byte-slice-starts-with` / `text-starts-with` によるprefix check、`byte-slice-ends-with` / `text-ends-with` によるsuffix check、`U8` 上のASCII byte predicate、explicitな `ByteSlice` / `TextView` 上の狭いall-ASCII class check、空入力、非数字、overflowを拒否する狭いASCII decimal `U64` parser、`Nat` / `U64` の明示bridge、`nat-elim` からC loopへ落ちるfirst-orderなhosted text output境界、明示的なhosted argument境界と `host-arg-text`、明示的なhosted environment境界と `host-env-text`、明示的なhosted file-write境界と `host-write-file`、そして明示的なhosted file-read境界と `host-read-file` を使う
 
 これらはSiltの型検査、正規化、layout検査、数量チェックによって支えられます。たとえば、`Ptr U64` と `Ptr BootInfo` は同じ機械表現になり得ますが、Siltの型では区別されます。`layout` のフィールドは、宣言したサイズ、アラインメント、オフセットに従って扱われます。
 
@@ -42,7 +42,8 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - 成熟したLSP/editor tooling、semantic highlighting、formatter-on-save連携
 - append mode、directory operation、path library、missing-vs-empty file-read error distinction、allocator-backed Silt file buffer、process spawning、signal、stdout/stderr abstraction、general hosted IO、environment enumeration/mutation、`silt run [TARGET] -- ARG...` を超えるargument policy
 - Unicode category、locale-sensitive behavior、case conversion
-- UTF-8 validation、汎用文字列、配列、dynamic slice、allocator-backed byte/text buffer、現在の狭いall-ASCII class checkを超えるsubstring/search/general scanning API、collation、text-normalization API
+- UTF-8 validation、汎用文字列、配列、dynamic slice、allocator-backed byte/text buffer、現在の狭いall-ASCII class checkとASCII decimal `U64` parserを超えるsubstring/search/general scanning API、collation、text-normalization API
+- 符号、基数prefix、separator、whitespace trimming、詳細なparse error分類、parser combinator library
 - indexed inductive families
 - 完全なtotality checking
 - generic ADTのruntime representation

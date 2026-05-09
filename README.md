@@ -50,17 +50,18 @@ production kernel.
   / `text-starts-with`, suffix checks through `byte-slice-ends-with` /
   `text-ends-with`, pure ASCII byte predicates for digit, alpha, alnum,
   hexadecimal, space, and whitespace classification, narrow all-ASCII slice/text
-  predicates for digits, alnum, hexadecimal digits, and whitespace, an explicit
-  `Nat` / `U64` bridge, and a first-order hosted text-output path that lowers
-  through `nat-elim` to a C loop, plus explicit hosted process-argument and
-  environment text views, first-order hosted file-write over explicit
-  `TextView` path/body values, and first-order hosted file-read into an
-  explicit `TextView`.
+  predicates for digits, alnum, hexadecimal digits, and whitespace, a checked
+  ASCII decimal `U64` parser with empty-input, non-digit, and overflow
+  rejection, an explicit `Nat` / `U64` bridge, and a first-order hosted
+  text-output path that lowers through `nat-elim` to a C loop, plus explicit
+  hosted process-argument and environment text views, first-order hosted
+  file-write over explicit `TextView` path/body values, and first-order hosted
+  file-read into an explicit `TextView`.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, and `hosted-cat`, that build and run
   through the package spine, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `ascii-test`, and `ascii-slice-test` as package test
-  targets.
+  `text-suffix-test`, `ascii-test`, `ascii-slice-test`, and
+  `ascii-decimal-u64-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
@@ -89,6 +90,7 @@ scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
+scripts/verify-ascii-decimal-u64.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
