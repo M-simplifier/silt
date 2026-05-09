@@ -57,7 +57,9 @@ production kernel.
   text-output path that lowers through `nat-elim` to a C loop, plus explicit
   hosted process-argument and environment text views, first-order hosted
   file-write over explicit `TextView` path/body values, and first-order hosted
-  file-read into an explicit `TextView` with a narrow read-status observation.
+  file-read into an explicit `TextView` with a narrow read-status observation,
+  a first-order `HostReadFileResult` body/status wrapper, and explicit stderr
+  byte/text diagnostics.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, and
   `hosted-size-report`, that build and run through the package spine, plus
@@ -71,8 +73,9 @@ production kernel.
   bounded live frame-pool alloc/free cell update, and an allocator handoff
   marker.
 - A hosted pressure-test bin, `hosted-size-report`, that combines process args,
-  file read plus read-status observation, ASCII decimal parse/format, file
-  write, stdout, and process status in one checked package target.
+  a first-order file read result layout, ASCII decimal parse/format, file
+  write, stdout, stderr diagnostics, and process status in one checked package
+  target.
 
 ## Quick Checks
 

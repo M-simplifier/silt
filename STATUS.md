@@ -45,7 +45,9 @@ Silt currently demonstrates:
   constructor; and explicit hosted environment presence/base/length boundaries
   with `host-env-has` and `host-env-text`; and a first-order hosted file-write
   boundary through `host-write-file`; and a first-order hosted file-read
-  boundary through `host-read-file` with a narrow read-status observation
+  boundary through `host-read-file` with a narrow read-status observation; and
+  a first-order `HostReadFileResult` body/status wrapper plus explicit stderr
+  byte/text writers
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
   `hosted-write-file`, `hosted-cat`, and `hosted-size-report` package examples
   that compile, run, print, read, write, or report through the hosted package
@@ -67,9 +69,9 @@ Silt currently demonstrates:
 - a single-local-package `Silt.pkg` command spine with `build`, `run`, and
   `test`, including selected package test execution through `silt test TARGET`
 - a hosted CLI pressure-test package target, `hosted-size-report`, that combines
-  process args, file read plus read-status observation, ASCII decimal
-  parse/format, file write, stdout, and process status in one checked runnable
-  example
+  process args, a first-order file read result layout, ASCII decimal
+  parse/format, file write, stdout, stderr diagnostics, and process status in
+  one checked runnable example
 
 ## Current Evidence
 
@@ -125,9 +127,10 @@ Silt does not currently claim:
   integration
 - append modes, directory operations, path libraries, rich file-read error
   categories beyond the current success/failure status, allocator-backed Silt
-  file buffers, process spawning, signals, stdout/stderr abstractions, general
-  hosted IO, environment enumeration or mutation, or package argument policy
-  beyond `silt run [TARGET] -- ARG...`
+  file buffers, process spawning, signals, stdout/stderr abstractions beyond
+  the current explicit byte/text writers, general hosted IO, environment
+  enumeration or mutation, or package argument policy beyond
+  `silt run [TARGET] -- ARG...`
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline
