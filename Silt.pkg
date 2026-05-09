@@ -68,6 +68,18 @@
       examples/ascii-predicates.silt)
     (entry ascii-predicate-test))
   (test
+    ascii-slice-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/ascii.silt
+      stdlib/ascii-slice.silt
+      stdlib/hosted.silt
+      examples/ascii-slice-predicates.silt)
+    (entry ascii-slice-predicate-test))
+  (test
     stdlib-test
     (sources
       stdlib/core.silt
