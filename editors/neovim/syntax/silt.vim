@@ -13,6 +13,9 @@ syntax keyword siltDeclaration
 
 syntax keyword siltForm
       \ Eff Pi addr align-of bind bool-case field field-offset fn let
+      \ ascii-byte-is-alnum ascii-byte-is-alpha ascii-byte-is-digit
+      \ ascii-byte-is-hex-digit ascii-byte-is-lower ascii-byte-is-space
+      \ ascii-byte-is-upper ascii-byte-is-whitespace
       \ byte-slice-at byte-slice-base byte-slice-drop byte-slice-from
       \ byte-slice-ends-with byte-slice-eq byte-slice-is-empty byte-slice-len
       \ byte-slice-starts-with byte-slice-take
