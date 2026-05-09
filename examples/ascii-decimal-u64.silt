@@ -1,0 +1,437 @@
+; ASCII decimal U64 parsing examples over explicit byte-backed views.
+
+; Empty input, non-digits, and overflow are rejected.
+
+(static-bytes ascii-decimal-small-bytes ((u8 49) (u8 50) (u8 51) (u8 52) (u8 53)))
+
+(static-bytes
+  ascii-decimal-leading-zero-bytes
+  ((u8 48) (u8 48) (u8 48) (u8 52) (u8 50)))
+
+(static-bytes ascii-decimal-invalid-bytes ((u8 49) (u8 50) (u8 65) (u8 51)))
+
+(static-bytes
+  ascii-decimal-max-bytes
+  ((u8 49)
+   (u8 56)
+   (u8 52)
+   (u8 52)
+   (u8 54)
+   (u8 55)
+   (u8 52)
+   (u8 52)
+   (u8 48)
+   (u8 55)
+   (u8 51)
+   (u8 55)
+   (u8 48)
+   (u8 57)
+   (u8 53)
+   (u8 53)
+   (u8 49)
+   (u8 54)
+   (u8 49)
+   (u8 53)))
+
+(static-bytes
+  ascii-decimal-overflow-bytes
+  ((u8 49)
+   (u8 56)
+   (u8 52)
+   (u8 52)
+   (u8 54)
+   (u8 55)
+   (u8 52)
+   (u8 52)
+   (u8 48)
+   (u8 55)
+   (u8 51)
+   (u8 55)
+   (u8 48)
+   (u8 57)
+   (u8 53)
+   (u8 53)
+   (u8 49)
+   (u8 54)
+   (u8 49)
+   (u8 54)))
+
+(static-bytes ascii-decimal-text-bytes ((u8 52) (u8 50)))
+
+(claim ascii-decimal-small-view ByteSlice)
+
+(def
+  ascii-decimal-small-view
+  (byte-slice-from ascii-decimal-small-bytes ascii-decimal-small-bytes-len))
+
+(claim ascii-decimal-leading-zero-view ByteSlice)
+
+(def
+  ascii-decimal-leading-zero-view
+  (byte-slice-from
+    ascii-decimal-leading-zero-bytes
+    ascii-decimal-leading-zero-bytes-len))
+
+(claim ascii-decimal-invalid-view ByteSlice)
+
+(def
+  ascii-decimal-invalid-view
+  (byte-slice-from ascii-decimal-invalid-bytes ascii-decimal-invalid-bytes-len))
+
+(claim ascii-decimal-max-view ByteSlice)
+
+(def
+  ascii-decimal-max-view
+  (byte-slice-from ascii-decimal-max-bytes ascii-decimal-max-bytes-len))
+
+(claim ascii-decimal-overflow-view ByteSlice)
+
+(def
+  ascii-decimal-overflow-view
+  (byte-slice-from ascii-decimal-overflow-bytes ascii-decimal-overflow-bytes-len))
+
+(claim ascii-decimal-empty-view ByteSlice)
+
+(def ascii-decimal-empty-view (byte-slice-from ascii-decimal-small-bytes (u64 0)))
+
+(claim ascii-decimal-text-view TextView)
+
+(def
+  ascii-decimal-text-view
+  (text-view-from ascii-decimal-text-bytes ascii-decimal-text-bytes-len))
+
+(claim ascii-decimal-text-leading-zero-view TextView)
+
+(def
+  ascii-decimal-text-leading-zero-view
+  (text-view-from ascii-decimal-leading-zero-bytes ascii-decimal-leading-zero-bytes-len))
+
+(claim ascii-decimal-text-max-view TextView)
+
+(def
+  ascii-decimal-text-max-view
+  (text-view-from ascii-decimal-max-bytes ascii-decimal-max-bytes-len))
+
+(claim ascii-decimal-text-overflow-view TextView)
+
+(def
+  ascii-decimal-text-overflow-view
+  (text-view-from ascii-decimal-overflow-bytes ascii-decimal-overflow-bytes-len))
+
+(claim ascii-decimal-text-empty-view TextView)
+
+(def ascii-decimal-text-empty-view (text-view-from ascii-decimal-text-bytes (u64 0)))
+
+(claim ascii-decimal-text-invalid-view TextView)
+
+(def
+  ascii-decimal-text-invalid-view
+  (text-view-from ascii-decimal-invalid-bytes ascii-decimal-invalid-bytes-len))
+
+(claim ascii-decimal-small-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-small-result
+  (byte-slice-parse-ascii-u64 HostIO ascii-decimal-small-view))
+
+(claim ascii-decimal-leading-zero-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-leading-zero-result
+  (byte-slice-parse-ascii-u64 HostIO ascii-decimal-leading-zero-view))
+
+(claim ascii-decimal-invalid-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-invalid-result
+  (byte-slice-parse-ascii-u64 HostIO ascii-decimal-invalid-view))
+
+(claim ascii-decimal-max-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-max-result
+  (byte-slice-parse-ascii-u64 HostIO ascii-decimal-max-view))
+
+(claim ascii-decimal-overflow-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-overflow-result
+  (byte-slice-parse-ascii-u64 HostIO ascii-decimal-overflow-view))
+
+(claim ascii-decimal-empty-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-empty-result
+  (byte-slice-parse-ascii-u64 HostIO ascii-decimal-empty-view))
+
+(claim ascii-decimal-text-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def ascii-decimal-text-result (text-parse-ascii-u64 HostIO ascii-decimal-text-view))
+
+(claim ascii-decimal-text-leading-zero-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-text-leading-zero-result
+  (text-parse-ascii-u64 HostIO ascii-decimal-text-leading-zero-view))
+
+(claim ascii-decimal-text-max-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-text-max-result
+  (text-parse-ascii-u64 HostIO ascii-decimal-text-max-view))
+
+(claim ascii-decimal-text-overflow-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-text-overflow-result
+  (text-parse-ascii-u64 HostIO ascii-decimal-text-overflow-view))
+
+(claim ascii-decimal-text-empty-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-text-empty-result
+  (text-parse-ascii-u64 HostIO ascii-decimal-text-empty-view))
+
+(claim ascii-decimal-text-invalid-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-decimal-text-invalid-result
+  (text-parse-ascii-u64 HostIO ascii-decimal-text-invalid-view))
+
+(claim
+  ascii-decimal-effect-and
+  (Pi
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-decimal-effect-and
+  (fn
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      left
+      (fn
+        ((left-value 1 Bool))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          Bool
+          right
+          (fn
+            ((right-value 1 Bool))
+            (pure HostIO Bool (bool-and left-value right-value))))))))
+
+(claim ascii-decimal-small-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-small-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-small-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-has-value result (u64 12345))))))
+
+(claim ascii-decimal-leading-zero-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-leading-zero-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-leading-zero-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-has-value result (u64 42))))))
+
+(claim ascii-decimal-max-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-max-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-max-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-has-value result (u64 18446744073709551615))))))
+
+(claim ascii-decimal-invalid-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-invalid-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-invalid-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-is-invalid result)))))
+
+(claim ascii-decimal-overflow-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-overflow-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-overflow-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-is-invalid result)))))
+
+(claim ascii-decimal-empty-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-empty-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-empty-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-is-invalid result)))))
+
+(claim ascii-decimal-text-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-text-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-text-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-has-value result (u64 42))))))
+
+(claim ascii-decimal-text-leading-zero-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-text-leading-zero-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-text-leading-zero-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-has-value result (u64 42))))))
+
+(claim ascii-decimal-text-max-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-text-max-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-text-max-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-has-value result (u64 18446744073709551615))))))
+
+(claim ascii-decimal-text-overflow-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-text-overflow-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-text-overflow-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-is-invalid result)))))
+
+(claim ascii-decimal-text-empty-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-text-empty-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-text-empty-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-is-invalid result)))))
+
+(claim ascii-decimal-text-invalid-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-text-invalid-test
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    AsciiDecimalU64
+    Bool
+    ascii-decimal-text-invalid-result
+    (fn
+      ((result 1 AsciiDecimalU64))
+      (pure HostIO Bool (ascii-decimal-u64-is-invalid result)))))
+
+(claim ascii-decimal-u64-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-decimal-u64-test
+  (ascii-decimal-effect-and
+    ascii-decimal-small-test
+    (ascii-decimal-effect-and
+      ascii-decimal-leading-zero-test
+      (ascii-decimal-effect-and
+        ascii-decimal-max-test
+        (ascii-decimal-effect-and
+          ascii-decimal-invalid-test
+          (ascii-decimal-effect-and
+            ascii-decimal-overflow-test
+            (ascii-decimal-effect-and
+              ascii-decimal-empty-test
+              (ascii-decimal-effect-and
+                ascii-decimal-text-test
+                (ascii-decimal-effect-and
+                  ascii-decimal-text-leading-zero-test
+                  (ascii-decimal-effect-and
+                    ascii-decimal-text-max-test
+                    (ascii-decimal-effect-and
+                      ascii-decimal-text-overflow-test
+                      (ascii-decimal-effect-and
+                        ascii-decimal-text-empty-test
+                        ascii-decimal-text-invalid-test))))))))))))

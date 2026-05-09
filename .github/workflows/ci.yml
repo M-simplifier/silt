@@ -25,6 +25,7 @@ on:
       - "scripts/verify-text-view-helpers.sh"
       - "scripts/verify-ascii-predicates.sh"
       - "scripts/verify-ascii-slice-predicates.sh"
+      - "scripts/verify-ascii-decimal-u64.sh"
       - "scripts/verify-stdlib-core-combinators.sh"
       - "scripts/verify-stdlib-hosted-seed.sh"
       - "scripts/verify-x86_64-elf-backend.sh"
@@ -109,6 +110,9 @@ jobs:
 
       - name: Verify ASCII slice predicates
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-ascii-slice-predicates.sh
+
+      - name: Verify ASCII decimal U64 parser
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-ascii-decimal-u64.sh
 
       - name: Verify stdlib core combinators
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-stdlib-core-combinators.sh
