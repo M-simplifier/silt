@@ -20,9 +20,10 @@ Silt currently demonstrates:
 - a lint spine that combines canonical formatting checks with source-bundle
   parsing and checker diagnostics
 - lightweight Neovim filetype and syntax files for the current public surface
-- a single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
-  no-argument hosted entry functions, plus `silt run [TARGET] -- ARG...`
-  forwarding and exit status propagation through the hosted package harness
+- a single-local-package `Silt.pkg` spine with `new`, `build`, `run`, `test`,
+  and `doc` for no-argument hosted entry functions, plus argument forwarding,
+  manifest-derived package docs, and exit status propagation through the hosted
+  package harness
 - a conservative standard-library seed with checker/normalizer-backed
   `Option`, `Result`, and `List` helpers, including map/and-then-style
   combinators for `Option` and `Result`; explicit `ByteSlice` and `TextView`
@@ -66,8 +67,10 @@ Silt currently demonstrates:
 - a bounded live frame-pool cell update inside the Limine path: seed state is
   stored, loaded, updated to an allocated state, stored again, restored through
   a free transition, and QEMU observes the final readiness marker
-- a single-local-package `Silt.pkg` command spine with `build`, `run`, and
-  `test`, including selected package test execution through `silt test TARGET`
+- a single-local-package `Silt.pkg` command spine with `new`, `build`, `run`,
+  `test`, and `doc`, including generated bin/test scaffolds, selected package
+  test execution through `silt test TARGET`, and manifest-derived HTML package
+  docs at `out/silt/doc/index.html`
 - a hosted CLI pressure-test package target, `hosted-size-report`, that combines
   process args, a first-order file read result layout, ASCII decimal
   parse/format, file write, stdout, stderr diagnostics, and process status in
@@ -122,15 +125,17 @@ Silt does not currently claim:
 - production readiness
 - a macro system
 - a module/import system beyond the current source include convenience
-- a package ecosystem, dependencies, workspaces, or lockfiles
+- a package ecosystem, dependencies, workspaces, lockfiles, package publishing,
+  package resolution, or selectable package templates
 - mature LSP/editor tooling, semantic highlighting, or formatter-on-save
   integration
 - append modes, directory operations, path libraries, rich file-read error
   categories beyond the current success/failure status, allocator-backed Silt
   file buffers, process spawning, signals, stdout/stderr abstractions beyond
   the current explicit byte/text writers, general hosted IO, environment
-  enumeration or mutation, or package argument policy beyond
-  `silt run [TARGET] -- ARG...`
+  enumeration or mutation, source-comment or type-signature API docs,
+  cross-package docs, or package argument policy beyond `silt new NAME`,
+  `silt run [TARGET] -- ARG...`, `silt test TARGET`, and `silt doc`
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline

@@ -39,10 +39,10 @@ production kernel.
 - A language-aware lint spine that combines canonical formatting checks with
   parser/checker diagnostics.
 - Lightweight Neovim filetype and syntax files for the current surface.
-- A single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
-  no-argument hosted entry functions, plus `silt run [TARGET] -- ARG...`
-  forwarding, selected test-target execution, and exit status propagation
-  through the hosted package harness.
+- A single-local-package `Silt.pkg` spine with `new`, `build`, `run`, `test`,
+  and `doc` for no-argument hosted entry functions, plus argument forwarding,
+  selected test-target execution, manifest-derived package docs, and exit status
+  propagation through the hosted package harness.
 - A conservative standard-library seed: checker/normalizer-backed `Option`,
   `Result`, and `List` helpers, byte/text view types over `U8` and `Ptr U8`,
   bounded pure view helpers for empty/take/drop, byte-wise equality through

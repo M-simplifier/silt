@@ -1,4 +1,7 @@
 module Silt.CLI (main) where
+import Control.Monad (when)
+import Data.Char (isSpace)
+import Data.List (isInfixOf)
 import Silt.Build (buildPackage, runPackage, testPackage)
 import Silt.Codegen.C
   ( emitDefinitionC
@@ -9,11 +12,14 @@ import Silt.Codegen.C
 import Silt.Elab (CheckedDecl (..), checkProgram, normalizeDefinition, renderCheckedDecl)
 import Silt.Format (formatSExprSource)
 import Silt.Lint (lintProgramPaths, renderLintDiagnostic)
+import Silt.PackageDoc (docPackage)
 import Silt.Parse (parseSExprs)
 import Silt.Source (readProgramBundle)
 import Silt.Syntax (Name, Program (..), prettyDecl)
+import System.Directory (createDirectory, doesDirectoryExist, doesFileExist)
 import System.Environment (getArgs)
 import System.Exit (die, exitFailure)
+import System.FilePath ((</>))
 import System.IO (hPutStr, hPutStrLn, stderr)
 
 main :: IO ()
@@ -22,6 +28,8 @@ main = do
   case args of
     ["version"] ->
       putStrLn "silt stage0 0.1.0.0"
+    ["new", packageName] ->
+      createPackage packageName
     ["build"] ->
       buildPackage Nothing
     ["build", target] ->
@@ -38,6 +46,8 @@ main = do
       testPackage Nothing
     ["test", target] ->
       testPackage (Just target)
+    ["doc"] ->
+      docPackage
     ["help"] ->
       putStr usage
     ["parse", path] -> do
@@ -131,9 +141,11 @@ usage =
     , "Usage:"
     , "  silt help"
     , "  silt version"
+    , "  silt new NAME"
     , "  silt build [TARGET]"
     , "  silt run [TARGET] [-- ARG...]"
     , "  silt test [TARGET]"
+    , "  silt doc"
     , "  silt sexpr FILE"
     , "  silt fmt FILE"
     , "  silt fmt --check FILE..."
@@ -178,6 +190,59 @@ splitSourcesAndNames args =
   case break (== "--") args of
     (paths, "--" : names) | not (null paths) && not (null names) -> Just (paths, names)
     _ -> Nothing
+
+createPackage :: String -> IO ()
+createPackage packageName = do
+  either die pure (validateNewPackageName packageName)
+  directoryExists <- doesDirectoryExist packageName
+  fileExists <- doesFileExist packageName
+  when (directoryExists || fileExists) $
+    die ("package path already exists: " ++ packageName)
+  createDirectory packageName
+  createDirectory (packageName </> "src")
+  createDirectory (packageName </> "tests")
+  writeFile (packageName </> "Silt.pkg") (newPackageManifest packageName)
+  writeFile (packageName </> "src" </> "main.silt") newPackageAppSource
+  writeFile (packageName </> "tests" </> "main.silt") newPackageTestSource
+  putStrLn ("Created Silt package " ++ packageName)
+
+validateNewPackageName :: String -> Either String ()
+validateNewPackageName packageName
+  | null packageName = Left "package name cannot be empty"
+  | packageName == "." || packageName == ".." = Left "package name cannot be '.' or '..'"
+  | "/" `isInfixOf` packageName = Left "package name cannot contain '/'"
+  | "\\" `isInfixOf` packageName = Left "package name cannot contain '\\'"
+  | any isPackageNameDelimiter packageName = Left "package name must be a simple S-expression atom"
+  | otherwise = Right ()
+
+isPackageNameDelimiter :: Char -> Bool
+isPackageNameDelimiter ch =
+  isSpace ch || ch == '(' || ch == ')' || ch == ';'
+
+newPackageManifest :: String -> String
+newPackageManifest packageName =
+  unlines
+    [ "(package"
+    , "  " ++ packageName
+    , "  (bin " ++ packageName ++ " (sources src/main.silt) (entry app-main))"
+    , "  (test " ++ packageName ++ "-test (sources src/main.silt tests/main.silt) (entry app-test)))"
+    ]
+
+newPackageAppSource :: String
+newPackageAppSource =
+  unlines
+    [ "(claim app-main U64)"
+    , ""
+    , "(def app-main (u64 0))"
+    ]
+
+newPackageTestSource :: String
+newPackageTestSource =
+  unlines
+    [ "(claim app-test Bool)"
+    , ""
+    , "(def app-test True)"
+    ]
 
 isAbiContract :: CheckedDecl -> Bool
 isAbiContract checked =
