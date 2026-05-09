@@ -34,8 +34,10 @@ syntax keyword siltForm
       \ host-arg-base host-arg-count host-arg-len host-arg-text
       \ host-env-base host-env-has host-env-len host-env-present host-env-text
       \ host-file-read-base host-file-read-len host-file-read-ok
-      \ host-file-write-bytes host-put-byte host-read-file host-read-file-ok
-      \ host-seq host-write-file
+      \ host-file-write-bytes host-put-byte host-put-error-byte
+      \ host-read-file host-read-file-ok host-read-file-result
+      \ host-seq host-write-error-byte host-write-error-byte-at
+      \ host-write-error-text host-write-error-text-n host-write-file
       \ host-write-text let-layout let-load-layout list-head-or list-is-empty
       \ list-tail-or load match nat-case nat-elim pure
       \ option-and-then option-is-some option-map option-unwrap-or
@@ -50,7 +52,7 @@ syntax keyword siltForm
       \ u64-rem u64-shl u64-shr u64-sub u64-to-nat u64-to-u8 u64-xor
       \ with-fields x86-in8 x86-out8
 
-syntax keyword siltType Addr AsciiDecimalU64 AsciiDecimalU64Buffer AsciiDecimalU64FormatState Bool Console Heap Nat Ptr Type U8 U64 Unit
+syntax keyword siltType Addr AsciiDecimalU64 AsciiDecimalU64Buffer AsciiDecimalU64FormatState Bool Console Heap HostReadFileResult Nat Ptr Type U8 U64 Unit
 syntax keyword siltConstant False S True Z tt
 
 syntax match siltParen "[()]"

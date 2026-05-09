@@ -6,6 +6,11 @@
 
 (extern host-put-byte (Pi ((byte U8)) (Eff HostIO HostIO Unit)) silt_host_put_byte)
 
+(extern
+  host-put-error-byte
+  (Pi ((byte U8)) (Eff HostIO HostIO Unit))
+  silt_host_put_error_byte)
+
 (extern host-arg-count (Eff HostIO HostIO U64) silt_host_arg_count)
 
 (extern
@@ -45,6 +50,8 @@
 (extern host-file-read-len (Eff HostIO HostIO U64) silt_host_file_read_len)
 
 (extern host-file-read-ok (Eff HostIO HostIO Bool) silt_host_file_read_ok)
+
+(layout HostReadFileResult 24 8 ((ok Bool 0) (text TextView 8)))
 
 (claim
   host-seq
@@ -103,6 +110,49 @@
 (def
   host-write-text
   (fn ((text TextView)) (host-write-text-n (u64-to-nat (text-len text)) text)))
+
+(claim host-write-error-byte (Pi ((byte U8)) (Eff HostIO HostIO Unit)))
+
+(def host-write-error-byte (fn ((byte U8)) (host-put-error-byte byte)))
+
+(claim
+  host-write-error-byte-at
+  (Pi ((base (Ptr U8)) (index U64)) (Eff HostIO HostIO Unit)))
+
+(def
+  host-write-error-byte-at
+  (fn
+    ((base (Ptr U8)) (index U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      U8
+      Unit
+      (load HostIO U8 (ptr-step U8 base index))
+      (fn ((byte 1 U8)) (host-write-error-byte byte)))))
+
+(claim
+  host-write-error-text-n
+  (Pi ((count Nat) (text TextView)) (Eff HostIO HostIO Unit)))
+
+(def
+  host-write-error-text-n
+  (fn
+    ((count Nat) (text TextView))
+    (nat-elim
+      (Eff HostIO HostIO Unit)
+      (pure HostIO Unit tt)
+      (fn
+        ((index Nat) (rec (Eff HostIO HostIO Unit)))
+        (host-seq rec (host-write-error-byte-at (text-base text) (nat-to-u64 index))))
+      count)))
+
+(claim host-write-error-text (Pi ((text TextView)) (Eff HostIO HostIO Unit)))
+
+(def
+  host-write-error-text
+  (fn ((text TextView)) (host-write-error-text-n (u64-to-nat (text-len text)) text)))
 
 (claim host-write-text5 (Pi ((text TextView)) (Eff HostIO HostIO Unit)))
 
@@ -208,3 +258,31 @@
 (claim host-read-file-ok (Eff HostIO HostIO Bool))
 
 (def host-read-file-ok host-file-read-ok)
+
+(claim
+  host-read-file-result
+  (Pi ((path TextView)) (Eff HostIO HostIO HostReadFileResult)))
+
+(def
+  host-read-file-result
+  (fn
+    ((path TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextView
+      HostReadFileResult
+      (host-read-file path)
+      (fn
+        ((body 1 TextView))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          HostReadFileResult
+          host-file-read-ok
+          (fn
+            ((ok 1 Bool))
+            (pure HostIO HostReadFileResult (layout-values HostReadFileResult ok body))))))))
