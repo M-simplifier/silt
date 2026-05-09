@@ -72,6 +72,19 @@
       stdlib/hosted.silt
       examples/hosted-size-report.silt)
     (entry hosted-size-report-main))
+  (bin
+    hosted-config-report
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/ascii.silt
+      stdlib/ascii-slice.silt
+      stdlib/ascii-decimal.silt
+      stdlib/hosted.silt
+      examples/hosted-config-report.silt)
+    (entry hosted-config-report-main))
   (test
     ascii-test
     (sources stdlib/core.silt stdlib/ascii.silt examples/ascii-predicates.silt)
