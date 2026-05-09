@@ -1,0 +1,71 @@
+; ASCII byte predicates over U8 values.
+
+; This module classifies bytes only. It does not claim UTF-8 validation,
+
+; Unicode categories, locale-sensitive behavior, or text case conversion.
+
+(claim ascii-byte-is-digit (Pi ((byte U8)) Bool))
+
+(def
+  ascii-byte-is-digit
+  (fn
+    ((byte U8))
+    (bool-and (u64-lte (u64 48) (u8-to-u64 byte)) (u64-lte (u8-to-u64 byte) (u64 57)))))
+
+(claim ascii-byte-is-lower (Pi ((byte U8)) Bool))
+
+(def
+  ascii-byte-is-lower
+  (fn
+    ((byte U8))
+    (bool-and (u64-lte (u64 97) (u8-to-u64 byte)) (u64-lte (u8-to-u64 byte) (u64 122)))))
+
+(claim ascii-byte-is-upper (Pi ((byte U8)) Bool))
+
+(def
+  ascii-byte-is-upper
+  (fn
+    ((byte U8))
+    (bool-and (u64-lte (u64 65) (u8-to-u64 byte)) (u64-lte (u8-to-u64 byte) (u64 90)))))
+
+(claim ascii-byte-is-alpha (Pi ((byte U8)) Bool))
+
+(def
+  ascii-byte-is-alpha
+  (fn ((byte U8)) (bool-or (ascii-byte-is-lower byte) (ascii-byte-is-upper byte))))
+
+(claim ascii-byte-is-alnum (Pi ((byte U8)) Bool))
+
+(def
+  ascii-byte-is-alnum
+  (fn ((byte U8)) (bool-or (ascii-byte-is-alpha byte) (ascii-byte-is-digit byte))))
+
+(claim ascii-byte-is-hex-digit (Pi ((byte U8)) Bool))
+
+(def
+  ascii-byte-is-hex-digit
+  (fn
+    ((byte U8))
+    (bool-or
+      (ascii-byte-is-digit byte)
+      (bool-or
+        (bool-and
+          (u64-lte (u64 65) (u8-to-u64 byte))
+          (u64-lte (u8-to-u64 byte) (u64 70)))
+        (bool-and
+          (u64-lte (u64 97) (u8-to-u64 byte))
+          (u64-lte (u8-to-u64 byte) (u64 102)))))))
+
+(claim ascii-byte-is-space (Pi ((byte U8)) Bool))
+
+(def ascii-byte-is-space (fn ((byte U8)) (u8-eq byte (u8 32))))
+
+(claim ascii-byte-is-whitespace (Pi ((byte U8)) Bool))
+
+(def
+  ascii-byte-is-whitespace
+  (fn
+    ((byte U8))
+    (bool-or
+      (bool-and (u64-lte (u64 9) (u8-to-u64 byte)) (u64-lte (u8-to-u64 byte) (u64 13)))
+      (ascii-byte-is-space byte))))

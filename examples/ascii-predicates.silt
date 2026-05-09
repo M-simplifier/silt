@@ -1,0 +1,245 @@
+; ASCII byte predicate examples.
+
+; This example stays byte-level. It does not claim UTF-8 validation, Unicode
+
+; classification, locale-sensitive behavior, text scanning, or allocation.
+
+(claim ascii-digit-zero-sample Bool)
+
+(def ascii-digit-zero-sample (ascii-byte-is-digit (u8 48)))
+
+(claim ascii-digit-slash-sample Bool)
+
+(def ascii-digit-slash-sample (ascii-byte-is-digit (u8 47)))
+
+(claim ascii-digit-nine-sample Bool)
+
+(def ascii-digit-nine-sample (ascii-byte-is-digit (u8 57)))
+
+(claim ascii-digit-colon-sample Bool)
+
+(def ascii-digit-colon-sample (ascii-byte-is-digit (u8 58)))
+
+(claim ascii-lower-a-sample Bool)
+
+(def ascii-lower-a-sample (ascii-byte-is-lower (u8 97)))
+
+(claim ascii-lower-z-sample Bool)
+
+(def ascii-lower-z-sample (ascii-byte-is-lower (u8 122)))
+
+(claim ascii-lower-backtick-sample Bool)
+
+(def ascii-lower-backtick-sample (ascii-byte-is-lower (u8 96)))
+
+(claim ascii-lower-upper-sample Bool)
+
+(def ascii-lower-upper-sample (ascii-byte-is-lower (u8 65)))
+
+(claim ascii-lower-left-brace-sample Bool)
+
+(def ascii-lower-left-brace-sample (ascii-byte-is-lower (u8 123)))
+
+(claim ascii-upper-a-sample Bool)
+
+(def ascii-upper-a-sample (ascii-byte-is-upper (u8 65)))
+
+(claim ascii-upper-z-sample Bool)
+
+(def ascii-upper-z-sample (ascii-byte-is-upper (u8 90)))
+
+(claim ascii-upper-at-sample Bool)
+
+(def ascii-upper-at-sample (ascii-byte-is-upper (u8 64)))
+
+(claim ascii-upper-left-bracket-sample Bool)
+
+(def ascii-upper-left-bracket-sample (ascii-byte-is-upper (u8 91)))
+
+(claim ascii-alpha-lower-sample Bool)
+
+(def ascii-alpha-lower-sample (ascii-byte-is-alpha (u8 97)))
+
+(claim ascii-alpha-upper-sample Bool)
+
+(def ascii-alpha-upper-sample (ascii-byte-is-alpha (u8 65)))
+
+(claim ascii-alpha-symbol-sample Bool)
+
+(def ascii-alpha-symbol-sample (ascii-byte-is-alpha (u8 95)))
+
+(claim ascii-alnum-digit-sample Bool)
+
+(def ascii-alnum-digit-sample (ascii-byte-is-alnum (u8 57)))
+
+(claim ascii-alnum-upper-sample Bool)
+
+(def ascii-alnum-upper-sample (ascii-byte-is-alnum (u8 90)))
+
+(claim ascii-alnum-symbol-sample Bool)
+
+(def ascii-alnum-symbol-sample (ascii-byte-is-alnum (u8 95)))
+
+(claim ascii-hex-digit-sample Bool)
+
+(def ascii-hex-digit-sample (ascii-byte-is-hex-digit (u8 57)))
+
+(claim ascii-hex-upper-a-sample Bool)
+
+(def ascii-hex-upper-a-sample (ascii-byte-is-hex-digit (u8 65)))
+
+(claim ascii-hex-upper-sample Bool)
+
+(def ascii-hex-upper-sample (ascii-byte-is-hex-digit (u8 70)))
+
+(claim ascii-hex-g-sample Bool)
+
+(def ascii-hex-g-sample (ascii-byte-is-hex-digit (u8 71)))
+
+(claim ascii-hex-lower-a-sample Bool)
+
+(def ascii-hex-lower-a-sample (ascii-byte-is-hex-digit (u8 97)))
+
+(claim ascii-hex-lower-f-sample Bool)
+
+(def ascii-hex-lower-f-sample (ascii-byte-is-hex-digit (u8 102)))
+
+(claim ascii-hex-lower-g-sample Bool)
+
+(def ascii-hex-lower-g-sample (ascii-byte-is-hex-digit (u8 103)))
+
+(claim ascii-space-sample Bool)
+
+(def ascii-space-sample (ascii-byte-is-space (u8 32)))
+
+(claim ascii-space-tab-sample Bool)
+
+(def ascii-space-tab-sample (ascii-byte-is-space (u8 9)))
+
+(claim ascii-whitespace-tab-sample Bool)
+
+(def ascii-whitespace-tab-sample (ascii-byte-is-whitespace (u8 9)))
+
+(claim ascii-whitespace-line-feed-sample Bool)
+
+(def ascii-whitespace-line-feed-sample (ascii-byte-is-whitespace (u8 10)))
+
+(claim ascii-whitespace-vertical-tab-sample Bool)
+
+(def ascii-whitespace-vertical-tab-sample (ascii-byte-is-whitespace (u8 11)))
+
+(claim ascii-whitespace-form-feed-sample Bool)
+
+(def ascii-whitespace-form-feed-sample (ascii-byte-is-whitespace (u8 12)))
+
+(claim ascii-whitespace-carriage-return-sample Bool)
+
+(def ascii-whitespace-carriage-return-sample (ascii-byte-is-whitespace (u8 13)))
+
+(claim ascii-whitespace-space-sample Bool)
+
+(def ascii-whitespace-space-sample (ascii-byte-is-whitespace (u8 32)))
+
+(claim ascii-whitespace-letter-sample Bool)
+
+(def ascii-whitespace-letter-sample (ascii-byte-is-whitespace (u8 65)))
+
+(claim ascii-digit-boundary-test Bool)
+
+(def
+  ascii-digit-boundary-test
+  (bool-and
+    ascii-digit-zero-sample
+    (bool-and
+      ascii-digit-nine-sample
+      (bool-and (bool-not ascii-digit-slash-sample) (bool-not ascii-digit-colon-sample)))))
+
+(claim ascii-alpha-boundary-test Bool)
+
+(def
+  ascii-alpha-boundary-test
+  (bool-and
+    ascii-lower-a-sample
+    (bool-and
+      ascii-lower-z-sample
+      (bool-and
+        (bool-not ascii-lower-backtick-sample)
+        (bool-and
+          (bool-not ascii-lower-upper-sample)
+          (bool-and
+            (bool-not ascii-lower-left-brace-sample)
+            (bool-and
+              ascii-upper-a-sample
+              (bool-and
+                ascii-upper-z-sample
+                (bool-and
+                  (bool-not ascii-upper-at-sample)
+                  (bool-and
+                    (bool-not ascii-upper-left-bracket-sample)
+                    (bool-and
+                      ascii-alpha-lower-sample
+                      (bool-and
+                        ascii-alpha-upper-sample
+                        (bool-not ascii-alpha-symbol-sample)))))))))))))
+
+(claim ascii-alnum-boundary-test Bool)
+
+(def
+  ascii-alnum-boundary-test
+  (bool-and
+    ascii-alnum-digit-sample
+    (bool-and ascii-alnum-upper-sample (bool-not ascii-alnum-symbol-sample))))
+
+(claim ascii-hex-boundary-test Bool)
+
+(def
+  ascii-hex-boundary-test
+  (bool-and
+    ascii-hex-digit-sample
+    (bool-and
+      ascii-hex-upper-a-sample
+      (bool-and
+        ascii-hex-upper-sample
+        (bool-and
+          (bool-not ascii-hex-g-sample)
+          (bool-and
+            ascii-hex-lower-a-sample
+            (bool-and ascii-hex-lower-f-sample (bool-not ascii-hex-lower-g-sample))))))))
+
+(claim ascii-space-boundary-test Bool)
+
+(def
+  ascii-space-boundary-test
+  (bool-and ascii-space-sample (bool-not ascii-space-tab-sample)))
+
+(claim ascii-whitespace-boundary-test Bool)
+
+(def
+  ascii-whitespace-boundary-test
+  (bool-and
+    ascii-whitespace-tab-sample
+    (bool-and
+      ascii-whitespace-line-feed-sample
+      (bool-and
+        ascii-whitespace-vertical-tab-sample
+        (bool-and
+          ascii-whitespace-form-feed-sample
+          (bool-and
+            ascii-whitespace-carriage-return-sample
+            (bool-and
+              ascii-whitespace-space-sample
+              (bool-not ascii-whitespace-letter-sample))))))))
+
+(claim ascii-predicate-test Bool)
+
+(def
+  ascii-predicate-test
+  (bool-and
+    ascii-digit-boundary-test
+    (bool-and
+      ascii-alpha-boundary-test
+      (bool-and
+        ascii-alnum-boundary-test
+        (bool-and
+          ascii-hex-boundary-test
+          (bool-and ascii-space-boundary-test ascii-whitespace-boundary-test))))))

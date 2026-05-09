@@ -61,6 +61,13 @@
       examples/hosted-cat.silt)
     (entry hosted-cat-main))
   (test
+    ascii-test
+    (sources
+      stdlib/core.silt
+      stdlib/ascii.silt
+      examples/ascii-predicates.silt)
+    (entry ascii-predicate-test))
+  (test
     stdlib-test
     (sources
       stdlib/core.silt

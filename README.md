@@ -48,21 +48,23 @@ production kernel.
   bounded pure view helpers for empty/take/drop, byte-wise equality through
   `byte-slice-eq` / `text-eq`, prefix checks through `byte-slice-starts-with`
   / `text-starts-with`, suffix checks through `byte-slice-ends-with` /
-  `text-ends-with`, an explicit `Nat` / `U64` bridge, and a first-order hosted
-  text-output path that lowers through
+  `text-ends-with`, pure ASCII byte predicates for digit, alpha, alnum,
+  hexadecimal, space, and whitespace classification, an explicit `Nat` / `U64`
+  bridge, and a first-order hosted text-output path that lowers through
   `nat-elim` to a C loop, plus explicit hosted process-argument and environment
   text views, first-order hosted file-write over explicit `TextView` path/body
   values, and first-order hosted file-read into an explicit `TextView`.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, and `hosted-cat`, that build and run
-  through the package spine, plus `text-eq-test`, `text-prefix-test`, and
-  `text-suffix-test` as package test targets.
+  through the package spine, plus `text-eq-test`, `text-prefix-test`,
+  `text-suffix-test`, and `ascii-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
 - QEMU-observed Limine smoke paths, including HHDM/Memmap response reads, a
   bounded live frame-pool alloc/free cell update, and an allocator handoff
   marker.
+
 ## Quick Checks
 
 ```bash
@@ -82,6 +84,7 @@ scripts/verify-hosted-file-read.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
+scripts/verify-ascii-predicates.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh

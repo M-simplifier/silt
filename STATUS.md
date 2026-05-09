@@ -30,18 +30,20 @@ Silt currently demonstrates:
   `take`, and `drop`; byte-wise equality through `byte-slice-eq` and
   `text-eq`; prefix checks through `byte-slice-starts-with` and
   `text-starts-with`; suffix checks through `byte-slice-ends-with` and
-  `text-ends-with`; an explicit `Nat` / `U64` bridge; and a first-order hosted
-  text-output path that lowers through `nat-elim` to a C loop; and explicit
-  hosted process-argument count/base/length boundaries with a
-  `host-arg-text` view constructor; and explicit hosted environment
+  `text-ends-with`; pure ASCII byte predicates over `U8` for digit,
+  lower/upper alpha, alpha, alnum, hexadecimal digit, literal space, and ASCII
+  whitespace classification; an explicit `Nat` / `U64` bridge; and a
+  first-order hosted text-output path that lowers through `nat-elim` to a C
+  loop; and explicit hosted process-argument count/base/length boundaries with
+  a `host-arg-text` view constructor; and explicit hosted environment
   presence/base/length boundaries with `host-env-has` and `host-env-text`; and
   a first-order hosted file-write boundary through `host-write-file`; and a
   first-order hosted file-read boundary through `host-read-file`
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`, and
   `hosted-write-file` and `hosted-cat` package examples that compile, run,
   print, read, or write through the hosted package harness, and exercise
-  process status where relevant, plus `text-eq-test`, `text-prefix-test`, and
-  `text-suffix-test` as package test targets
+  process status where relevant, plus `text-eq-test`, `text-prefix-test`,
+  `text-suffix-test`, and `ascii-test` as package test targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -78,6 +80,7 @@ scripts/verify-stdlib-core-combinators.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
+scripts/verify-ascii-predicates.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
@@ -108,11 +111,12 @@ Silt does not currently claim:
   signals, stdout/stderr abstractions, general hosted IO, environment
   enumeration or mutation, or package argument policy beyond
   `silt run [TARGET] -- ARG...`
-- runtime representation for generic ADTs or general closure conversion
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline
-- UTF-8 validation, generic strings, arrays, dynamic slices, allocator-backed
+- runtime representation for generic ADTs or general closure conversion
+- Unicode categories, locale-sensitive behavior, case conversion, UTF-8
+  validation, generic strings, arrays, dynamic slices, allocator-backed
   byte/text buffers, substring/search/scanning APIs, collation, or
   text-normalization APIs
 - a complete Limine or memory-map parser
