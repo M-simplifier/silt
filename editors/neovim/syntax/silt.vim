@@ -18,6 +18,11 @@ syntax keyword siltForm
       \ ascii-byte-is-hex-digit ascii-byte-is-lower ascii-byte-is-space
       \ ascii-byte-is-upper ascii-byte-is-whitespace
       \ ascii-decimal-u64-can-append ascii-decimal-u64-has-value
+      \ ascii-decimal-u64-buffer-base
+      \ ascii-decimal-u64-format-initial ascii-decimal-u64-format-into
+      \ ascii-decimal-u64-format-remaining ascii-decimal-u64-format-state
+      \ ascii-decimal-u64-format-step ascii-decimal-u64-format-should-write
+      \ ascii-decimal-u64-format-written
       \ ascii-decimal-u64-is-invalid ascii-decimal-u64-result
       \ ascii-decimal-u64-step ascii-decimal-u64-valid
       \ ascii-decimal-u64-value
@@ -44,7 +49,7 @@ syntax keyword siltForm
       \ u64-rem u64-shl u64-shr u64-sub u64-to-nat u64-to-u8 u64-xor
       \ with-fields x86-in8 x86-out8
 
-syntax keyword siltType Addr AsciiDecimalU64 Bool Console Heap Nat Ptr Type U8 U64 Unit
+syntax keyword siltType Addr AsciiDecimalU64 AsciiDecimalU64Buffer AsciiDecimalU64FormatState Bool Console Heap Nat Ptr Type U8 U64 Unit
 syntax keyword siltConstant False S True Z tt
 
 syntax match siltParen "[()]"
