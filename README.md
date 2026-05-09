@@ -41,7 +41,8 @@ production kernel.
 - Lightweight Neovim filetype and syntax files for the current surface.
 - A single-local-package `Silt.pkg` spine with `build`, `run`, and `test` for
   no-argument hosted entry functions, plus `silt run [TARGET] -- ARG...`
-  forwarding and exit status propagation through the hosted package harness.
+  forwarding, selected test-target execution, and exit status propagation
+  through the hosted package harness.
 - A conservative standard-library seed: checker/normalizer-backed `Option`,
   `Result`, and `List` helpers, byte/text view types over `U8` and `Ptr U8`,
   bounded pure view helpers for empty/take/drop, byte-wise equality through
@@ -54,20 +55,14 @@ production kernel.
   values, and first-order hosted file-read into an explicit `TextView`.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, and `hosted-cat`, that build and run
-  through the package spine, plus `text-eq-test` as a package test target.
+  through the package spine, plus `text-eq-test`, `text-prefix-test`, and
+  `text-suffix-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
 - QEMU-observed Limine smoke paths, including HHDM/Memmap response reads, a
   bounded live frame-pool alloc/free cell update, and an allocator handoff
   marker.
-- A conservative standard-library seed with checker/normalizer-backed
-  `Option` / `Result` / `List` helpers and explicit byte/text views, including
-  empty/take/drop helpers plus byte-wise equality and prefix checks.
-- A single-local-package `Silt.pkg` spine with `silt build [TARGET]`,
-  `silt run [TARGET] [-- ARG...]`, and `silt test [TARGET]` for explicit
-  `bin` and `test` targets.
-
 ## Quick Checks
 
 ```bash
@@ -85,6 +80,8 @@ scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
 scripts/verify-text-eq.sh
+scripts/verify-text-prefix.sh
+scripts/verify-text-suffix.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-stage0-backend.sh
 scripts/verify-freestanding-backend.sh
