@@ -10,57 +10,90 @@ import Silt.Codegen.C
 import Silt.Elab (checkProgram, normalizeDefinition)
 import Silt.Format (formatSExprSource)
 import Silt.Lint (lintProgramPaths, renderLintDiagnostic)
-import Silt.Package (Package (..), parsePackageSource)
+import Silt.Package
+  ( Package (..)
+  , PackageTarget (..)
+  , PackageTargetKind (..)
+  , parsePackageSource
+  )
 import Silt.Parse (parseProgram, parseSExprs)
 import Silt.Source (readProgramBundle)
 import Silt.Syntax (Program (..))
 import System.Exit (exitFailure)
 
+expectAll :: [IO Bool] -> IO Bool
+expectAll checks = fmap and (sequence checks)
+
 main :: IO ()
-main = do
-  ok1 <- expectCheck "identity module" identitySource
-  ok2 <- expectCheck "composition module" compositionSource
-  ok3 <- expectCheck "let bindings" letSource
-  ok4 <- expectCheck "bool match" boolSource
-  ok5 <- expectCheck "nat recursion primitive" natElimSource
-  ok6 <- expectCheck "quantities" quantitiesSource
-  ok7 <- expectCheck "effects" effectSource
-  ok8 <- expectCheck "u64 repr" u64Source
-  ok9 <- expectCheck "low-level repr" lowLevelSource
-  ok10 <- expectCheck "extern interop" externSource
-  ok11 <- expectCheck "memory effects" memorySource
-  ok12 <- expectCheck "ABI interop" abiSource
-  ok13 <- expectCheck "freestanding source" freestandingSource
-  ok13b <- expectCheck "capability source" capabilitySource
-  ok13c <- expectCheckFile "capability example file" "examples/capabilities.silt"
-  ok13d <- expectCheckFile "limine include example source" "examples/limine.silt"
-  ok13e <- expectCheckFile "limine panic include example source" "examples/limine-panic.silt"
-  ok13f <- expectCheckFile "limine serial shared source" "examples/limine-serial.silt"
-  ok13g <- expectCheckFile "top-level include fixture" "test/fixtures/includes/main.silt"
-  ok13h <- expectSourceFailure "include rejects parent traversal" ["test/fixtures/includes/unsafe-parent.silt"] "include path cannot contain '..'"
-  ok13i <- expectSourceFailure "include rejects non-silt extension" ["test/fixtures/includes/bad-extension.silt"] "include path must end in .silt"
-  ok13j <- expectSourceFailure "include rejects cycles" ["test/fixtures/includes/cycle-a.silt"] "include cycle:"
-  ok13k <- expectCheckFile "byte buffer example file" "examples/bytes.silt"
-  ok13l <- expectCheckFile "limine protocol shared source" "examples/limine-protocol.silt"
-  ok13m <- expectFormat "formatter compacts current surface" "(claim id(Pi((A Type)(x A))A))" "(claim id (Pi ((A Type) (x A)) A))\n"
-  ok13n <- expectFormatIdempotent "formatter is idempotent" formatFixtureSource
-  ok13o <- expectFormatParses "formatter output parses" formatFixtureMessySource
-  ok13p <- expectFormat "formatter preserves top-level include" "(include test/fixtures/includes/lib.silt)\n" "(include test/fixtures/includes/lib.silt)\n"
-  ok13p1 <- expectLintSuccess "lint accepts canonical checked source" ["test/fixtures/lint/clean.silt"]
-  ok13p2 <- expectLintFailure "lint rejects non-canonical source" ["test/fixtures/lint/messy.silt"] "not canonical"
-  ok13p3 <- expectLintFailure "lint rejects ill-typed source" ["test/fixtures/lint/bad-check.silt"] "type mismatch"
-  ok13q <- expectPackageFile "package manifest parses" "test/fixtures/packages/hello/Silt.pkg" "hello" 2
-  ok13r <- expectPackageFailureFile "package rejects parent source" "test/fixtures/packages/bad-parent-source.pkg" "source path cannot contain '..'"
-  ok13s <- expectPackageFailureFile "package rejects duplicate targets" "test/fixtures/packages/duplicate-targets.pkg" "package target names must be unique"
-  ok13t <- expectPackageFailureFile "package rejects dependency clause for v0" "test/fixtures/packages/unsupported-clause.pkg" "unsupported target clause"
-  ok13u <- expectPackageFile "root platform package parses" "Silt.pkg" "silt-platform" 18
-  ok13v <- expectCheckFiles "stdlib hosted seed bundle" stdlibHostedSources
-  ok13w <- expectNormalizedFiles "stdlib option sample normalization" stdlibHostedSources "stdlib-option-sample" "(u64 42)"
-  ok13x <- expectNormalizedFiles "stdlib result sample normalization" stdlibHostedSources "stdlib-result-sample" "(u64 7)"
-  ok13y <- expectNormalizedFiles "stdlib list sample normalization" stdlibHostedSources "stdlib-list-sample" "(u64 9)"
-  ok13z <- expectNormalizedFiles "stdlib hosted test normalization" stdlibHostedSources "stdlib-test" "True"
-  ok13z34 <-
-    fmap and $
+main = runChecks
+  [ expectCheck "identity module" identitySource
+  , expectCheck "composition module" compositionSource
+  , expectCheck "let bindings" letSource
+  , expectCheck "bool match" boolSource
+  , expectCheck "nat recursion primitive" natElimSource
+  , expectCheck "quantities" quantitiesSource
+  , expectCheck "effects" effectSource
+  , expectCheck "u64 repr" u64Source
+  , expectCheck "low-level repr" lowLevelSource
+  , expectCheck "extern interop" externSource
+  , expectCheck "memory effects" memorySource
+  , expectCheck "ABI interop" abiSource
+  , expectCheck "freestanding source" freestandingSource
+  , expectCheck "capability source" capabilitySource
+  , expectCheckFile "capability example file" "examples/capabilities.silt"
+  , expectCheckFile "limine include example source" "examples/limine.silt"
+  , expectCheckFile "limine panic include example source" "examples/limine-panic.silt"
+  , expectCheckFile "limine serial shared source" "examples/limine-serial.silt"
+  , expectCheckFile "top-level include fixture" "test/fixtures/includes/main.silt"
+  , expectSourceFailure "include rejects parent traversal" ["test/fixtures/includes/unsafe-parent.silt"] "include path cannot contain '..'"
+  , expectSourceFailure "include rejects non-silt extension" ["test/fixtures/includes/bad-extension.silt"] "include path must end in .silt"
+  , expectSourceFailure "include rejects cycles" ["test/fixtures/includes/cycle-a.silt"] "include cycle:"
+  , expectCheckFile "byte buffer example file" "examples/bytes.silt"
+  , expectCheckFile "limine protocol shared source" "examples/limine-protocol.silt"
+  , expectFormat "formatter compacts current surface" "(claim id(Pi((A Type)(x A))A))" "(claim id (Pi ((A Type) (x A)) A))\n"
+  , expectFormatIdempotent "formatter is idempotent" formatFixtureSource
+  , expectFormatParses "formatter output parses" formatFixtureMessySource
+  , expectFormat "formatter preserves top-level include" "(include test/fixtures/includes/lib.silt)\n" "(include test/fixtures/includes/lib.silt)\n"
+  , expectLintSuccess "lint accepts canonical checked source" ["test/fixtures/lint/clean.silt"]
+  , expectLintFailure "lint rejects non-canonical source" ["test/fixtures/lint/messy.silt"] "not canonical"
+  , expectLintFailure "lint rejects ill-typed source" ["test/fixtures/lint/bad-check.silt"] "type mismatch"
+  , expectPackageFile
+      "package manifest parses"
+      "test/fixtures/packages/hello/Silt.pkg"
+      "hello"
+      [(PackageBin, "hello"), (PackageTest, "hello-test")]
+  , expectPackageFailureFile "package rejects parent source" "test/fixtures/packages/bad-parent-source.pkg" "source path cannot contain '..'"
+  , expectPackageFailureFile "package rejects duplicate targets" "test/fixtures/packages/duplicate-targets.pkg" "package target names must be unique"
+  , expectPackageFailureFile "package rejects dependency clause for v0" "test/fixtures/packages/unsupported-clause.pkg" "unsupported target clause"
+  , expectPackageFile
+      "root platform package parses"
+      "Silt.pkg"
+      "silt-platform"
+      [ (PackageBin, "hosted-hello")
+      , (PackageBin, "hosted-echo")
+      , (PackageBin, "hosted-env")
+      , (PackageBin, "hosted-exit")
+      , (PackageBin, "hosted-write-file")
+      , (PackageBin, "hosted-cat")
+      , (PackageBin, "hosted-size-report")
+      , (PackageBin, "hosted-config-report")
+      , (PackageTest, "ascii-test")
+      , (PackageTest, "ascii-slice-test")
+      , (PackageTest, "ascii-trim-test")
+      , (PackageTest, "ascii-decimal-u64-test")
+      , (PackageTest, "ascii-decimal-u64-format-test")
+      , (PackageTest, "stdlib-test")
+      , (PackageTest, "text-eq-test")
+      , (PackageTest, "text-prefix-test")
+      , (PackageTest, "text-suffix-test")
+      , (PackageTest, "text-scan-test")
+      ]
+  , expectCheckFiles "stdlib hosted seed bundle" stdlibHostedSources
+  , expectNormalizedFiles "stdlib option sample normalization" stdlibHostedSources "stdlib-option-sample" "(u64 42)"
+  , expectNormalizedFiles "stdlib result sample normalization" stdlibHostedSources "stdlib-result-sample" "(u64 7)"
+  , expectNormalizedFiles "stdlib list sample normalization" stdlibHostedSources "stdlib-list-sample" "(u64 9)"
+  , expectNormalizedFiles "stdlib hosted test normalization" stdlibHostedSources "stdlib-test" "True"
+  , fmap and $
       sequence
         [ expectNormalizedFiles "stdlib option map normalization" stdlibHostedSources "stdlib-option-map-sample" "(u64 42)"
         , expectNormalizedFiles "stdlib option map none normalization" stdlibHostedSources "stdlib-option-map-none-sample" "(u64 13)"
@@ -81,59 +114,56 @@ main = do
         , expectNormalizedFiles "stdlib combinator fallback test normalization" stdlibHostedSources "stdlib-combinator-fallback-test" "True"
         , expectNormalizedFiles "stdlib combinator test normalization" stdlibHostedSources "stdlib-combinator-test" "True"
         ]
-  ok13z1 <- expectCheckFiles "hosted args example bundle" hostedArgSources
-  ok13z2 <- expectCodegenFiles "hosted args base codegen" hostedArgSources "hosted-echo-main" "silt_host_arg_base"
-  ok13z3 <- expectCodegenFiles "hosted args length codegen" hostedArgSources "hosted-echo-main" "silt_host_arg_len"
-  ok13z4 <- expectCodegenFiles "hosted args output codegen" hostedArgSources "hosted-echo-main" "silt_host_put_byte(byte_"
-  ok13z5 <- expectCheckFiles "hosted env example bundle" hostedEnvSources
-  ok13z6 <- expectCodegenFiles "hosted env present codegen" hostedEnvSources "hosted-env-ready" "silt_host_env_present"
-  ok13z7 <- expectCodegenFiles "hosted env base codegen" hostedEnvSources "hosted-env-main" "silt_host_env_base"
-  ok13z8 <- expectCodegenFiles "hosted env length codegen" hostedEnvSources "hosted-env-main" "silt_host_env_len"
-  ok13z9 <- expectCodegenFiles "hosted env output codegen" hostedEnvSources "hosted-env-main" "silt_host_put_byte(byte_"
-  ok13z10 <- expectCheckFiles "text view helper bundle" textViewSources
-  ok13z11 <- expectNormalizedFiles "text view sample length normalization" textViewSources "text-view-sample-len" "(u64 9)"
-  ok13z12 <- expectNormalizedFiles "byte view take length normalization" textViewSources "byte-view-take-len" "(u64 4)"
-  ok13z13 <- expectNormalizedFiles "byte view drop base normalization" textViewSources "byte-view-drop-base" "(addr 4100)"
-  ok13z14 <- expectNormalizedFiles "byte view overdrop length normalization" textViewSources "byte-view-drop-too-far-len" "(u64 0)"
-  ok13z15 <- expectNormalizedFiles "text view take length normalization" textViewSources "text-view-take-len" "(u64 4)"
-  ok13z16 <- expectNormalizedFiles "text view drop base normalization" textViewSources "text-view-drop-base" "(addr 4100)"
-  ok13z17 <- expectNormalizedFiles "text view overdrop base normalization" textViewSources "text-view-drop-too-far-base" "(addr 4105)"
-  ok13z18 <- expectCheckFiles "hosted exit example bundle" hostedExitSources
-  ok13z19 <- expectCodegenFiles "hosted exit argument count codegen" hostedExitSources "hosted-exit-main" "silt_host_arg_count"
-  ok13z20 <- expectCheckFiles "hosted file write example bundle" hostedFileWriteSources
-  ok13z21 <- expectCodegenFiles "hosted file write codegen" hostedFileWriteSources "hosted-write-file-main" "silt_host_file_write_bytes"
-  ok13z22 <- expectCheckFiles "hosted file read example bundle" hostedFileReadSources
-  ok13z23 <- expectCodegenFiles "hosted file read base codegen" hostedFileReadSources "hosted-cat-main" "silt_host_file_read_base"
-  ok13z24 <- expectCodegenFiles "hosted file read length codegen" hostedFileReadSources "hosted-cat-main" "silt_host_file_read_len"
-  ok13z25 <- expectCodegenFiles "hosted file read output codegen" hostedFileReadSources "hosted-cat-main" "silt_host_put_byte(byte_"
-  ok13z26 <- expectCheckFiles "text equality example bundle" textEqSources
-  ok13z27 <- expectCodegenFiles "text equality loop codegen" textEqSources "text-eq-test" "for (uint64_t index_"
-  ok13z28 <- expectCodegenFiles "text equality byte load codegen" textEqSources "text-eq-test" "(*((uint8_t*)"
-  ok13z29 <- expectCodegenFiles "text equality byte compare codegen" textEqSources "text-eq-test" "== right_byte_"
-  ok13z30 <- expectCheckFiles "text prefix example bundle" textPrefixSources
-  ok13z31 <- expectCodegenFiles "text prefix loop codegen" textPrefixSources "text-prefix-test" "for (uint64_t index_"
-  ok13z32 <- expectCodegenFiles "text prefix byte load codegen" textPrefixSources "text-prefix-test" "(*((uint8_t*)"
-  ok13z33 <- expectCodegenFiles "text prefix byte compare codegen" textPrefixSources "text-prefix-test" "== right_byte_"
-  ok13z35 <-
-    fmap and $
-      sequence
-        [ expectCheckFiles "text suffix example bundle" textSuffixSources
-        , expectCheckFiles "text scan example bundle" textScanSources
-        , expectCodegenFiles "text scan find result layout codegen" textScanSources "text-scan-test" "silt_layout_ByteFindResult"
-        , expectCodegenFiles "text scan byte split layout codegen" textScanSources "text-scan-test" "silt_layout_ByteSplitFirst"
-        , expectCodegenFiles "text scan text split layout codegen" textScanSources "text-scan-test" "silt_layout_TextSplitFirst"
-        , expectCodegenFiles "text scan loop codegen" textScanSources "text-scan-test" "for (uint64_t index_"
-        , expectCodegenFiles "text scan load codegen" textScanSources "text-scan-test" "(*((uint8_t*)"
-        , expectCodegenFiles "text scan needle compare codegen" textScanSources "text-scan-test" "== ((uint8_t)58u)"
-        , expectCodegenFiles "text scan split-after codegen" textScanSources "text-scan-test" "+ 1ULL) * 1ULL)"
-        , expectCodegenFiles "text scan split-after base check codegen" textScanSources "text-scan-test" "(5ULL * 1ULL)"
-        ]
-  ok13z36 <- expectCodegenFiles "text suffix loop codegen" textSuffixSources "text-suffix-test" "for (uint64_t index_"
-  ok13z37 <- expectCodegenFiles "text suffix byte load codegen" textSuffixSources "text-suffix-test" "(*((uint8_t*)"
-  ok13z38 <- expectCodegenFiles "text suffix byte compare codegen" textSuffixSources "text-suffix-test" "== right_byte_"
-  ok13z39 <- expectCheckFiles "ASCII predicate example bundle" asciiPredicateSources
-  ok13z40 <-
-    fmap and $
+  , expectCheckFiles "hosted args example bundle" hostedArgSources
+  , expectCodegenFiles "hosted args base codegen" hostedArgSources "hosted-echo-main" "silt_host_arg_base"
+  , expectCodegenFiles "hosted args length codegen" hostedArgSources "hosted-echo-main" "silt_host_arg_len"
+  , expectCodegenFiles "hosted args output codegen" hostedArgSources "hosted-echo-main" "silt_host_put_byte(byte_"
+  , expectCheckFiles "hosted env example bundle" hostedEnvSources
+  , expectCodegenFiles "hosted env present codegen" hostedEnvSources "hosted-env-ready" "silt_host_env_present"
+  , expectCodegenFiles "hosted env base codegen" hostedEnvSources "hosted-env-main" "silt_host_env_base"
+  , expectCodegenFiles "hosted env length codegen" hostedEnvSources "hosted-env-main" "silt_host_env_len"
+  , expectCodegenFiles "hosted env output codegen" hostedEnvSources "hosted-env-main" "silt_host_put_byte(byte_"
+  , expectCheckFiles "text view helper bundle" textViewSources
+  , expectNormalizedFiles "text view sample length normalization" textViewSources "text-view-sample-len" "(u64 9)"
+  , expectNormalizedFiles "byte view take length normalization" textViewSources "byte-view-take-len" "(u64 4)"
+  , expectNormalizedFiles "byte view drop base normalization" textViewSources "byte-view-drop-base" "(addr 4100)"
+  , expectNormalizedFiles "byte view overdrop length normalization" textViewSources "byte-view-drop-too-far-len" "(u64 0)"
+  , expectNormalizedFiles "text view take length normalization" textViewSources "text-view-take-len" "(u64 4)"
+  , expectNormalizedFiles "text view drop base normalization" textViewSources "text-view-drop-base" "(addr 4100)"
+  , expectNormalizedFiles "text view overdrop base normalization" textViewSources "text-view-drop-too-far-base" "(addr 4105)"
+  , expectCheckFiles "hosted exit example bundle" hostedExitSources
+  , expectCodegenFiles "hosted exit argument count codegen" hostedExitSources "hosted-exit-main" "silt_host_arg_count"
+  , expectCheckFiles "hosted file write example bundle" hostedFileWriteSources
+  , expectCodegenFiles "hosted file write codegen" hostedFileWriteSources "hosted-write-file-main" "silt_host_file_write_bytes"
+  , expectCheckFiles "hosted file read example bundle" hostedFileReadSources
+  , expectCodegenFiles "hosted file read base codegen" hostedFileReadSources "hosted-cat-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted file read length codegen" hostedFileReadSources "hosted-cat-main" "silt_host_file_read_len"
+  , expectCodegenFiles "hosted file read output codegen" hostedFileReadSources "hosted-cat-main" "silt_host_put_byte(byte_"
+  , expectCheckFiles "text equality example bundle" textEqSources
+  , expectCodegenFiles "text equality loop codegen" textEqSources "text-eq-test" "for (uint64_t index_"
+  , expectCodegenFiles "text equality byte load codegen" textEqSources "text-eq-test" "(*((uint8_t*)"
+  , expectCodegenFiles "text equality byte compare codegen" textEqSources "text-eq-test" "== right_byte_"
+  , expectCheckFiles "text prefix example bundle" textPrefixSources
+  , expectCodegenFiles "text prefix loop codegen" textPrefixSources "text-prefix-test" "for (uint64_t index_"
+  , expectCodegenFiles "text prefix byte load codegen" textPrefixSources "text-prefix-test" "(*((uint8_t*)"
+  , expectCodegenFiles "text prefix byte compare codegen" textPrefixSources "text-prefix-test" "== right_byte_"
+  , expectCheckFiles "text suffix example bundle" textSuffixSources
+  , expectCodegenFiles "text suffix loop codegen" textSuffixSources "text-suffix-test" "for (uint64_t index_"
+  , expectCodegenFiles "text suffix byte load codegen" textSuffixSources "text-suffix-test" "(*((uint8_t*)"
+  , expectCodegenFiles "text suffix byte compare codegen" textSuffixSources "text-suffix-test" "== right_byte_"
+  , expectAll
+      [ expectCheckFiles "text scan example bundle" textScanSources
+      , expectCodegenFiles "text scan find result layout codegen" textScanSources "text-scan-test" "silt_layout_ByteFindResult"
+      , expectCodegenFiles "text scan byte split layout codegen" textScanSources "text-scan-test" "silt_layout_ByteSplitFirst"
+      , expectCodegenFiles "text scan text split layout codegen" textScanSources "text-scan-test" "silt_layout_TextSplitFirst"
+      , expectCodegenFiles "text scan loop codegen" textScanSources "text-scan-test" "for (uint64_t index_"
+      , expectCodegenFiles "text scan load codegen" textScanSources "text-scan-test" "(*((uint8_t*)"
+      , expectCodegenFiles "text scan needle compare codegen" textScanSources "text-scan-test" "== ((uint8_t)58u)"
+      , expectCodegenFiles "text scan split-after codegen" textScanSources "text-scan-test" "+ 1ULL) * 1ULL)"
+      , expectCodegenFiles "text scan split-after base check codegen" textScanSources "text-scan-test" "(5ULL * 1ULL)"
+      ]
+  , expectCheckFiles "ASCII predicate example bundle" asciiPredicateSources
+  , fmap and $
       sequence
         [ expectNormalizedFiles "ASCII digit true normalization" asciiPredicateSources "ascii-digit-zero-sample" "True"
         , expectNormalizedFiles "ASCII digit false normalization" asciiPredicateSources "ascii-digit-slash-sample" "False"
@@ -156,447 +186,450 @@ main = do
         , expectNormalizedFiles "ASCII whitespace boundary test normalization" asciiPredicateSources "ascii-whitespace-boundary-test" "True"
         , expectNormalizedFiles "ASCII predicate test normalization" asciiPredicateSources "ascii-predicate-test" "True"
         ]
-  ok13z41 <-
-    fmap and $
-      sequence
-        [ expectCheckFiles "ASCII slice predicate example bundle" asciiSlicePredicateSources
-        , expectCheckFiles "ASCII trim example bundle" asciiTrimSources
-        , expectCodegenFiles "ASCII trim state layout codegen" asciiTrimSources "ascii-trim-test" "silt_layout_AsciiTrimState"
-        , expectCodegenFiles "ASCII trim loop codegen" asciiTrimSources "ascii-trim-test" "for (uint64_t index_"
-        , expectCodegenFiles "ASCII trim byte load codegen" asciiTrimSources "ascii-trim-test" "(*((uint8_t*)"
-        , expectCodegenFiles "ASCII trim whitespace lower-bound codegen" asciiTrimSources "ascii-trim-test" "9ULL <="
-        , expectCodegenFiles "ASCII trim whitespace space codegen" asciiTrimSources "ascii-trim-test" "== ((uint8_t)32u)"
-        , expectCodegenFiles "ASCII trim interior sample codegen" asciiTrimSources "ascii-trim-test" "silt_static_ascii_trim_interior_bytes"
-        , expectCodegenFiles "ASCII trim non-ASCII sample codegen" asciiTrimSources "ascii-trim-test" "silt_static_ascii_trim_non_ascii_bytes"
-        , expectCodegenFiles "ASCII trim start-offset codegen" asciiTrimSources "ascii-trim-test" "(2ULL * 1ULL)"
-        , expectCodegenFiles "ASCII trim all-whitespace offset codegen" asciiTrimSources "ascii-trim-test" "(3ULL * 1ULL)"
-        , expectCodegenFiles "ASCII trim parse value codegen" asciiTrimSources "ascii-trim-test" "42ULL"
-        ]
-  ok13z42 <- expectCodegenFiles "ASCII slice predicate loop codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "for (uint64_t index_"
-  ok13z43 <- expectCodegenFiles "ASCII slice predicate byte load codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "(*((uint8_t*)"
-  ok13z44 <- expectCodegenFiles "ASCII slice digit lower-bound codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "48ULL <="
-  ok13z45 <- expectCheckFiles "ASCII decimal U64 example bundle" asciiDecimalSources
-  ok13z46 <- expectCodegenFiles "ASCII decimal U64 loop codegen" asciiDecimalSources "ascii-decimal-u64-test" "for (uint64_t index_"
-  ok13z47 <- expectCodegenFiles "ASCII decimal U64 byte load codegen" asciiDecimalSources "ascii-decimal-u64-test" "(*((uint8_t*)"
-  ok13z48 <- expectCodegenFiles "ASCII decimal U64 overflow bound codegen" asciiDecimalSources "ascii-decimal-u64-test" "1844674407370955161ULL"
-  ok13z49 <- expectCodegenFiles "ASCII decimal U64 max sample codegen" asciiDecimalSources "ascii-decimal-u64-test" "silt_static_ascii_decimal_max_bytes"
-  ok13z50 <- expectCodegenFiles "ASCII decimal U64 digit guard codegen" asciiDecimalSources "ascii-decimal-u64-test" "<= 9ULL"
-  ok13z51 <- expectCodegenFiles "ASCII decimal U64 final digit bound codegen" asciiDecimalSources "ascii-decimal-u64-test" "<= 5ULL"
-  ok13z52 <- expectCodegenFiles "ASCII decimal U64 base-10 accumulation codegen" asciiDecimalSources "ascii-decimal-u64-test" "* 10ULL) + (((uint64_t)byte_"
-  ok13z53 <- expectCheckFiles "ASCII decimal U64 format example bundle" asciiDecimalFormatSources
-  ok13z54 <- expectCodegenFiles "ASCII decimal U64 format loop codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "for (uint64_t index_"
-  ok13z55 <- expectCodegenFiles "ASCII decimal U64 format digit remainder codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "% 10ULL"
-  ok13z56 <- expectCodegenFiles "ASCII decimal U64 format digit division codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "/ 10ULL"
-  ok13z57 <- expectCodegenFiles "ASCII decimal U64 format caller-buffer byte store codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "&silt_cell_ascii_decimal_format_max_buffer[0])) + 0ULL))) + ((19ULL -"
-  ok13z58 <- expectCodegenFiles "ASCII decimal U64 format ASCII offset codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "48ULL +"
-  ok13z59 <- expectCodegenFiles "ASCII decimal U64 format max sample codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "silt_static_ascii_decimal_format_max_bytes"
-  ok13z60 <- expectNormalizedFiles "ASCII decimal U64 format full state guard normalization" asciiDecimalFormatSources "ascii-decimal-format-full-state-should-not-write" "False"
-  ok13z61 <- expectCodegenFiles "ASCII decimal U64 format capacity guard codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "< 20ULL"
-  ok13z61a <- expectCheckFiles "hosted decimal helper bundle" hostedDecimalSources
-  ok13z62 <- expectCheckFiles "hosted size report pressure app bundle" hostedSizeReportSources
-  ok13z63 <- expectCodegenFiles "hosted size report arg count codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_arg_count"
-  ok13z64 <- expectCodegenFiles "hosted size report arg base codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_arg_base"
-  ok13z65 <- expectCodegenFiles "hosted size report file read codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_file_read_base"
-  ok13z66 <- expectCodegenFiles "hosted size report file write codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_file_write_bytes"
-  ok13z67 <- expectCodegenFiles "hosted size report stdout codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_put_byte(byte_"
-  ok13z68 <- expectCodegenFiles "hosted size report parser codegen" hostedSizeReportSources "hosted-size-report-main" "* 10ULL) + (((uint64_t)byte_"
-  ok13z69 <- expectCodegenFiles "hosted size report formatter remainder codegen" hostedSizeReportSources "hosted-size-report-main" "% 10ULL"
-  ok13z70 <- expectCodegenFiles "hosted size report formatter division codegen" hostedSizeReportSources "hosted-size-report-main" "/ 10ULL"
-  ok13z71 <- expectCodegenFiles "hosted size report file buffer codegen" hostedSizeReportSources "hosted-size-report-main" "silt_cell_hosted_size_report_file_buffer"
-  ok13z72 <- expectCodegenFiles "hosted size report file-read status codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_file_read_ok"
-  ok13z73 <- expectCodegenFiles "hosted size report file-read length codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_file_read_len"
-  ok13z74 <- expectCodegenFiles "hosted size report read result layout codegen" hostedSizeReportSources "hosted-size-report-main" "silt_layout_HostReadFileResult"
-  ok13z75 <- expectCodegenFiles "hosted size report stderr codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_put_error_byte(byte_"
-  ok13z76 <- expectCheckFiles "hosted config report pressure app bundle" hostedConfigReportSources
-  ok13z77 <- expectCodegenFiles "hosted config report arg count codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_arg_count"
-  ok13z78 <- expectCodegenFiles "hosted config report file read codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_file_read_base"
-  ok13z79 <- expectCodegenFiles "hosted config report file-read status codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_file_read_ok"
-  ok13z80 <- expectCodegenFiles "hosted config report read result layout codegen" hostedConfigReportSources "hosted-config-report-main" "silt_layout_HostReadFileResult"
-  ok13z81 <- expectCodegenFiles "hosted config report text split layout codegen" hostedConfigReportSources "hosted-config-report-main" "silt_layout_TextSplitFirst"
-  ok13z82 <- expectCodegenFiles "hosted config report colon split codegen" hostedConfigReportSources "hosted-config-report-main" "== ((uint8_t)58u)"
-  ok13z83 <- expectCodegenFiles "hosted config report trim state codegen" hostedConfigReportSources "hosted-config-report-main" "silt_layout_AsciiTrimState"
-  ok13z84 <- expectCodegenFiles "hosted config report key static codegen" hostedConfigReportSources "hosted-config-report-main" "silt_static_hosted_config_report_key_bytes"
-  ok13z85 <- expectCodegenFiles "hosted config report parser codegen" hostedConfigReportSources "hosted-config-report-main" "* 10ULL) + (((uint64_t)byte_"
-  ok13z86 <- expectCodegenFiles "hosted config report formatter remainder codegen" hostedConfigReportSources "hosted-config-report-main" "% 10ULL"
-  ok13z87 <- expectCodegenFiles "hosted config report file write codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_file_write_bytes"
-  ok13z88 <- expectCodegenFiles "hosted config report stdout codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_put_byte(byte_"
-  ok13z89 <- expectCodegenFiles "hosted config report stderr codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_put_error_byte(byte_"
-  ok14 <- expectCheck "generic data" optionSource
-  ok15 <- expectCheck "recursive generic data" recursiveDataSource
-  ok16 <- expectFailure "missing claim" "(def nope Type)"
-  ok17 <- expectFailure "ill-typed body" illTypedSource
-  ok18 <- expectFailure "bad match scrutinee" badMatchSource
-  ok18a <- expectFailureWithFragment "bool match rejects extra Nat arm" badBoolExtraArmSource "constructor Z does not belong to data Bool"
-  ok18b <- expectFailureWithFragment "nat match rejects extra Bool arm" badNatExtraArmSource "constructor True does not belong to data Nat"
-  ok19 <- expectFailure "erased binder used" badErasedSource
-  ok20 <- expectFailure "linear binder duplicated" badLinearSource
-  ok21 <- expectNormalized "normalization" normalizationSource "three" "(S (S (S Z)))"
-  ok22 <- expectNormalized "effect normalization" effectSource "eff-three" "(((pure Console) Nat) (S (S Z)))"
-  ok23 <- expectNormalized "u64 normalization" u64Source "word-answer" "(u64 42)"
-  ok23a <- expectNormalized "nat-to-u64 normalization" u64Source "nat-two-word" "(u64 2)"
-  ok24 <- expectNormalized "addr normalization" lowLevelSource "heap-next" "(addr 4160)"
-  ok25 <- expectNormalized "addr diff normalization" lowLevelSource "heap-span" "(u64 64)"
-  ok26 <- expectNormalized "page alignment normalization" lowLevelSource "aligned-page" "(u64 8192)"
-  ok27 <- expectNormalized "align-up normalization" lowLevelSource "aligned-up" "(u64 8192)"
-  ok28 <- expectNormalized "page-count normalization" lowLevelSource "page-count-5000" "(u64 2)"
-  ok29 <- expectNormalized "size-of normalization" lowLevelSource "u64-size" "(u64 8)"
-  ok30 <- expectNormalized "align-of normalization" lowLevelSource "u64-align" "(u64 8)"
-  ok31 <- expectNormalized "layout size normalization" lowLevelSource "header-size" "(u64 16)"
-  ok32 <- expectNormalized "layout align normalization" lowLevelSource "header-align" "(u64 8)"
-  ok33 <- expectNormalized "layout field offset normalization" lowLevelSource "header-next-offset" "(u64 8)"
-  ok34 <- expectNormalized "layout field ptr normalization" lowLevelSource "header-next-ptr-addr" "(addr 8200)"
-  ok35 <- expectNormalized "ptr-step normalization" lowLevelSource "heap-ptr-step-addr" "(addr 4104)"
-  ok36 <- expectNormalized "pointer normalization" lowLevelSource "heap-ptr-addr" "(addr 4104)"
-  ok37 <- expectNormalized "layout ptr-step normalization" lowLevelSource "header-step-addr" "(addr 8224)"
-  ok38 <- expectNormalized "generic data normalization" optionSource "picked" "Z"
-  ok39 <- expectNormalized "recursive generic data normalization" recursiveDataSource "picked-head" "Z"
-  ok39b <- expectNormalized "capability linear token normalization" capabilitySource "rotated-lease" "lease1"
-  ok39c <- expectNormalized "capability owned abstraction normalization" capabilitySource "unpacked-owned-lease" "lease1"
-  ok39d <- expectNormalized "capability owned pointer handle normalization" capabilitySource "retagged-word-handle" "((((OwnedAt Lease1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
-  ok39e <- expectNormalized "capability observed value normalization" capabilitySource "observed-sample-value" "(u64 77)"
-  ok39f <- expectNormalized "capability observed handle recovery normalization" capabilitySource "restored-word-handle" "((((OwnedAt Lease1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
-  ok39g <- expectNormalized "capability word updater normalization" capabilitySource "incremented-sample-word" "(u64 8)"
-  ok39h <- expectNormalized "capability header updater normalization" capabilitySource "advanced-sample-next" "(addr 8192)"
-  ok39i <- expectNormalized "capability state-indexed owned handle normalization" capabilitySource "forgot-word-cap-handle" "((((OwnedAt Lease1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
-  ok39j <- expectNormalized "capability state-indexed observed handle normalization" capabilitySource "forgot-word-cap-observed" "((((((ObservedAt Lease1) U64) U64) lease1) ((ptr-from-addr U64) (addr 4096))) (u64 33))"
-  ok39k <- expectNormalized "capability state-indexed header handle normalization" capabilitySource "forgot-header-cap-handle" "((((OwnedAt HeaderLease1) Header) header-lease1) ((ptr-from-addr Header) (addr 8192)))"
-  ok39l <- expectNormalizedFile "capability step settled word normalization" "examples/capabilities.silt" "settled-word-cap-step" "(((((OwnedCapAt Lease1) WordSlot1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
-  ok39m <- expectNormalizedFile "capability step forgotten word normalization" "examples/capabilities.silt" "forgot-word-cap-step" "((((OwnedAt Lease1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
-  ok39n <- expectNormalizedFile "capability step settled header normalization" "examples/capabilities.silt" "settled-header-cap-step" "(((((OwnedCapAt HeaderLease1) HeaderRegion1) Header) header-lease1) ((ptr-from-addr Header) (addr 8192)))"
-  ok39o <- expectNormalizedFile "capability step forgotten header normalization" "examples/capabilities.silt" "forgot-header-cap-step" "((((OwnedAt HeaderLease1) Header) header-lease1) ((ptr-from-addr Header) (addr 8192)))"
-  ok39p <- expectNormalizedFile "capability generic header update normalization" "examples/capabilities.silt" "replaced-header-next-sample" "(addr 12288)"
-  ok39q <- expectNormalizedFile "u8 literal conversion normalization" "examples/bytes.silt" "byte-answer" "(u8 2)"
-  ok39r <- expectNormalizedFile "u8 widening normalization" "examples/bytes.silt" "byte-answer-word" "(u64 2)"
-  ok39s <- expectNormalizedFile "u8 equality normalization" "examples/bytes.silt" "byte-eq-sample" "True"
-  ok39t <- expectNormalizedFile "u8 size normalization" "examples/bytes.silt" "u8-size" "(u64 1)"
-  ok39u <- expectNormalizedFile "u8 align normalization" "examples/bytes.silt" "u8-align" "(u64 1)"
-  ok39v <- expectNormalizedFile "u8 ptr-step normalization" "examples/bytes.silt" "byte-third-addr" "(addr 4099)"
-  ok39w <- expectNormalizedFile "byte slice length normalization" "examples/bytes.silt" "byte-slice-len" "(u64 20)"
-  ok39x <- expectNormalizedFile "byte slice base normalization" "examples/bytes.silt" "byte-slice-base-addr" "(addr 4096)"
-  ok39y <- expectNormalizedFile "static byte length normalization" "examples/bytes.silt" "static-byte-sample-len-value" "(u64 4)"
-  ok39z <- expectNormalizedFile "static byte slice length normalization" "examples/bytes.silt" "static-byte-sample-slice-len" "(u64 4)"
-  ok40 <- expectCodegen "C backend seed" normalizationSource "three" "uint64_t three(void) {"
-  ok41 <- expectCodegen "C backend add fn" codegenFunctionSource "add" "uint64_t add(uint64_t a, uint64_t b) {"
-  ok42 <- expectCodegen "C backend erase arg" codegenFunctionSource "erase-first" "uint64_t erase_first(uint64_t x) {"
-  ok43 <- expectCodegen "C backend u64 fn" u64Source "word-inc" "uint64_t word_inc(uint64_t x) {"
-  ok43a <- expectCodegen "C backend u64-to-nat fn" u64Source "word-to-nat" "uint64_t word_to_nat(uint64_t x) {"
-  ok43b <- expectCodegen "C backend u64-to-nat return" u64Source "word-to-nat" "return ((uint64_t)(x));"
-  ok44 <- expectCodegen "C backend addr fn" lowLevelSource "bump-addr" "uintptr_t bump_addr(uintptr_t base, uint64_t bytes) {"
-  ok45 <- expectCodegen "C backend ptr fn" lowLevelSource "bump-ptr" "uintptr_t bump_ptr(uintptr_t base, uint64_t bytes) {"
-  ok46 <- expectCodegen "C backend ptr-step fn" lowLevelSource "step-ptr" "uintptr_t step_ptr(uintptr_t base, uint64_t count) {"
-  ok47 <- expectCodegen "C backend layout ptr-step signature" lowLevelSource "step-header" "uintptr_t step_header(uintptr_t base, uint64_t count) {"
-  ok48 <- expectCodegen "C backend layout ptr-step stride" lowLevelSource "step-header" "(count * 16ULL)"
-  ok49 <- expectCodegen "C backend align fn" lowLevelSource "align-up" "uint64_t align_up(uint64_t x, uint64_t align) {"
-  ok50 <- expectCodegen "C backend generic load signature" memorySource "read-word" "uint64_t read_word(uintptr_t ptr) {"
-  ok51 <- expectCodegen "C backend generic load deref" memorySource "read-word" "return (*((uint64_t*)(ptr)));"
-  ok52 <- expectCodegen "C backend generic store signature" memorySource "write-word" "uint8_t write_word(uintptr_t ptr, uint64_t value) {"
-  ok53 <- expectCodegen "C backend generic store write" memorySource "write-word" "(*((uint64_t*)(ptr))) = value;"
-  ok54 <- expectCodegen "C backend bind effect fn" memorySource "increment-word" "uint64_t increment_word(uintptr_t ptr) {"
-  ok55 <- expectCodegen "C backend aggregate load temp" memorySource "copy-header" "silt_layout_Header hdr_0 = (*((silt_layout_Header*)(src)));"
-  ok56 <- expectCodegen "C backend aggregate store" memorySource "copy-header" "(*((silt_layout_Header*)(dst))) = hdr_0;"
-  ok57 <- expectCodegen "C backend layout extern prototype" abiSource "inspect-header" "uint64_t header_magic(silt_layout_Header hdr);"
-  ok58 <- expectCodegen "C backend unit extern prototype" abiSource "call-header-zero" "uint8_t header_zero(uintptr_t ptr);"
-  ok59 <- expectCodegen "C backend extern prototype" externSource "call-host-add3" "uint64_t host_add3(uint64_t x);"
-  ok60 <- expectCodegen "C backend extern addr prototype" externSource "call-host-bump" "uintptr_t host_bump(uintptr_t base, uint64_t bytes);"
-  ok61 <- expectBundle "C backend bundle" codegenFunctionSource ["add", "erase-first"] "uint64_t erase_first(uint64_t x) {"
-  ok62 <- expectBundle "memory backend bundle" memorySource ["read-word", "increment-word"] "uint64_t increment_word(uintptr_t ptr) {"
-  ok63 <- expectBundle "ABI backend bundle" abiSource ["inspect-header", "call-header-zero"] "uint8_t call_header_zero(uintptr_t ptr) {"
-  ok64 <- expectFreestandingCodegen "freestanding prelude" freestandingSource "init-and-read" "typedef __UINTPTR_TYPE__ uintptr_t;"
-  ok65 <- expectFreestandingCodegen "freestanding layout typedef" freestandingSource "init-and-read" "silt_layout_Header;"
-  ok66 <- expectFreestandingCodegen "freestanding signature" freestandingSource "init-and-read" "uint64_t init_and_read(uintptr_t base) {"
-  ok67 <- expectFreestandingBundle "freestanding bundle" freestandingSource ["init-header", "init-and-read"] "uint8_t init_header(uintptr_t base) {"
-  ok67b <- expectFreestandingCodegenFiles "freestanding u8 load signature" ["examples/bytes.silt"] "load-byte" "uint8_t load_byte(uintptr_t ptr) {"
-  ok67c <- expectFreestandingCodegenFiles "freestanding u8 load deref" ["examples/bytes.silt"] "load-byte" "return (*((uint8_t*)(ptr)));"
-  ok67d <- expectFreestandingCodegenFiles "freestanding u8 store signature" ["examples/bytes.silt"] "store-byte" "uint8_t store_byte(uintptr_t ptr, uint8_t value) {"
-  ok67e <- expectFreestandingCodegenFiles "freestanding u8 store write" ["examples/bytes.silt"] "store-byte" "(*((uint8_t*)(ptr))) = value;"
-  ok67f <- expectFreestandingCodegenFiles "freestanding static bytes rodata" ["examples/bytes.silt"] "static-byte-sample-first" "static const uint8_t silt_static_static_byte_sample[4] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u};"
-  ok67g <- expectFreestandingCodegenFiles "freestanding static bytes load" ["examples/bytes.silt"] "static-byte-sample-first" "return (*((uint8_t*)(((uintptr_t)&silt_static_static_byte_sample[0]))));"
-  ok68 <- expectCheck "layout literals" layoutLiteralSource
-  ok69 <- expectFailure "layout literal missing field" layoutLiteralMissingFieldSource
-  ok70 <- expectFailure "layout literal unknown field" layoutLiteralUnknownFieldSource
-  ok70b <- expectFailure "layout-values arity" layoutValuesAritySource
-  ok70c <- expectFailure "layout-values wrong field type" layoutValuesWrongTypeSource
-  ok70d <- expectFailure "u8 literal out of range" "(claim bad U8)\n(def bad (u8 256))"
-  ok70e <- expectFailure "u8 store rejects u64" badU8StoreSource
-  ok70f <- expectFailure "static bytes reject empty object" "(static-bytes empty-bytes ())"
-  ok70g <- expectFailure "static cell rejects non-runtime type" "(static-cell bad-cell (Pi ((x U64)) U64))"
-  ok70h <- expectFailure "static value rejects non-runtime type" "(static-value bad-value (Pi ((x U64)) U64) .data.silt (fn ((x U64)) x))"
-  ok70i <- expectFailure "static value rejects non-static initializer" "(claim runtime-word U64)\n(static-value bad-value U64 .data.silt runtime-word)"
-  ok71 <- expectNormalized "layout literal normalization" layoutLiteralSource "header-template" "(layout Header ((magic (u64 77)) (next (addr 4096))))"
-  ok71b <- expectNormalized "layout-values normalization" layoutLiteralSource "header-template-positional" "(layout Header ((magic (u64 77)) (next (addr 4096))))"
-  ok72 <- expectCodegen "C backend layout literal zero-init" layoutLiteralSource "header-template" "silt_layout_Header Header_0 = {0};"
-  ok73 <- expectCodegen "C backend layout literal field write" layoutLiteralSource "header-template" "(*((uint64_t*)(((uintptr_t)&Header_0 + 0ULL)))) = 77ULL;"
-  ok74 <- expectCodegen "C backend layout literal extern call" layoutLiteralSource "header-template-magic" "return header_magic(Header_0);"
-  ok75 <- expectFreestandingCodegen "freestanding layout literal store" freestandingSource "init-header" "(*((silt_layout_Header*)(base))) = Header_0;"
-  ok76 <- expectNormalized "layout field projection normalization" layoutLiteralSource "header-template-next" "(addr 4096)"
-  ok77 <- expectCodegen "C backend layout field projection" layoutLiteralSource "header-magic-from-arg" "return (*((uint64_t*)(((uintptr_t)&magic_0 + 0ULL))));"
-  ok78 <- expectCodegen "C backend layout field projection from arg" layoutLiteralSource "header-magic-from-arg" "silt_layout_Header magic_0 = hdr;"
-  ok79 <- expectFailure "layout update wrong field type" layoutUpdateWrongTypeSource
-  ok80 <- expectNormalized "layout update normalization" layoutLiteralSource "retarget-template-next" "(addr 8192)"
-  ok81 <- expectCodegen "C backend layout update" layoutLiteralSource "retarget-header" "(*((uintptr_t*)(((uintptr_t)&Header_0 + 8ULL)))) = next_addr;"
-  ok82 <- expectFreestandingCodegen "freestanding layout update" freestandingSource "boot-header-at" "(*((uintptr_t*)(((uintptr_t)&Header_0 + 8ULL)))) = next_addr;"
-  ok83 <- expectCheck "layout destructuring" layoutLiteralSource
-  ok84 <- expectFailure "layout destructuring unknown field" layoutLetUnknownFieldSource
-  ok85 <- expectNormalized "layout destructuring normalization" layoutLiteralSource "let-layout-next" "(addr 4096)"
-  ok86 <- expectCodegen "C backend layout destructuring" layoutLiteralSource "let-layout-magic-from-arg" "return (*((uint64_t*)(((uintptr_t)&magic_0 + 0ULL))));"
-  ok87 <- expectFreestandingCodegen "freestanding layout destructuring" freestandingSource "boot-header-next" "return ((uintptr_t)0ULL);"
-  ok88 <- expectFailure "layout multi-update unknown field" layoutWithFieldsUnknownFieldSource
-  ok89 <- expectNormalized "layout multi-update normalization" layoutLiteralSource "repacked-template-next" "(addr 12288)"
-  ok90 <- expectNormalized "layout multi-update order normalization" layoutLiteralSource "override-template-next" "(addr 12288)"
-  ok91 <- expectCodegen "C backend layout multi-update magic write" layoutLiteralSource "repack-header" "(*((uint64_t*)(((uintptr_t)&Header_0 + 0ULL)))) = magic;"
-  ok92 <- expectCodegen "C backend layout multi-update next write" layoutLiteralSource "repack-header" "(*((uintptr_t*)(((uintptr_t)&Header_1 + 8ULL)))) = next_addr;"
-  ok93 <- expectFreestandingCodegen "freestanding layout multi-update" freestandingSource "boot-header-remap" "(*((uintptr_t*)(((uintptr_t)&Header_0 + 8ULL)))) = next_addr;"
-  ok94 <- expectCodegen "C backend load-field" memorySource "read-header-magic" "return (*((uint64_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 0ULL))))));"
-  ok95 <- expectCodegen "C backend store-field" memorySource "write-header-next" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 8ULL)))))) = value;"
-  ok96 <- expectFreestandingCodegen "freestanding store-field" freestandingSource "reset-next" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)base) + 8ULL)))))) = next_addr;"
-  ok97 <- expectFailure "layout multi-store unknown field" layoutStoreFieldsUnknownFieldSource
-  ok98 <- expectCodegen "C backend multi-store magic write" memorySource "write-header-fields" "(*((uint64_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 0ULL)))))) = magic;"
-  ok99 <- expectCodegen "C backend multi-store next write" memorySource "write-header-fields" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 8ULL)))))) = next_addr;"
-  ok100 <- expectFreestandingCodegen "freestanding multi-store" freestandingSource "reset-header-fields" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)base) + 8ULL)))))) = next_addr;"
-  ok101 <- expectFailure "layout load destructuring unknown field" layoutLoadUnknownFieldSource
-  ok102 <- expectCodegen "C backend layout load destructuring temp" memorySource "read-header-next-via-layout" "silt_layout_Header silt_value_0 = (*((silt_layout_Header*)(hdr)));"
-  ok103 <- expectCodegen "C backend layout load destructuring return" memorySource "read-header-next-via-layout" "return (*((uintptr_t*)(((uintptr_t)&next_1 + 8ULL))));"
-  ok104 <- expectFreestandingCodegen "freestanding layout load destructuring" freestandingSource "read-next-via-layout" "return (*((uintptr_t*)(((uintptr_t)&next_1 + 8ULL))));"
-  ok105 <- expectCheck "explicit effect transitions" explicitEffectSource
-  ok106 <- expectFailure "effect transition mismatch" badEffectTransitionSource
-  ok107 <- expectCodegen "C backend explicit capability store" memorySource "seed-word-token" "(*((uint64_t*)(ptr))) = value;"
-  ok108 <- expectCodegen "C backend explicit capability bind read" memorySource "seed-and-read-token" "return (*((uint64_t*)(ptr)));"
-  ok109 <- expectCodegen "C backend explicit capability field load" memorySource "read-header-next-token" "return (*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 8ULL))))));"
-  ok110 <- expectFreestandingCodegen "freestanding explicit capability field store" freestandingSource "reset-next-token" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)base) + 8ULL)))))) = next_addr;"
-  ok111 <- expectFailure "memory capability transition mismatch" badMemoryCapabilitySource
-  ok112 <- expectFailure "capability token duplication" badCapabilityDupSource
-  ok113 <- expectFailure "capability pattern duplication" badCapabilityPatternDupSource
-  ok114 <- expectFailure "capability observed split duplication" badObservedSplitSource
-  ok115 <- expectFailure "capability rewrite step duplication" badRewriteWordHandleSource
-  ok116 <- expectFailure "capability carrier state mismatch" badCapabilityCarrierStateSource
-  ok117 <- expectFailureFileWithSuffix "capability step post-state mismatch" "examples/capabilities.silt" badCapabilityStepPostStateSuffix
-  ok118 <- expectFailureFileWithSuffix "capability step stale-state read" "examples/capabilities.silt" badCapabilityStepStaleReadSuffix
-  ok119 <- expectCheckFile "memory example file" "examples/memory.silt"
-  ok120 <- expectCheckFile "freestanding example file" "examples/freestanding.silt"
-  ok121 <- expectCodegen "C backend cap-stable multi-store" memorySource "write-header-fields-token" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 8ULL)))))) = next_addr;"
-  ok122 <- expectCodegen "C backend cap-stable layout load destructuring" memorySource "read-header-next-via-layout-token" "silt_layout_Header silt_value_0 = (*((silt_layout_Header*)(hdr)));"
-  ok123 <- expectFreestandingCodegen "freestanding cap-stable multi-store" freestandingSource "reset-header-fields-token" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)base) + 8ULL)))))) = next_addr;"
-  ok124 <- expectFreestandingCodegen "freestanding cap-stable layout load destructuring" freestandingSource "read-next-via-layout-token" "return (*((uintptr_t*)(((uintptr_t)&next_1 + 8ULL))));"
-  ok125 <- expectFailure "layout multi-store capability mismatch" layoutStoreFieldsCapabilityMismatchSource
-  ok126 <- expectFailure "layout load capability mismatch" layoutLoadCapabilityMismatchSource
-  ok127 <- expectFailure "layout alignment power-of-two" badLayoutAlignmentSource
-  ok128 <- expectFailure "layout size alignment multiple" badLayoutSizeAlignmentSource
-  ok129 <- expectFailure "layout overlapping fields" badLayoutOverlapSource
-  ok130 <- expectFailure "layout alignment covers fields" badLayoutWeakAlignmentSource
-  ok131 <- expectFreestandingCodegen "freestanding layout extern prototype" freestandingSource "inspect-header-platform" "uint64_t platform_header_magic(silt_layout_Header hdr);"
-  ok132 <- expectFreestandingCodegen "freestanding layout extern call" freestandingSource "inspect-header-platform" "return platform_header_magic(hdr_0);"
-  ok133 <- expectFreestandingCodegen "freestanding unit extern prototype" freestandingSource "call-platform-zero" "uint8_t platform_header_zero(uintptr_t ptr);"
-  ok134 <- expectFreestandingCodegen "freestanding unit extern call" freestandingSource "call-platform-zero" "return platform_header_zero(base);"
-  ok135 <- expectFreestandingCodegen "freestanding exported symbol" freestandingSource "boot-entry" "uint64_t silt_boot_entry(uintptr_t base) {"
-  ok136 <- expectFailure "export unknown target" badExportUnknownSource
-  ok137 <- expectFailure "export extern target" badExportExternSource
-  ok138 <- expectFailure "export duplicate target" badExportDuplicateTargetSource
-  ok139 <- expectFailure "export duplicate symbol" badExportDuplicateSymbolSource
-  ok140 <- expectFailure "extern invalid C symbol" badExternSymbolSource
-  ok141 <- expectFailure "export invalid C symbol" badExportSymbolSource
-  ok142 <- expectFreestandingCodegen "freestanding entry section and calling convention attributes" freestandingSource "boot-entry" "__attribute__((used)) __attribute__((sysv_abi)) __attribute__((section(\".text.silt.boot\"))) uint64_t silt_boot_entry(uintptr_t base) {"
-  ok143 <- expectFailure "section unknown target" badSectionUnknownSource
-  ok144 <- expectFailure "section extern target" badSectionExternSource
-  ok145 <- expectFailure "section duplicate target" badSectionDuplicateTargetSource
-  ok146 <- expectFailure "section invalid name" badSectionNameSource
-  ok147 <- expectFreestandingCodegen "freestanding extern calling convention" freestandingSource "inspect-header-platform" "__attribute__((sysv_abi)) uint64_t platform_header_magic(silt_layout_Header hdr);"
-  ok148 <- expectFailure "calling-convention unknown target" badCallingConventionUnknownSource
-  ok149 <- expectFailure "calling-convention claim target" badCallingConventionClaimSource
-  ok150 <- expectFailure "calling-convention duplicate target" badCallingConventionDuplicateTargetSource
-  ok151 <- expectFailure "calling-convention invalid name" badCallingConventionNameSource
-  ok152 <- expectFailure "entry unknown target" badEntryUnknownSource
-  ok153 <- expectFailure "entry extern target" badEntryExternSource
-  ok154 <- expectFailure "entry duplicate target" badEntryDuplicateSource
-  ok155 <- expectFailure "entry unsupported signature" badEntryUnsupportedSignatureSource
-  ok156 <- expectFailure "abi-contract symbol mismatch" badAbiContractSymbolSource
-  ok157 <- expectFailure "abi-contract missing entry metadata" badAbiContractEntrySource
-  ok158 <- expectFailure "abi-contract calling convention mismatch" badAbiContractCallingConventionSource
-  ok159 <- expectFailure "abi-contract duplicate clause" badAbiContractDuplicateClauseSource
-  ok160 <- expectFailure "abi-contract unsupported freestanding signature" badAbiContractFreestandingSource
-  ok161 <- expectCheck "target contract source" targetContractSource
-  ok162 <- expectFailure "target-contract unsupported target" badTargetContractTargetSource
-  ok163 <- expectFailure "target-contract format mismatch" badTargetContractFormatSource
-  ok164 <- expectFailure "target-contract entry metadata missing" badTargetContractEntrySource
-  ok165 <- expectFailure "target-contract symbol mismatch" badTargetContractSymbolSource
-  ok166 <- expectFailure "target-contract unaligned entry address" badTargetContractAddressSource
-  ok167 <- expectFailure "target-contract duplicate clause" badTargetContractDuplicateClauseSource
-  ok168 <- expectFreestandingCodegenFiles "limine freestanding entry signature" ["examples/limine.silt"] "limine-entry" "__attribute__((used)) __attribute__((sysv_abi)) __attribute__((section(\".text.silt.boot\"))) uint8_t silt_limine_entry(void) {"
-  ok169 <- expectFreestandingCodegenFiles "limine static bytes rodata from Silt" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 76u, 73u, 77u, 73u, 78u, 69u, 95u, 81u, 69u, 77u, 85u, 95u, 79u, 75u, 10u};"
-  ok169a <- expectFreestandingCodegenFiles "limine static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169a1 <- expectFreestandingCodegenFiles "limine static cell store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_BootState*)(((uintptr_t)&silt_cell_limine_boot_state[0])))) = BootState_0;"
-  ok169a2 <- expectFreestandingCodegenFiles "limine static cell load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_BootState state_1 = (*((silt_layout_BootState*)(((uintptr_t)&silt_cell_limine_boot_state[0]))));"
-  ok169a3 <- expectFreestandingCodegenFiles "limine static value data from Silt" ["examples/limine.silt"] "limine-entry" "static silt_layout_BootState silt_value_limine_boot_manifest __attribute__((used, section(\".data.silt\"), aligned(8))) = {{1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 66u, 0u, 0u, 0u, 0u, 0u, 0u, 0u}};"
-  ok169a4 <- expectFreestandingCodegenFiles "limine static value load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_BootState manifest_2 = (*((silt_layout_BootState*)(((uintptr_t)&silt_value_limine_boot_manifest))));"
-  ok169b <- expectFreestandingCodegen "x86 in8 primitive codegen" machineIoSource "read-status" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_0) : \"Nd\"((uint16_t)(1016ULL)));"
-  ok169c <- expectFreestandingCodegenFiles "limine serial readiness from Silt" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_"
-  ok169d <- expectFreestandingCodegenFiles "limine panic marker from Silt" ["examples/limine-panic.silt"] "panic-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(80ULL)), \"Nd\"((uint16_t)(1016ULL)));"
-  ok169e <- expectFailure "x86 out8 transition mismatch" badMachineIoTransitionSource
-  ok169f <- expectFailureFilesWithSuffix "limine panic cause mismatch" ["examples/limine-panic.silt"] badPanicCauseMismatchSuffix
-  ok169g <- expectFreestandingCodegenFiles "limine panic oom cause codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(18ULL)), \"Nd\"((uint16_t)(244ULL)));"
-  ok169h <- expectFreestandingCodegenFiles "limine panic invariant cause codegen" ["examples/limine-panic.silt"] "kernel-panic-invariant" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(19ULL)), \"Nd\"((uint16_t)(244ULL)));"
-  ok169i <- expectFailureFilesWithSuffix "limine panic cause cross mismatch" ["examples/limine-panic.silt"] badPanicCauseCrossMismatchSuffix
-  ok169j <- expectFreestandingCodegenFiles "limine panic oom marker codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(79ULL)), \"Nd\"((uint16_t)(1016ULL)));"
-  ok169k <- expectFreestandingCodegenFiles "limine panic invariant marker codegen" ["examples/limine-panic.silt"] "kernel-panic-invariant" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(86ULL)), \"Nd\"((uint16_t)(1016ULL)));"
-  ok169l <- expectFreestandingCodegenFiles "limine message writer signature" ["examples/limine-serial.silt"] "serial-write-msg20" "uint8_t serial_write_msg20(silt_layout_SerialMsg20 msg) {"
-  ok169m <- expectFailureFilesWithSuffix "limine message length mismatch" ["examples/limine.silt"] badMessageLengthMismatchSuffix
-  ok169n <- expectFreestandingCodegenFiles "limine panic oom marker M codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(77ULL)), \"Nd\"((uint16_t)(1016ULL)));"
-  ok169o <- expectNormalizedFiles "limine layout-values message normalization" ["examples/limine.silt"] "limine-ok-message" "(layout SerialMsg20 ((b0 (u64 83)) (b1 (u64 73)) (b2 (u64 76)) (b3 (u64 84)) (b4 (u64 95)) (b5 (u64 76)) (b6 (u64 73)) (b7 (u64 77)) (b8 (u64 73)) (b9 (u64 78)) (b10 (u64 69)) (b11 (u64 95)) (b12 (u64 81)) (b13 (u64 69)) (b14 (u64 77)) (b15 (u64 85)) (b16 (u64 95)) (b17 (u64 79)) (b18 (u64 75)) (b19 (u64 10))))"
-  ok169o1 <- expectNormalizedFiles "limine boot state normalization" ["examples/limine.silt"] "boot-state-ready" "(layout BootState ((phase (u64 1)) (code (u64 66))))"
-  ok169o2 <- expectNormalizedFiles "limine boot manifest acceptance normalization" ["examples/limine.silt"] "boot-state-ready-accepted" "True"
-  ok169p <- expectFreestandingCodegenFiles "limine serial slice writer signature" ["examples/limine-serial.silt"] "serial-write-slice20" "uint8_t serial_write_slice20(silt_layout_SerialSlice slice) {"
-  ok169q <- expectFreestandingCodegenFiles "limine serial slice length guard" ["examples/limine-serial.silt"] "serial-write-slice20" "== 20ULL"
-  ok169r <- expectFreestandingCodegenFiles "limine serial slice byte load" ["examples/limine-serial.silt"] "serial-write-slice20" "uint8_t byte_2 = (*((uint8_t*)"
-  ok169s <- expectNormalizedFiles "limine static byte slice length normalization" ["examples/limine.silt"] "limine-ok-slice-len" "(u64 20)"
-  ok169t <- expectNormalizedFiles "limine base revision marker normalization" ["examples/limine.silt"] "limine-base-revision-value" "(layout LimineBaseRevision ((magic0 (u64 17966595237268006600)) (magic1 (u64 7672788277485857756)) (revision (u64 3))))"
-  ok169u <- expectFreestandingCodegenFiles "limine request start section codegen" ["examples/limine.silt"] "limine-entry" "silt_value_limine_requests_start __attribute__((used, section(\".limine_requests_start\"), aligned(8)))"
-  ok169v <- expectFreestandingCodegenFiles "limine HHDM request section codegen" ["examples/limine.silt"] "limine-entry" "silt_value_limine_hhdm_request __attribute__((used, section(\".limine_requests\"), aligned(8)))"
-  ok169w <- expectFreestandingCodegenFiles "limine HHDM response load codegen" ["examples/limine.silt"] "limine-entry" "silt_layout_LimineHhdmResponse response_"
-  ok169x <- expectFreestandingCodegenFiles "limine HHDM marker codegen" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(72ULL)), \"Nd\"((uint16_t)(1016ULL)));"
-  ok169y <- expectNormalizedFiles "limine Memmap request normalization" ["examples/limine.silt"] "limine-memmap-request-value" "(layout LimineMemmapRequest ((id0 (u64 14389525486399949704)) (id1 (u64 757423339400917115)) (id2 (u64 7480265251536666735)) (id3 (u64 16358389823600082018)) (revision (u64 0)) (response ((ptr-from-addr LimineMemmapResponse) (addr 0)))))"
-  ok169z <- expectFreestandingCodegenFiles "limine Memmap request section codegen" ["examples/limine.silt"] "limine-entry" "silt_value_limine_memmap_request __attribute__((used, section(\".limine_requests\"), aligned(8)))"
-  ok169aa <- expectFreestandingCodegenFiles "limine Memmap response load codegen" ["examples/limine.silt"] "limine-entry" "silt_layout_LimineMemmapResponse response_"
-  ok169ab <- expectFreestandingCodegenFiles "limine Memmap entry pointer load codegen" ["examples/limine.silt"] "limine-entry" "uintptr_t first_entry_ptr_"
-  ok169ac <- expectFreestandingCodegenFiles "limine Memmap entry load codegen" ["examples/limine.silt"] "limine-entry" "silt_layout_LimineMemmapEntry first_entry_"
-  ok169ad <- expectFreestandingCodegenFiles "limine Memmap marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_memmap_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 77u, 69u, 77u, 77u, 65u, 80u, 95u, 81u, 69u, 77u, 85u, 95u, 79u, 75u, 10u};"
-  ok169ae <- expectNormalizedFiles "limine boot info readiness normalization" ["examples/limine.silt"] "boot-info-sample-ready" "True"
-  ok169af <- expectFreestandingCodegenFiles "limine boot info static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_boot_info[40] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169ag <- expectFreestandingCodegenFiles "limine boot info store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_BootInfo*)(((uintptr_t)&silt_cell_limine_boot_info[0])))) = BootInfo_"
-  ok169ah <- expectFreestandingCodegenFiles "limine boot info load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_BootInfo info_"
-  ok169ai <- expectFreestandingCodegenFiles "limine boot info marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_boot_info_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 73u, 78u, 70u, 79u, 95u, 79u, 75u, 33u, 33u, 10u};"
-  ok169aj <- expectNormalizedFiles "limine boot info first end normalization" ["examples/limine.silt"] "boot-info-sample-first-end" "(u64 4096)"
-  ok169ak <- expectNormalizedFiles "limine boot info direct-map base normalization" ["examples/limine.silt"] "boot-info-sample-direct-map-first-base" "(u64 4096)"
-  ok169al <- expectNormalizedFiles "limine boot info direct-map end normalization" ["examples/limine.silt"] "boot-info-sample-direct-map-first-end" "(u64 8192)"
-  ok169am <- expectNormalizedFiles "limine boot info span validity normalization" ["examples/limine.silt"] "boot-info-sample-first-span-valid" "True"
-  ok169an <- expectFreestandingCodegenFiles "limine boot span marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_boot_span_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 83u, 80u, 65u, 78u, 95u, 79u, 75u, 33u, 33u, 10u};"
-  ok169ao <- expectNormalizedFiles "limine kernel span normalization" ["examples/limine.silt"] "kernel-span-sample" "(layout KernelBootSpan ((physical-base (u64 0)) (physical-end (u64 4096)) (direct-base (u64 4096)) (direct-end (u64 8192)) (kind (u64 0))))"
-  ok169ap <- expectNormalizedFiles "limine kernel span readiness normalization" ["examples/limine.silt"] "kernel-span-sample-ready" "True"
-  ok169aq <- expectFreestandingCodegenFiles "limine kernel span static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_span[40] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169ar <- expectFreestandingCodegenFiles "limine kernel span store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelBootSpan*)(((uintptr_t)&silt_cell_limine_kernel_span[0])))) = KernelBootSpan_"
-  ok169as <- expectFreestandingCodegenFiles "limine kernel span load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelBootSpan span_"
-  ok169at <- expectFreestandingCodegenFiles "limine kernel span marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_kernel_span_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 75u, 69u, 82u, 78u, 69u, 76u, 95u, 83u, 80u, 65u, 78u, 95u, 79u, 75u, 10u};"
-  ok169au <- expectNormalizedFiles "limine kernel span page count normalization" ["examples/limine.silt"] "kernel-span-sample-page-count" "(u64 1)"
-  ok169av <- expectNormalizedFiles "limine kernel span has pages normalization" ["examples/limine.silt"] "kernel-span-sample-has-pages" "True"
-  ok169aw <- expectFreestandingCodegenFiles "limine kernel page count static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_page_count[8] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169ax <- expectFreestandingCodegenFiles "limine kernel page count store from Silt" ["examples/limine.silt"] "limine-entry" "(*((uint64_t*)(((uintptr_t)&silt_cell_limine_kernel_page_count[0])))) ="
-  ok169ay <- expectFreestandingCodegenFiles "limine kernel page count load from Silt" ["examples/limine.silt"] "limine-entry" "uint64_t page_count_"
-  ok169ba <- expectFreestandingCodegenFiles "limine kernel pages marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_kernel_pages_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 75u, 80u, 65u, 71u, 69u, 83u, 95u, 79u, 75u, 33u, 33u, 33u, 33u, 33u, 10u};"
-  ok169bb <- expectNormalizedFiles "limine kernel boot policy normalization" ["examples/limine.silt"] "kernel-boot-policy-sample" "(layout KernelBootPolicy ((required-pages (u64 1)) (available-pages (u64 1)) (accepted (u64 1))))"
-  ok169bc <- expectNormalizedFiles "limine kernel boot policy readiness normalization" ["examples/limine.silt"] "kernel-boot-policy-sample-ready" "True"
-  ok169bd <- expectFreestandingCodegenFiles "limine kernel policy static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_policy[24] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169be <- expectFreestandingCodegenFiles "limine kernel policy store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelBootPolicy*)(((uintptr_t)&silt_cell_limine_kernel_policy[0])))) ="
-  ok169bf <- expectFreestandingCodegenFiles "limine kernel policy load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelBootPolicy policy_"
-  ok169bg <- expectFreestandingCodegenFiles "limine boot policy marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_boot_policy_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 80u, 79u, 76u, 73u, 67u, 89u, 95u, 79u, 75u, 10u};"
-  ok169bh <- expectNormalizedFiles "limine kernel boot plan normalization" ["examples/limine.silt"] "kernel-boot-plan-sample" "(layout KernelBootPlan ((physical-base (u64 0)) (direct-base (u64 4096)) (page-count (u64 1)) (accepted (u64 1))))"
-  ok169bi <- expectNormalizedFiles "limine kernel boot plan readiness normalization" ["examples/limine.silt"] "kernel-boot-plan-sample-ready" "True"
-  ok169bj <- expectFreestandingCodegenFiles "limine kernel plan static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_plan[32] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169bk <- expectFreestandingCodegenFiles "limine kernel plan store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelBootPlan*)(((uintptr_t)&silt_cell_limine_kernel_plan[0])))) ="
-  ok169bl <- expectFreestandingCodegenFiles "limine kernel plan load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelBootPlan plan_"
-  ok169bm <- expectFreestandingCodegenFiles "limine boot plan marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_boot_plan_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 80u, 76u, 65u, 78u, 95u, 79u, 75u, 33u, 33u, 10u};"
-  ok169bn <- expectNormalizedFiles "limine kernel boot plan invariant normalization" ["examples/limine.silt"] "kernel-boot-plan-invariant-sample" "(layout KernelBootPlanInvariant ((nonzero-pages (u64 1)) (accepted (u64 1)) (direct-map-above-physical (u64 1))))"
-  ok169bo <- expectNormalizedFiles "limine kernel boot plan invariant readiness normalization" ["examples/limine.silt"] "kernel-boot-plan-invariant-sample-ready" "True"
-  ok169bp <- expectFreestandingCodegenFiles "limine kernel plan invariant static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_plan_invariant[24] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169bq <- expectFreestandingCodegenFiles "limine kernel plan invariant store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelBootPlanInvariant*)(((uintptr_t)&silt_cell_limine_kernel_plan_invariant[0])))) ="
-  ok169br <- expectFreestandingCodegenFiles "limine kernel plan invariant load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelBootPlanInvariant invariant_"
-  ok169bs <- expectFreestandingCodegenFiles "limine plan invariant marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_plan_invariant_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 80u, 76u, 65u, 78u, 95u, 73u, 78u, 86u, 95u, 79u, 75u, 33u, 33u, 33u, 10u};"
-  ok169bt <- expectNormalizedFiles "limine kernel frame candidate normalization" ["examples/limine.silt"] "kernel-frame-candidate-sample" "(layout KernelFrameCandidate ((physical-base (u64 0)) (direct-base (u64 4096)) (page-count (u64 1)) (kind (u64 0)) (ready (u64 1))))"
-  ok169bu <- expectNormalizedFiles "limine kernel frame candidate readiness normalization" ["examples/limine.silt"] "kernel-frame-candidate-sample-ready" "True"
-  ok169bv <- expectFreestandingCodegenFiles "limine kernel frame candidate static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_candidate[40] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169bw <- expectFreestandingCodegenFiles "limine kernel frame candidate store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameCandidate*)(((uintptr_t)&silt_cell_limine_kernel_frame_candidate[0])))) ="
-  ok169bx <- expectFreestandingCodegenFiles "limine kernel frame candidate load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameCandidate candidate_"
-  ok169by <- expectFreestandingCodegenFiles "limine frame candidate marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_candidate_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 67u, 65u, 78u, 68u, 95u, 79u, 75u, 33u, 10u};"
-  ok169bz <- expectNormalizedFiles "limine kernel frame eligibility normalization" ["examples/limine.silt"] "kernel-frame-eligibility-sample" "(layout KernelFrameEligibility ((candidate-ready (u64 1)) (usable-kind (u64 1)) (physical-page-aligned (u64 1)) (direct-page-aligned (u64 1)) (nonzero-pages (u64 1)) (eligible (u64 1))))"
-  ok169ca <- expectNormalizedFiles "limine kernel frame eligibility readiness normalization" ["examples/limine.silt"] "kernel-frame-eligibility-sample-ready" "True"
-  ok169cb <- expectFreestandingCodegenFiles "limine kernel frame eligibility static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_eligibility[48] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169cc <- expectFreestandingCodegenFiles "limine kernel frame eligibility store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameEligibility*)(((uintptr_t)&silt_cell_limine_kernel_frame_eligibility[0])))) ="
-  ok169cd <- expectFreestandingCodegenFiles "limine kernel frame eligibility load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameEligibility eligibility_"
-  ok169ce <- expectFreestandingCodegenFiles "limine frame eligibility marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_eligibility_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 69u, 76u, 73u, 71u, 95u, 79u, 75u, 33u, 10u};"
-  ok169cf <- expectNormalizedFiles "limine kernel frame reservation intent normalization" ["examples/limine.silt"] "kernel-frame-reservation-intent-sample" "(layout KernelFrameReservationIntent ((physical-base (u64 0)) (direct-base (u64 4096)) (page-count (u64 1)) (candidate-ready (u64 1)) (eligible (u64 1)) (requested (u64 1)) (intent-ready (u64 1))))"
-  ok169cg <- expectNormalizedFiles "limine kernel frame reservation intent readiness normalization" ["examples/limine.silt"] "kernel-frame-reservation-intent-sample-ready" "True"
-  ok169ch <- expectFreestandingCodegenFiles "limine kernel frame reservation intent static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_reservation_intent[56] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169ci <- expectFreestandingCodegenFiles "limine kernel frame reservation intent store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameReservationIntent*)(((uintptr_t)&silt_cell_limine_kernel_frame_reservation_intent[0])))) ="
-  ok169cj <- expectFreestandingCodegenFiles "limine kernel frame reservation intent load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameReservationIntent intent_"
-  ok169ck <- expectFreestandingCodegenFiles "limine frame reservation marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_reservation_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 82u, 69u, 83u, 86u, 95u, 79u, 75u, 33u, 10u};"
-  ok169cl <- expectNormalizedFiles "limine kernel frame reservation invariant normalization" ["examples/limine.silt"] "kernel-frame-reservation-invariant-sample" "(layout KernelFrameReservationInvariant ((candidate-ready (u64 1)) (eligible (u64 1)) (requested (u64 1)) (nonzero-pages (u64 1)) (span-ordered (u64 1)) (intent-ready (u64 1))))"
-  ok169cm <- expectNormalizedFiles "limine kernel frame reservation invariant readiness normalization" ["examples/limine.silt"] "kernel-frame-reservation-invariant-sample-ready" "True"
-  ok169cn <- expectFreestandingCodegenFiles "limine kernel frame reservation invariant static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_reservation_invariant[48] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169co <- expectFreestandingCodegenFiles "limine kernel frame reservation invariant store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameReservationInvariant*)(((uintptr_t)&silt_cell_limine_kernel_frame_reservation_invariant[0])))) ="
-  ok169cp <- expectFreestandingCodegenFiles "limine kernel frame reservation invariant load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameReservationInvariant invariant_"
-  ok169cq <- expectFreestandingCodegenFiles "limine frame reservation invariant marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_reservation_invariant_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 82u, 69u, 83u, 86u, 95u, 73u, 78u, 86u, 95u, 79u, 75u, 33u, 33u, 33u, 10u};"
-  ok169cr <- expectNormalizedFiles "limine kernel frame reservation state normalization" ["examples/limine.silt"] "kernel-frame-reservation-state-sample" "(layout KernelFrameReservationState ((physical-base (u64 0)) (direct-base (u64 4096)) (page-count (u64 1)) (previous-reserved (u64 0)) (reserved (u64 1)) (intent-ready (u64 1)) (invariant-ready (u64 1)) (state-ready (u64 1))))"
-  ok169cs <- expectNormalizedFiles "limine kernel frame reservation state readiness normalization" ["examples/limine.silt"] "kernel-frame-reservation-state-sample-ready" "True"
-  ok169ct <- expectFreestandingCodegenFiles "limine kernel frame reservation state static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_reservation_state[64] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169cu <- expectFreestandingCodegenFiles "limine kernel frame reservation state store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameReservationState*)(((uintptr_t)&silt_cell_limine_kernel_frame_reservation_state[0])))) ="
-  ok169cv <- expectFreestandingCodegenFiles "limine kernel frame reservation state load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameReservationState state_"
-  ok169cw <- expectFreestandingCodegenFiles "limine frame reservation state marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_reservation_state_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 82u, 83u, 86u, 68u, 95u, 79u, 75u, 33u, 10u};"
-  ok169cx <- expectNormalizedFiles "limine kernel frame free-list seed normalization" ["examples/limine.silt"] "kernel-frame-free-list-seed-sample" "(layout KernelFrameFreeListSeed ((reserved-base (u64 0)) (free-base (u64 4096)) (free-direct-base (u64 8192)) (reserved-count (u64 1)) (free-count (u64 1)) (state-ready (u64 1)) (free-ready (u64 1)) (seed-ready (u64 1))))"
-  ok169cy <- expectNormalizedFiles "limine kernel frame free-list seed readiness normalization" ["examples/limine.silt"] "kernel-frame-free-list-seed-sample-ready" "True"
-  ok169cz <- expectFreestandingCodegenFiles "limine kernel frame free-list seed static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_free_list_seed[64] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169da <- expectFreestandingCodegenFiles "limine kernel frame free-list seed store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameFreeListSeed*)(((uintptr_t)&silt_cell_limine_kernel_frame_free_list_seed[0])))) ="
-  ok169db <- expectFreestandingCodegenFiles "limine kernel frame free-list seed load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameFreeListSeed seed_"
-  ok169dc <- expectFreestandingCodegenFiles "limine frame free-list seed marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_free_list_seed_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 76u, 73u, 83u, 84u, 95u, 83u, 69u, 69u, 68u, 95u, 79u, 75u, 33u, 10u};"
-  ok169dc1 <- expectNormalizedFiles "limine live frame pool seed normalization" ["examples/limine.silt"] "kernel-frame-pool-live-seeded-sample" "(layout KernelFramePoolLiveState ((reserved-base (u64 0)) (next-free-base (u64 4096)) (next-free-direct-base (u64 8192)) (reserved-count (u64 1)) (free-count (u64 1)) (last-allocated-base (u64 0)) (last-allocated-direct-base (u64 0)) (phase (u64 0)) (ready (u64 1))))"
-  ok169dc2 <- expectNormalizedFiles "limine live frame pool seed readiness normalization" ["examples/limine.silt"] "kernel-frame-pool-live-seeded-sample-ready" "True"
-  ok169dc3 <- expectNormalizedFiles "limine live frame pool allocated normalization" ["examples/limine.silt"] "kernel-frame-pool-live-allocated-sample" "(layout KernelFramePoolLiveState ((reserved-base (u64 0)) (next-free-base (u64 8192)) (next-free-direct-base (u64 12288)) (reserved-count (u64 2)) (free-count (u64 0)) (last-allocated-base (u64 4096)) (last-allocated-direct-base (u64 8192)) (phase (u64 1)) (ready (u64 1))))"
-  ok169dc4 <- expectNormalizedFiles "limine live frame pool allocated readiness normalization" ["examples/limine.silt"] "kernel-frame-pool-live-allocated-sample-ready" "True"
-  ok169dc5 <- expectNormalizedFiles "limine live frame pool restored normalization" ["examples/limine.silt"] "kernel-frame-pool-live-restored-sample" "(layout KernelFramePoolLiveState ((reserved-base (u64 0)) (next-free-base (u64 4096)) (next-free-direct-base (u64 8192)) (reserved-count (u64 1)) (free-count (u64 1)) (last-allocated-base (u64 4096)) (last-allocated-direct-base (u64 8192)) (phase (u64 2)) (ready (u64 1))))"
-  ok169dc6 <- expectNormalizedFiles "limine live frame pool restored readiness normalization" ["examples/limine.silt"] "kernel-frame-pool-live-restored-sample-ready" "True"
-  ok169dc7 <- expectFreestandingCodegenFiles "limine live frame pool static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_pool_live_state[72] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169dc8 <- expectFreestandingCodegenFiles "limine live frame pool store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFramePoolLiveState*)(((uintptr_t)&silt_cell_limine_kernel_frame_pool_live_state[0])))) ="
-  ok169dc9 <- expectFreestandingCodegenFiles "limine live frame pool load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFramePoolLiveState restored_"
-  ok169dc10 <- expectFreestandingCodegenFiles "limine live frame pool marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_pool_live_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 80u, 79u, 79u, 76u, 95u, 76u, 73u, 86u, 69u, 95u, 79u, 75u, 33u, 33u, 10u};"
-  ok169dd <- expectNormalizedFiles "limine kernel frame alloc-one state normalization" ["examples/limine.silt"] "kernel-frame-alloc-one-state-sample" "(layout KernelFrameAllocOneState ((allocated-base (u64 4096)) (allocated-direct-base (u64 8192)) (reserved-count-before (u64 1)) (free-count-before (u64 1)) (reserved-count-after (u64 2)) (free-count-after (u64 0)) (allocated-count (u64 1)) (alloc-ready (u64 1))))"
-  ok169de <- expectNormalizedFiles "limine kernel frame alloc-one readiness normalization" ["examples/limine.silt"] "kernel-frame-alloc-one-state-sample-ready" "True"
-  ok169df <- expectNormalizedFiles "limine kernel frame free-one state normalization" ["examples/limine.silt"] "kernel-frame-free-one-state-sample" "(layout KernelFrameFreeOneState ((freed-base (u64 4096)) (freed-direct-base (u64 8192)) (reserved-count-before (u64 2)) (free-count-before (u64 0)) (reserved-count-after (u64 1)) (free-count-after (u64 1)) (released-count (u64 1)) (free-ready (u64 1))))"
-  ok169dg <- expectNormalizedFiles "limine kernel frame free-one readiness normalization" ["examples/limine.silt"] "kernel-frame-free-one-state-sample-ready" "True"
-  ok169dh <- expectFreestandingCodegenFiles "limine kernel frame alloc-one static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_alloc_one_state[64] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169di <- expectFreestandingCodegenFiles "limine kernel frame free-one static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_free_one_state[64] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169dj <- expectFreestandingCodegenFiles "limine kernel frame alloc-one store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocOneState*)(((uintptr_t)&silt_cell_limine_kernel_frame_alloc_one_state[0])))) ="
-  ok169dk <- expectFreestandingCodegenFiles "limine kernel frame alloc-one load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocOneState state_"
-  ok169dl <- expectFreestandingCodegenFiles "limine kernel frame free-one store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameFreeOneState*)(((uintptr_t)&silt_cell_limine_kernel_frame_free_one_state[0])))) ="
-  ok169dm <- expectFreestandingCodegenFiles "limine kernel frame free-one load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameFreeOneState freed_"
-  ok169dn <- expectFreestandingCodegenFiles "limine frame alloc-one marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_alloc_one_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 79u, 78u, 69u, 95u, 79u, 75u, 33u, 33u, 10u};"
-  ok169do <- expectFreestandingCodegenFiles "limine frame free-one marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_free_one_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 69u, 69u, 95u, 79u, 78u, 69u, 95u, 79u, 75u, 33u, 33u, 33u, 10u};"
-  ok169dp <- expectNormalizedFiles "limine kernel frame allocator state normalization" ["examples/limine.silt"] "kernel-frame-allocator-state-sample" "(layout KernelFrameAllocatorState ((initial-reserved-count (u64 1)) (initial-free-count (u64 1)) (allocated-base (u64 4096)) (allocated-direct-base (u64 8192)) (reserved-count-after-alloc (u64 2)) (free-count-after-alloc (u64 0)) (allocated-count (u64 1)) (released-count (u64 1)) (final-reserved-count (u64 1)) (final-free-count (u64 1)) (alloc-ready (u64 1)) (free-ready (u64 1)) (allocator-ready (u64 1))))"
-  ok169dq <- expectNormalizedFiles "limine kernel frame allocator readiness normalization" ["examples/limine.silt"] "kernel-frame-allocator-state-sample-ready" "True"
-  ok169dr <- expectFreestandingCodegenFiles "limine kernel frame allocator static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_allocator_state[104] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169ds <- expectFreestandingCodegenFiles "limine kernel frame allocator state store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocatorState*)(((uintptr_t)&silt_cell_limine_kernel_frame_allocator_state[0])))) ="
-  ok169dt <- expectFreestandingCodegenFiles "limine kernel frame allocator state load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocatorState allocator_"
-  ok169du <- expectFreestandingCodegenFiles "limine frame allocator state marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_allocator_state_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 83u, 84u, 65u, 84u, 69u, 33u, 33u, 33u, 10u};"
-  ok169dv <- expectNormalizedFiles "limine kernel frame allocator alloc API result normalization" ["examples/limine.silt"] "kernel-frame-allocator-alloc-result-sample" "(layout KernelFrameAllocatorAllocResult ((input-reserved-count (u64 1)) (input-free-count (u64 1)) (allocated-base (u64 4096)) (allocated-direct-base (u64 8192)) (output-reserved-count (u64 2)) (output-free-count (u64 0)) (allocated-count (u64 1)) (state-ready (u64 1)) (alloc-ready (u64 1)) (api-ready (u64 1))))"
-  ok169dw <- expectNormalizedFiles "limine kernel frame allocator alloc API readiness normalization" ["examples/limine.silt"] "kernel-frame-allocator-alloc-result-sample-ready" "True"
-  ok169dx <- expectNormalizedFiles "limine kernel frame allocator free API result normalization" ["examples/limine.silt"] "kernel-frame-allocator-free-result-sample" "(layout KernelFrameAllocatorFreeResult ((input-reserved-count (u64 2)) (input-free-count (u64 0)) (freed-base (u64 4096)) (freed-direct-base (u64 8192)) (output-reserved-count (u64 1)) (output-free-count (u64 1)) (released-count (u64 1)) (state-ready (u64 1)) (free-ready (u64 1)) (api-ready (u64 1))))"
-  ok169dy <- expectNormalizedFiles "limine kernel frame allocator free API readiness normalization" ["examples/limine.silt"] "kernel-frame-allocator-free-result-sample-ready" "True"
-  ok169dz <- expectFreestandingCodegenFiles "limine kernel frame allocator alloc API static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_allocator_alloc_result[80] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169ea <- expectFreestandingCodegenFiles "limine kernel frame allocator free API static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_allocator_free_result[80] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169eb <- expectFreestandingCodegenFiles "limine kernel frame allocator alloc API result store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocatorAllocResult*)(((uintptr_t)&silt_cell_limine_kernel_frame_allocator_alloc_result[0])))) ="
-  ok169ec <- expectFreestandingCodegenFiles "limine kernel frame allocator alloc API result load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocatorAllocResult result_"
-  ok169ed <- expectFreestandingCodegenFiles "limine kernel frame allocator free API result store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocatorFreeResult*)(((uintptr_t)&silt_cell_limine_kernel_frame_allocator_free_result[0])))) ="
-  ok169ee <- expectFreestandingCodegenFiles "limine kernel frame allocator free API result load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocatorFreeResult result_"
-  ok169ef <- expectFreestandingCodegenFiles "limine frame allocator alloc API marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_allocator_alloc_api_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 65u, 80u, 73u, 95u, 79u, 75u, 33u, 33u, 10u};"
-  ok169eg <- expectFreestandingCodegenFiles "limine frame allocator free API marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_allocator_free_api_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 69u, 69u, 95u, 65u, 80u, 73u, 95u, 79u, 75u, 33u, 33u, 33u, 10u};"
-  ok169eh <- expectNormalizedFiles "limine kernel frame allocator semantics state normalization" ["examples/limine.silt"] "kernel-frame-allocator-semantics-state-sample" "(layout KernelFrameAllocatorSemanticsState ((initial-free-count (u64 1)) (post-alloc-free-count (u64 0)) (alloc-progress-ready (u64 1)) (post-free-free-count (u64 1)) (reusable-base (u64 4096)) (reusable-direct-base (u64 8192)) (reusable-count (u64 1)) (alloc-api-ready (u64 1)) (free-api-ready (u64 1)) (reuse-ready (u64 1)) (semantics-ready (u64 1))))"
-  ok169ei <- expectNormalizedFiles "limine kernel frame allocator semantics readiness normalization" ["examples/limine.silt"] "kernel-frame-allocator-semantics-state-sample-ready" "True"
-  ok169ej <- expectFreestandingCodegenFiles "limine kernel frame allocator semantics static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_allocator_semantics_state[88] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169ek <- expectFreestandingCodegenFiles "limine kernel frame allocator semantics state store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocatorSemanticsState*)(((uintptr_t)&silt_cell_limine_kernel_frame_allocator_semantics_state[0])))) ="
-  ok169el <- expectFreestandingCodegenFiles "limine kernel frame allocator semantics state load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocatorSemanticsState semantics_"
-  ok169em <- expectFreestandingCodegenFiles "limine frame allocator semantics marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_allocator_semantics_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 83u, 69u, 77u, 95u, 79u, 75u, 33u, 33u, 10u};"
-  ok169en <- expectNormalizedFiles "limine kernel frame lease normalization" ["examples/limine.silt"] "kernel-frame-lease-sample" "(layout KernelFrameLease ((physical-base (u64 4096)) (direct-base (u64 8192)) (acquired-count (u64 1)) (released-count (u64 1)) (post-alloc-free-count (u64 0)) (post-free-free-count (u64 1)) (alloc-progress-ready (u64 1)) (reuse-ready (u64 1)) (same-frame (u64 1)) (semantics-ready (u64 1)) (lease-ready (u64 1))))"
-  ok169eo <- expectNormalizedFiles "limine kernel frame lease readiness normalization" ["examples/limine.silt"] "kernel-frame-lease-sample-ready" "True"
-  ok169ep <- expectFreestandingCodegenFiles "limine kernel frame lease static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_lease[88] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169eq <- expectFreestandingCodegenFiles "limine kernel frame lease store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameLease*)(((uintptr_t)&silt_cell_limine_kernel_frame_lease[0])))) ="
-  ok169er <- expectFreestandingCodegenFiles "limine kernel frame lease load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameLease lease_"
-  ok169es <- expectFreestandingCodegenFiles "limine frame lease marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_lease_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 76u, 69u, 65u, 83u, 69u, 33u, 33u, 33u, 10u};"
-  ok169et <- expectNormalizedFiles "limine kernel allocator handoff normalization" ["examples/limine.silt"] "kernel-allocator-handoff-sample" "(layout KernelAllocatorHandoff ((allocator-ready (u64 1)) (semantics-ready (u64 1)) (lease-ready (u64 1)) (physical-base (u64 4096)) (direct-base (u64 8192)) (initial-free-count (u64 1)) (post-alloc-free-count (u64 0)) (post-free-free-count (u64 1)) (acquired-count (u64 1)) (released-count (u64 1)) (same-frame (u64 1)) (handoff-ready (u64 1))))"
-  ok169eu <- expectNormalizedFiles "limine kernel allocator handoff readiness normalization" ["examples/limine.silt"] "kernel-allocator-handoff-sample-ready" "True"
-  ok169ev <- expectFreestandingCodegenFiles "limine kernel allocator handoff static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_allocator_handoff[96] __attribute__((section(\".bss.silt\"), aligned(8)));"
-  ok169ew <- expectFreestandingCodegenFiles "limine kernel allocator handoff store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelAllocatorHandoff*)(((uintptr_t)&silt_cell_limine_kernel_allocator_handoff[0])))) ="
-  ok169ex <- expectFreestandingCodegenFiles "limine kernel allocator handoff load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelAllocatorHandoff handoff_"
-  ok169ey <- expectFreestandingCodegenFiles "limine allocator handoff marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_allocator_handoff_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 72u, 65u, 78u, 68u, 79u, 70u, 70u, 33u, 10u};"
-  ok170 <- expectFailure "target-contract limine lower-half address" badTargetContractLimineAddressSource
-  ok171 <- expectFailure "boot-contract unknown target" badBootContractUnknownTargetSource
-  ok172 <- expectFailure "boot-contract target mismatch" badBootContractTargetMismatchSource
-  ok173 <- expectFailure "boot-contract duplicate clause" badBootContractDuplicateClauseSource
-  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok13g, ok13h, ok13i, ok13j, ok13k, ok13l, ok13m, ok13n, ok13o, ok13p, ok13p1, ok13p2, ok13p3, ok13q, ok13r, ok13s, ok13t, ok13u, ok13v, ok13w, ok13x, ok13y, ok13z, ok13z34, ok13z1, ok13z2, ok13z3, ok13z4, ok13z5, ok13z6, ok13z7, ok13z8, ok13z9, ok13z10, ok13z11, ok13z12, ok13z13, ok13z14, ok13z15, ok13z16, ok13z17, ok13z18, ok13z19, ok13z20, ok13z21, ok13z22, ok13z23, ok13z24, ok13z25, ok13z26, ok13z27, ok13z28, ok13z29, ok13z30, ok13z31, ok13z32, ok13z33, ok13z35, ok13z36, ok13z37, ok13z38, ok13z39, ok13z40, ok13z41, ok13z42, ok13z43, ok13z44, ok13z45, ok13z46, ok13z47, ok13z48, ok13z49, ok13z50, ok13z51, ok13z52, ok13z53, ok13z54, ok13z55, ok13z56, ok13z57, ok13z58, ok13z59, ok13z60, ok13z61, ok13z61a, ok13z62, ok13z63, ok13z64, ok13z65, ok13z66, ok13z67, ok13z68, ok13z69, ok13z70, ok13z71, ok13z72, ok13z73, ok13z74, ok13z75, ok13z76, ok13z77, ok13z78, ok13z79, ok13z80, ok13z81, ok13z82, ok13z83, ok13z84, ok13z85, ok13z86, ok13z87, ok13z88, ok13z89, ok14, ok15, ok16, ok17, ok18, ok18a, ok18b, ok19, ok20, ok21, ok22, ok23, ok23a, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok39q, ok39r, ok39s, ok39t, ok39u, ok39v, ok39w, ok39x, ok39y, ok39z, ok40, ok41, ok42, ok43, ok43a, ok43b, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok67b, ok67c, ok67d, ok67e, ok67f, ok67g, ok68, ok69, ok70, ok70b, ok70c, ok70d, ok70e, ok70f, ok70g, ok70h, ok70i, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169a, ok169a1, ok169a2, ok169a3, ok169a4, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok169o1, ok169o2, ok169p, ok169q, ok169r, ok169s, ok169t, ok169u, ok169v, ok169w, ok169x, ok169y, ok169z, ok169aa, ok169ab, ok169ac, ok169ad, ok169ae, ok169af, ok169ag, ok169ah, ok169ai, ok169aj, ok169ak, ok169al, ok169am, ok169an, ok169ao, ok169ap, ok169aq, ok169ar, ok169as, ok169at, ok169au, ok169av, ok169aw, ok169ax, ok169ay, ok169ba, ok169bb, ok169bc, ok169bd, ok169be, ok169bf, ok169bg, ok169bh, ok169bi, ok169bj, ok169bk, ok169bl, ok169bm, ok169bn, ok169bo, ok169bp, ok169bq, ok169br, ok169bs, ok169bt, ok169bu, ok169bv, ok169bw, ok169bx, ok169by, ok169bz, ok169ca, ok169cb, ok169cc, ok169cd, ok169ce, ok169cf, ok169cg, ok169ch, ok169ci, ok169cj, ok169ck, ok169cl, ok169cm, ok169cn, ok169co, ok169cp, ok169cq, ok169cr, ok169cs, ok169ct, ok169cu, ok169cv, ok169cw, ok169cx, ok169cy, ok169cz, ok169da, ok169db, ok169dc, ok169dc1, ok169dc2, ok169dc3, ok169dc4, ok169dc5, ok169dc6, ok169dc7, ok169dc8, ok169dc9, ok169dc10, ok169dd, ok169de, ok169df, ok169dg, ok169dh, ok169di, ok169dj, ok169dk, ok169dl, ok169dm, ok169dn, ok169do, ok169dp, ok169dq, ok169dr, ok169ds, ok169dt, ok169du, ok169dv, ok169dw, ok169dx, ok169dy, ok169dz, ok169ea, ok169eb, ok169ec, ok169ed, ok169ee, ok169ef, ok169eg, ok169eh, ok169ei, ok169ej, ok169ek, ok169el, ok169em, ok169en, ok169eo, ok169ep, ok169eq, ok169er, ok169es, ok169et, ok169eu, ok169ev, ok169ew, ok169ex, ok169ey, ok170, ok171, ok172, ok173]
+  , expectCheckFiles "ASCII slice predicate example bundle" asciiSlicePredicateSources
+  , expectCodegenFiles "ASCII slice predicate loop codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "for (uint64_t index_"
+  , expectCodegenFiles "ASCII slice predicate byte load codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "(*((uint8_t*)"
+  , expectCodegenFiles "ASCII slice digit lower-bound codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "48ULL <="
+  , expectAll
+      [ expectCheckFiles "ASCII trim example bundle" asciiTrimSources
+      , expectCodegenFiles "ASCII trim state layout codegen" asciiTrimSources "ascii-trim-test" "silt_layout_AsciiTrimState"
+      , expectCodegenFiles "ASCII trim loop codegen" asciiTrimSources "ascii-trim-test" "for (uint64_t index_"
+      , expectCodegenFiles "ASCII trim byte load codegen" asciiTrimSources "ascii-trim-test" "(*((uint8_t*)"
+      , expectCodegenFiles "ASCII trim whitespace lower-bound codegen" asciiTrimSources "ascii-trim-test" "9ULL <="
+      , expectCodegenFiles "ASCII trim whitespace space codegen" asciiTrimSources "ascii-trim-test" "== ((uint8_t)32u)"
+      , expectCodegenFiles "ASCII trim interior sample codegen" asciiTrimSources "ascii-trim-test" "silt_static_ascii_trim_interior_bytes"
+      , expectCodegenFiles "ASCII trim non-ASCII sample codegen" asciiTrimSources "ascii-trim-test" "silt_static_ascii_trim_non_ascii_bytes"
+      , expectCodegenFiles "ASCII trim start-offset codegen" asciiTrimSources "ascii-trim-test" "(2ULL * 1ULL)"
+      , expectCodegenFiles "ASCII trim all-whitespace offset codegen" asciiTrimSources "ascii-trim-test" "(3ULL * 1ULL)"
+      , expectCodegenFiles "ASCII trim parse value codegen" asciiTrimSources "ascii-trim-test" "42ULL"
+      ]
+  , expectCheckFiles "ASCII decimal U64 example bundle" asciiDecimalSources
+  , expectCodegenFiles "ASCII decimal U64 loop codegen" asciiDecimalSources "ascii-decimal-u64-test" "for (uint64_t index_"
+  , expectCodegenFiles "ASCII decimal U64 byte load codegen" asciiDecimalSources "ascii-decimal-u64-test" "(*((uint8_t*)"
+  , expectCodegenFiles "ASCII decimal U64 overflow bound codegen" asciiDecimalSources "ascii-decimal-u64-test" "1844674407370955161ULL"
+  , expectCodegenFiles "ASCII decimal U64 max sample codegen" asciiDecimalSources "ascii-decimal-u64-test" "silt_static_ascii_decimal_max_bytes"
+  , expectCodegenFiles "ASCII decimal U64 digit guard codegen" asciiDecimalSources "ascii-decimal-u64-test" "<= 9ULL"
+  , expectCodegenFiles "ASCII decimal U64 final digit bound codegen" asciiDecimalSources "ascii-decimal-u64-test" "<= 5ULL"
+  , expectCodegenFiles "ASCII decimal U64 base-10 accumulation codegen" asciiDecimalSources "ascii-decimal-u64-test" "* 10ULL) + (((uint64_t)byte_"
+  , expectCheckFiles "ASCII decimal U64 format example bundle" asciiDecimalFormatSources
+  , expectCodegenFiles "ASCII decimal U64 format loop codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "for (uint64_t index_"
+  , expectCodegenFiles "ASCII decimal U64 format digit remainder codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "% 10ULL"
+  , expectCodegenFiles "ASCII decimal U64 format digit division codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "/ 10ULL"
+  , expectCodegenFiles "ASCII decimal U64 format caller-buffer byte store codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "&silt_cell_ascii_decimal_format_max_buffer[0])) + 0ULL))) + ((19ULL -"
+  , expectCodegenFiles "ASCII decimal U64 format ASCII offset codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "48ULL +"
+  , expectCodegenFiles "ASCII decimal U64 format max sample codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "silt_static_ascii_decimal_format_max_bytes"
+  , expectNormalizedFiles "ASCII decimal U64 format full state guard normalization" asciiDecimalFormatSources "ascii-decimal-format-full-state-should-not-write" "False"
+  , expectCodegenFiles "ASCII decimal U64 format capacity guard codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "< 20ULL"
+  , expectCheckFiles "hosted decimal helper bundle" hostedDecimalSources
+  , expectCheckFiles "hosted size report pressure app bundle" hostedSizeReportSources
+  , expectCodegenFiles "hosted size report arg count codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted size report arg base codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_arg_base"
+  , expectCodegenFiles "hosted size report file read codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted size report file write codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_file_write_bytes"
+  , expectCodegenFiles "hosted size report stdout codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted size report parser codegen" hostedSizeReportSources "hosted-size-report-main" "* 10ULL) + (((uint64_t)byte_"
+  , expectCodegenFiles "hosted size report formatter remainder codegen" hostedSizeReportSources "hosted-size-report-main" "% 10ULL"
+  , expectCodegenFiles "hosted size report formatter division codegen" hostedSizeReportSources "hosted-size-report-main" "/ 10ULL"
+  , expectCodegenFiles "hosted size report file buffer codegen" hostedSizeReportSources "hosted-size-report-main" "silt_cell_hosted_size_report_file_buffer"
+  , expectCodegenFiles "hosted size report file-read status codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_file_read_ok"
+  , expectCodegenFiles "hosted size report file-read length codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_file_read_len"
+  , expectCodegenFiles "hosted size report read result layout codegen" hostedSizeReportSources "hosted-size-report-main" "silt_layout_HostReadFileResult"
+  , expectCodegenFiles "hosted size report stderr codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_put_error_byte(byte_"
+  , expectCheckFiles "hosted config report pressure app bundle" hostedConfigReportSources
+  , expectCodegenFiles "hosted config report arg count codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted config report file read codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted config report file-read status codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_file_read_ok"
+  , expectCodegenFiles "hosted config report read result layout codegen" hostedConfigReportSources "hosted-config-report-main" "silt_layout_HostReadFileResult"
+  , expectCodegenFiles "hosted config report text split layout codegen" hostedConfigReportSources "hosted-config-report-main" "silt_layout_TextSplitFirst"
+  , expectCodegenFiles "hosted config report colon split codegen" hostedConfigReportSources "hosted-config-report-main" "== ((uint8_t)58u)"
+  , expectCodegenFiles "hosted config report trim state codegen" hostedConfigReportSources "hosted-config-report-main" "silt_layout_AsciiTrimState"
+  , expectCodegenFiles "hosted config report key static codegen" hostedConfigReportSources "hosted-config-report-main" "silt_static_hosted_config_report_key_bytes"
+  , expectCodegenFiles "hosted config report parser codegen" hostedConfigReportSources "hosted-config-report-main" "* 10ULL) + (((uint64_t)byte_"
+  , expectCodegenFiles "hosted config report formatter remainder codegen" hostedConfigReportSources "hosted-config-report-main" "% 10ULL"
+  , expectCodegenFiles "hosted config report file write codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_file_write_bytes"
+  , expectCodegenFiles "hosted config report stdout codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted config report stderr codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_put_error_byte(byte_"
+  , expectCheck "generic data" optionSource
+  , expectCheck "recursive generic data" recursiveDataSource
+  , expectFailure "missing claim" "(def nope Type)"
+  , expectFailure "ill-typed body" illTypedSource
+  , expectFailure "bad match scrutinee" badMatchSource
+  , expectFailureWithFragment "bool match rejects extra Nat arm" badBoolExtraArmSource "constructor Z does not belong to data Bool"
+  , expectFailureWithFragment "nat match rejects extra Bool arm" badNatExtraArmSource "constructor True does not belong to data Nat"
+  , expectFailure "erased binder used" badErasedSource
+  , expectFailure "linear binder duplicated" badLinearSource
+  , expectNormalized "normalization" normalizationSource "three" "(S (S (S Z)))"
+  , expectNormalized "effect normalization" effectSource "eff-three" "(((pure Console) Nat) (S (S Z)))"
+  , expectNormalized "u64 normalization" u64Source "word-answer" "(u64 42)"
+  , expectNormalized "nat-to-u64 normalization" u64Source "nat-two-word" "(u64 2)"
+  , expectNormalized "addr normalization" lowLevelSource "heap-next" "(addr 4160)"
+  , expectNormalized "addr diff normalization" lowLevelSource "heap-span" "(u64 64)"
+  , expectNormalized "page alignment normalization" lowLevelSource "aligned-page" "(u64 8192)"
+  , expectNormalized "align-up normalization" lowLevelSource "aligned-up" "(u64 8192)"
+  , expectNormalized "page-count normalization" lowLevelSource "page-count-5000" "(u64 2)"
+  , expectNormalized "size-of normalization" lowLevelSource "u64-size" "(u64 8)"
+  , expectNormalized "align-of normalization" lowLevelSource "u64-align" "(u64 8)"
+  , expectNormalized "layout size normalization" lowLevelSource "header-size" "(u64 16)"
+  , expectNormalized "layout align normalization" lowLevelSource "header-align" "(u64 8)"
+  , expectNormalized "layout field offset normalization" lowLevelSource "header-next-offset" "(u64 8)"
+  , expectNormalized "layout field ptr normalization" lowLevelSource "header-next-ptr-addr" "(addr 8200)"
+  , expectNormalized "ptr-step normalization" lowLevelSource "heap-ptr-step-addr" "(addr 4104)"
+  , expectNormalized "pointer normalization" lowLevelSource "heap-ptr-addr" "(addr 4104)"
+  , expectNormalized "layout ptr-step normalization" lowLevelSource "header-step-addr" "(addr 8224)"
+  , expectNormalized "generic data normalization" optionSource "picked" "Z"
+  , expectNormalized "recursive generic data normalization" recursiveDataSource "picked-head" "Z"
+  , expectNormalized "capability linear token normalization" capabilitySource "rotated-lease" "lease1"
+  , expectNormalized "capability owned abstraction normalization" capabilitySource "unpacked-owned-lease" "lease1"
+  , expectNormalized "capability owned pointer handle normalization" capabilitySource "retagged-word-handle" "((((OwnedAt Lease1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
+  , expectNormalized "capability observed value normalization" capabilitySource "observed-sample-value" "(u64 77)"
+  , expectNormalized "capability observed handle recovery normalization" capabilitySource "restored-word-handle" "((((OwnedAt Lease1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
+  , expectNormalized "capability word updater normalization" capabilitySource "incremented-sample-word" "(u64 8)"
+  , expectNormalized "capability header updater normalization" capabilitySource "advanced-sample-next" "(addr 8192)"
+  , expectNormalized "capability state-indexed owned handle normalization" capabilitySource "forgot-word-cap-handle" "((((OwnedAt Lease1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
+  , expectNormalized "capability state-indexed observed handle normalization" capabilitySource "forgot-word-cap-observed" "((((((ObservedAt Lease1) U64) U64) lease1) ((ptr-from-addr U64) (addr 4096))) (u64 33))"
+  , expectNormalized "capability state-indexed header handle normalization" capabilitySource "forgot-header-cap-handle" "((((OwnedAt HeaderLease1) Header) header-lease1) ((ptr-from-addr Header) (addr 8192)))"
+  , expectNormalizedFile "capability step settled word normalization" "examples/capabilities.silt" "settled-word-cap-step" "(((((OwnedCapAt Lease1) WordSlot1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
+  , expectNormalizedFile "capability step forgotten word normalization" "examples/capabilities.silt" "forgot-word-cap-step" "((((OwnedAt Lease1) U64) lease1) ((ptr-from-addr U64) (addr 4096)))"
+  , expectNormalizedFile "capability step settled header normalization" "examples/capabilities.silt" "settled-header-cap-step" "(((((OwnedCapAt HeaderLease1) HeaderRegion1) Header) header-lease1) ((ptr-from-addr Header) (addr 8192)))"
+  , expectNormalizedFile "capability step forgotten header normalization" "examples/capabilities.silt" "forgot-header-cap-step" "((((OwnedAt HeaderLease1) Header) header-lease1) ((ptr-from-addr Header) (addr 8192)))"
+  , expectNormalizedFile "capability generic header update normalization" "examples/capabilities.silt" "replaced-header-next-sample" "(addr 12288)"
+  , expectNormalizedFile "u8 literal conversion normalization" "examples/bytes.silt" "byte-answer" "(u8 2)"
+  , expectNormalizedFile "u8 widening normalization" "examples/bytes.silt" "byte-answer-word" "(u64 2)"
+  , expectNormalizedFile "u8 equality normalization" "examples/bytes.silt" "byte-eq-sample" "True"
+  , expectNormalizedFile "u8 size normalization" "examples/bytes.silt" "u8-size" "(u64 1)"
+  , expectNormalizedFile "u8 align normalization" "examples/bytes.silt" "u8-align" "(u64 1)"
+  , expectNormalizedFile "u8 ptr-step normalization" "examples/bytes.silt" "byte-third-addr" "(addr 4099)"
+  , expectNormalizedFile "byte slice length normalization" "examples/bytes.silt" "byte-slice-len" "(u64 20)"
+  , expectNormalizedFile "byte slice base normalization" "examples/bytes.silt" "byte-slice-base-addr" "(addr 4096)"
+  , expectNormalizedFile "static byte length normalization" "examples/bytes.silt" "static-byte-sample-len-value" "(u64 4)"
+  , expectNormalizedFile "static byte slice length normalization" "examples/bytes.silt" "static-byte-sample-slice-len" "(u64 4)"
+  , expectCodegen "C backend seed" normalizationSource "three" "uint64_t three(void) {"
+  , expectCodegen "C backend add fn" codegenFunctionSource "add" "uint64_t add(uint64_t a, uint64_t b) {"
+  , expectCodegen "C backend erase arg" codegenFunctionSource "erase-first" "uint64_t erase_first(uint64_t x) {"
+  , expectCodegen "C backend u64 fn" u64Source "word-inc" "uint64_t word_inc(uint64_t x) {"
+  , expectCodegen "C backend u64-to-nat fn" u64Source "word-to-nat" "uint64_t word_to_nat(uint64_t x) {"
+  , expectCodegen "C backend u64-to-nat return" u64Source "word-to-nat" "return ((uint64_t)(x));"
+  , expectCodegen "C backend addr fn" lowLevelSource "bump-addr" "uintptr_t bump_addr(uintptr_t base, uint64_t bytes) {"
+  , expectCodegen "C backend ptr fn" lowLevelSource "bump-ptr" "uintptr_t bump_ptr(uintptr_t base, uint64_t bytes) {"
+  , expectCodegen "C backend ptr-step fn" lowLevelSource "step-ptr" "uintptr_t step_ptr(uintptr_t base, uint64_t count) {"
+  , expectCodegen "C backend layout ptr-step signature" lowLevelSource "step-header" "uintptr_t step_header(uintptr_t base, uint64_t count) {"
+  , expectCodegen "C backend layout ptr-step stride" lowLevelSource "step-header" "(count * 16ULL)"
+  , expectCodegen "C backend align fn" lowLevelSource "align-up" "uint64_t align_up(uint64_t x, uint64_t align) {"
+  , expectCodegen "C backend generic load signature" memorySource "read-word" "uint64_t read_word(uintptr_t ptr) {"
+  , expectCodegen "C backend generic load deref" memorySource "read-word" "return (*((uint64_t*)(ptr)));"
+  , expectCodegen "C backend generic store signature" memorySource "write-word" "uint8_t write_word(uintptr_t ptr, uint64_t value) {"
+  , expectCodegen "C backend generic store write" memorySource "write-word" "(*((uint64_t*)(ptr))) = value;"
+  , expectCodegen "C backend bind effect fn" memorySource "increment-word" "uint64_t increment_word(uintptr_t ptr) {"
+  , expectCodegen "C backend aggregate load temp" memorySource "copy-header" "silt_layout_Header hdr_0 = (*((silt_layout_Header*)(src)));"
+  , expectCodegen "C backend aggregate store" memorySource "copy-header" "(*((silt_layout_Header*)(dst))) = hdr_0;"
+  , expectCodegen "C backend layout extern prototype" abiSource "inspect-header" "uint64_t header_magic(silt_layout_Header hdr);"
+  , expectCodegen "C backend unit extern prototype" abiSource "call-header-zero" "uint8_t header_zero(uintptr_t ptr);"
+  , expectCodegen "C backend extern prototype" externSource "call-host-add3" "uint64_t host_add3(uint64_t x);"
+  , expectCodegen "C backend extern addr prototype" externSource "call-host-bump" "uintptr_t host_bump(uintptr_t base, uint64_t bytes);"
+  , expectBundle "C backend bundle" codegenFunctionSource ["add", "erase-first"] "uint64_t erase_first(uint64_t x) {"
+  , expectBundle "memory backend bundle" memorySource ["read-word", "increment-word"] "uint64_t increment_word(uintptr_t ptr) {"
+  , expectBundle "ABI backend bundle" abiSource ["inspect-header", "call-header-zero"] "uint8_t call_header_zero(uintptr_t ptr) {"
+  , expectFreestandingCodegen "freestanding prelude" freestandingSource "init-and-read" "typedef __UINTPTR_TYPE__ uintptr_t;"
+  , expectFreestandingCodegen "freestanding layout typedef" freestandingSource "init-and-read" "silt_layout_Header;"
+  , expectFreestandingCodegen "freestanding signature" freestandingSource "init-and-read" "uint64_t init_and_read(uintptr_t base) {"
+  , expectFreestandingBundle "freestanding bundle" freestandingSource ["init-header", "init-and-read"] "uint8_t init_header(uintptr_t base) {"
+  , expectFreestandingCodegenFiles "freestanding u8 load signature" ["examples/bytes.silt"] "load-byte" "uint8_t load_byte(uintptr_t ptr) {"
+  , expectFreestandingCodegenFiles "freestanding u8 load deref" ["examples/bytes.silt"] "load-byte" "return (*((uint8_t*)(ptr)));"
+  , expectFreestandingCodegenFiles "freestanding u8 store signature" ["examples/bytes.silt"] "store-byte" "uint8_t store_byte(uintptr_t ptr, uint8_t value) {"
+  , expectFreestandingCodegenFiles "freestanding u8 store write" ["examples/bytes.silt"] "store-byte" "(*((uint8_t*)(ptr))) = value;"
+  , expectFreestandingCodegenFiles "freestanding static bytes rodata" ["examples/bytes.silt"] "static-byte-sample-first" "static const uint8_t silt_static_static_byte_sample[4] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u};"
+  , expectFreestandingCodegenFiles "freestanding static bytes load" ["examples/bytes.silt"] "static-byte-sample-first" "return (*((uint8_t*)(((uintptr_t)&silt_static_static_byte_sample[0]))));"
+  , expectCheck "layout literals" layoutLiteralSource
+  , expectFailure "layout literal missing field" layoutLiteralMissingFieldSource
+  , expectFailure "layout literal unknown field" layoutLiteralUnknownFieldSource
+  , expectFailure "layout-values arity" layoutValuesAritySource
+  , expectFailure "layout-values wrong field type" layoutValuesWrongTypeSource
+  , expectFailure "u8 literal out of range" "(claim bad U8)\n(def bad (u8 256))"
+  , expectFailure "u8 store rejects u64" badU8StoreSource
+  , expectFailure "static bytes reject empty object" "(static-bytes empty-bytes ())"
+  , expectFailure "static cell rejects non-runtime type" "(static-cell bad-cell (Pi ((x U64)) U64))"
+  , expectFailure "static value rejects non-runtime type" "(static-value bad-value (Pi ((x U64)) U64) .data.silt (fn ((x U64)) x))"
+  , expectFailure "static value rejects non-static initializer" "(claim runtime-word U64)\n(static-value bad-value U64 .data.silt runtime-word)"
+  , expectNormalized "layout literal normalization" layoutLiteralSource "header-template" "(layout Header ((magic (u64 77)) (next (addr 4096))))"
+  , expectNormalized "layout-values normalization" layoutLiteralSource "header-template-positional" "(layout Header ((magic (u64 77)) (next (addr 4096))))"
+  , expectCodegen "C backend layout literal zero-init" layoutLiteralSource "header-template" "silt_layout_Header Header_0 = {0};"
+  , expectCodegen "C backend layout literal field write" layoutLiteralSource "header-template" "(*((uint64_t*)(((uintptr_t)&Header_0 + 0ULL)))) = 77ULL;"
+  , expectCodegen "C backend layout literal extern call" layoutLiteralSource "header-template-magic" "return header_magic(Header_0);"
+  , expectFreestandingCodegen "freestanding layout literal store" freestandingSource "init-header" "(*((silt_layout_Header*)(base))) = Header_0;"
+  , expectNormalized "layout field projection normalization" layoutLiteralSource "header-template-next" "(addr 4096)"
+  , expectCodegen "C backend layout field projection" layoutLiteralSource "header-magic-from-arg" "return (*((uint64_t*)(((uintptr_t)&magic_0 + 0ULL))));"
+  , expectCodegen "C backend layout field projection from arg" layoutLiteralSource "header-magic-from-arg" "silt_layout_Header magic_0 = hdr;"
+  , expectFailure "layout update wrong field type" layoutUpdateWrongTypeSource
+  , expectNormalized "layout update normalization" layoutLiteralSource "retarget-template-next" "(addr 8192)"
+  , expectCodegen "C backend layout update" layoutLiteralSource "retarget-header" "(*((uintptr_t*)(((uintptr_t)&Header_0 + 8ULL)))) = next_addr;"
+  , expectFreestandingCodegen "freestanding layout update" freestandingSource "boot-header-at" "(*((uintptr_t*)(((uintptr_t)&Header_0 + 8ULL)))) = next_addr;"
+  , expectCheck "layout destructuring" layoutLiteralSource
+  , expectFailure "layout destructuring unknown field" layoutLetUnknownFieldSource
+  , expectNormalized "layout destructuring normalization" layoutLiteralSource "let-layout-next" "(addr 4096)"
+  , expectCodegen "C backend layout destructuring" layoutLiteralSource "let-layout-magic-from-arg" "return (*((uint64_t*)(((uintptr_t)&magic_0 + 0ULL))));"
+  , expectFreestandingCodegen "freestanding layout destructuring" freestandingSource "boot-header-next" "return ((uintptr_t)0ULL);"
+  , expectFailure "layout multi-update unknown field" layoutWithFieldsUnknownFieldSource
+  , expectNormalized "layout multi-update normalization" layoutLiteralSource "repacked-template-next" "(addr 12288)"
+  , expectNormalized "layout multi-update order normalization" layoutLiteralSource "override-template-next" "(addr 12288)"
+  , expectCodegen "C backend layout multi-update magic write" layoutLiteralSource "repack-header" "(*((uint64_t*)(((uintptr_t)&Header_0 + 0ULL)))) = magic;"
+  , expectCodegen "C backend layout multi-update next write" layoutLiteralSource "repack-header" "(*((uintptr_t*)(((uintptr_t)&Header_1 + 8ULL)))) = next_addr;"
+  , expectFreestandingCodegen "freestanding layout multi-update" freestandingSource "boot-header-remap" "(*((uintptr_t*)(((uintptr_t)&Header_0 + 8ULL)))) = next_addr;"
+  , expectCodegen "C backend load-field" memorySource "read-header-magic" "return (*((uint64_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 0ULL))))));"
+  , expectCodegen "C backend store-field" memorySource "write-header-next" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 8ULL)))))) = value;"
+  , expectFreestandingCodegen "freestanding store-field" freestandingSource "reset-next" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)base) + 8ULL)))))) = next_addr;"
+  , expectFailure "layout multi-store unknown field" layoutStoreFieldsUnknownFieldSource
+  , expectCodegen "C backend multi-store magic write" memorySource "write-header-fields" "(*((uint64_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 0ULL)))))) = magic;"
+  , expectCodegen "C backend multi-store next write" memorySource "write-header-fields" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 8ULL)))))) = next_addr;"
+  , expectFreestandingCodegen "freestanding multi-store" freestandingSource "reset-header-fields" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)base) + 8ULL)))))) = next_addr;"
+  , expectFailure "layout load destructuring unknown field" layoutLoadUnknownFieldSource
+  , expectCodegen "C backend layout load destructuring temp" memorySource "read-header-next-via-layout" "silt_layout_Header silt_value_0 = (*((silt_layout_Header*)(hdr)));"
+  , expectCodegen "C backend layout load destructuring return" memorySource "read-header-next-via-layout" "return (*((uintptr_t*)(((uintptr_t)&next_1 + 8ULL))));"
+  , expectFreestandingCodegen "freestanding layout load destructuring" freestandingSource "read-next-via-layout" "return (*((uintptr_t*)(((uintptr_t)&next_1 + 8ULL))));"
+  , expectCheck "explicit effect transitions" explicitEffectSource
+  , expectFailure "effect transition mismatch" badEffectTransitionSource
+  , expectCodegen "C backend explicit capability store" memorySource "seed-word-token" "(*((uint64_t*)(ptr))) = value;"
+  , expectCodegen "C backend explicit capability bind read" memorySource "seed-and-read-token" "return (*((uint64_t*)(ptr)));"
+  , expectCodegen "C backend explicit capability field load" memorySource "read-header-next-token" "return (*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 8ULL))))));"
+  , expectFreestandingCodegen "freestanding explicit capability field store" freestandingSource "reset-next-token" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)base) + 8ULL)))))) = next_addr;"
+  , expectFailure "memory capability transition mismatch" badMemoryCapabilitySource
+  , expectFailure "capability token duplication" badCapabilityDupSource
+  , expectFailure "capability pattern duplication" badCapabilityPatternDupSource
+  , expectFailure "capability observed split duplication" badObservedSplitSource
+  , expectFailure "capability rewrite step duplication" badRewriteWordHandleSource
+  , expectFailure "capability carrier state mismatch" badCapabilityCarrierStateSource
+  , expectFailureFileWithSuffix "capability step post-state mismatch" "examples/capabilities.silt" badCapabilityStepPostStateSuffix
+  , expectFailureFileWithSuffix "capability step stale-state read" "examples/capabilities.silt" badCapabilityStepStaleReadSuffix
+  , expectCheckFile "memory example file" "examples/memory.silt"
+  , expectCheckFile "freestanding example file" "examples/freestanding.silt"
+  , expectCodegen "C backend cap-stable multi-store" memorySource "write-header-fields-token" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)hdr) + 8ULL)))))) = next_addr;"
+  , expectCodegen "C backend cap-stable layout load destructuring" memorySource "read-header-next-via-layout-token" "silt_layout_Header silt_value_0 = (*((silt_layout_Header*)(hdr)));"
+  , expectFreestandingCodegen "freestanding cap-stable multi-store" freestandingSource "reset-header-fields-token" "(*((uintptr_t*)(((uintptr_t)((uintptr_t)(((uintptr_t)base) + 8ULL)))))) = next_addr;"
+  , expectFreestandingCodegen "freestanding cap-stable layout load destructuring" freestandingSource "read-next-via-layout-token" "return (*((uintptr_t*)(((uintptr_t)&next_1 + 8ULL))));"
+  , expectFailure "layout multi-store capability mismatch" layoutStoreFieldsCapabilityMismatchSource
+  , expectFailure "layout load capability mismatch" layoutLoadCapabilityMismatchSource
+  , expectFailure "layout alignment power-of-two" badLayoutAlignmentSource
+  , expectFailure "layout size alignment multiple" badLayoutSizeAlignmentSource
+  , expectFailure "layout overlapping fields" badLayoutOverlapSource
+  , expectFailure "layout alignment covers fields" badLayoutWeakAlignmentSource
+  , expectFreestandingCodegen "freestanding layout extern prototype" freestandingSource "inspect-header-platform" "uint64_t platform_header_magic(silt_layout_Header hdr);"
+  , expectFreestandingCodegen "freestanding layout extern call" freestandingSource "inspect-header-platform" "return platform_header_magic(hdr_0);"
+  , expectFreestandingCodegen "freestanding unit extern prototype" freestandingSource "call-platform-zero" "uint8_t platform_header_zero(uintptr_t ptr);"
+  , expectFreestandingCodegen "freestanding unit extern call" freestandingSource "call-platform-zero" "return platform_header_zero(base);"
+  , expectFreestandingCodegen "freestanding exported symbol" freestandingSource "boot-entry" "uint64_t silt_boot_entry(uintptr_t base) {"
+  , expectFailure "export unknown target" badExportUnknownSource
+  , expectFailure "export extern target" badExportExternSource
+  , expectFailure "export duplicate target" badExportDuplicateTargetSource
+  , expectFailure "export duplicate symbol" badExportDuplicateSymbolSource
+  , expectFailure "extern invalid C symbol" badExternSymbolSource
+  , expectFailure "export invalid C symbol" badExportSymbolSource
+  , expectFreestandingCodegen "freestanding entry section and calling convention attributes" freestandingSource "boot-entry" "__attribute__((used)) __attribute__((sysv_abi)) __attribute__((section(\".text.silt.boot\"))) uint64_t silt_boot_entry(uintptr_t base) {"
+  , expectFailure "section unknown target" badSectionUnknownSource
+  , expectFailure "section extern target" badSectionExternSource
+  , expectFailure "section duplicate target" badSectionDuplicateTargetSource
+  , expectFailure "section invalid name" badSectionNameSource
+  , expectFreestandingCodegen "freestanding extern calling convention" freestandingSource "inspect-header-platform" "__attribute__((sysv_abi)) uint64_t platform_header_magic(silt_layout_Header hdr);"
+  , expectFailure "calling-convention unknown target" badCallingConventionUnknownSource
+  , expectFailure "calling-convention claim target" badCallingConventionClaimSource
+  , expectFailure "calling-convention duplicate target" badCallingConventionDuplicateTargetSource
+  , expectFailure "calling-convention invalid name" badCallingConventionNameSource
+  , expectFailure "entry unknown target" badEntryUnknownSource
+  , expectFailure "entry extern target" badEntryExternSource
+  , expectFailure "entry duplicate target" badEntryDuplicateSource
+  , expectFailure "entry unsupported signature" badEntryUnsupportedSignatureSource
+  , expectFailure "abi-contract symbol mismatch" badAbiContractSymbolSource
+  , expectFailure "abi-contract missing entry metadata" badAbiContractEntrySource
+  , expectFailure "abi-contract calling convention mismatch" badAbiContractCallingConventionSource
+  , expectFailure "abi-contract duplicate clause" badAbiContractDuplicateClauseSource
+  , expectFailure "abi-contract unsupported freestanding signature" badAbiContractFreestandingSource
+  , expectCheck "target contract source" targetContractSource
+  , expectFailure "target-contract unsupported target" badTargetContractTargetSource
+  , expectFailure "target-contract format mismatch" badTargetContractFormatSource
+  , expectFailure "target-contract entry metadata missing" badTargetContractEntrySource
+  , expectFailure "target-contract symbol mismatch" badTargetContractSymbolSource
+  , expectFailure "target-contract unaligned entry address" badTargetContractAddressSource
+  , expectFailure "target-contract duplicate clause" badTargetContractDuplicateClauseSource
+  , expectFreestandingCodegenFiles "limine freestanding entry signature" ["examples/limine.silt"] "limine-entry" "__attribute__((used)) __attribute__((sysv_abi)) __attribute__((section(\".text.silt.boot\"))) uint8_t silt_limine_entry(void) {"
+  , expectFreestandingCodegenFiles "limine static bytes rodata from Silt" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 76u, 73u, 77u, 73u, 78u, 69u, 95u, 81u, 69u, 77u, 85u, 95u, 79u, 75u, 10u};"
+  , expectFreestandingCodegenFiles "limine static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_boot_state[16] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine static cell store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_BootState*)(((uintptr_t)&silt_cell_limine_boot_state[0])))) = BootState_0;"
+  , expectFreestandingCodegenFiles "limine static cell load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_BootState state_1 = (*((silt_layout_BootState*)(((uintptr_t)&silt_cell_limine_boot_state[0]))));"
+  , expectFreestandingCodegenFiles "limine static value data from Silt" ["examples/limine.silt"] "limine-entry" "static silt_layout_BootState silt_value_limine_boot_manifest __attribute__((used, section(\".data.silt\"), aligned(8))) = {{1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 66u, 0u, 0u, 0u, 0u, 0u, 0u, 0u}};"
+  , expectFreestandingCodegenFiles "limine static value load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_BootState manifest_2 = (*((silt_layout_BootState*)(((uintptr_t)&silt_value_limine_boot_manifest))));"
+  , expectFreestandingCodegen "x86 in8 primitive codegen" machineIoSource "read-status" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_0) : \"Nd\"((uint16_t)(1016ULL)));"
+  , expectFreestandingCodegenFiles "limine serial readiness from Silt" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"inb %1, %0\" : \"=a\"(in8_"
+  , expectFreestandingCodegenFiles "limine panic marker from Silt" ["examples/limine-panic.silt"] "panic-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(80ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  , expectFailure "x86 out8 transition mismatch" badMachineIoTransitionSource
+  , expectFailureFilesWithSuffix "limine panic cause mismatch" ["examples/limine-panic.silt"] badPanicCauseMismatchSuffix
+  , expectFreestandingCodegenFiles "limine panic oom cause codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(18ULL)), \"Nd\"((uint16_t)(244ULL)));"
+  , expectFreestandingCodegenFiles "limine panic invariant cause codegen" ["examples/limine-panic.silt"] "kernel-panic-invariant" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(19ULL)), \"Nd\"((uint16_t)(244ULL)));"
+  , expectFailureFilesWithSuffix "limine panic cause cross mismatch" ["examples/limine-panic.silt"] badPanicCauseCrossMismatchSuffix
+  , expectFreestandingCodegenFiles "limine panic oom marker codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(79ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  , expectFreestandingCodegenFiles "limine panic invariant marker codegen" ["examples/limine-panic.silt"] "kernel-panic-invariant" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(86ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  , expectFreestandingCodegenFiles "limine message writer signature" ["examples/limine-serial.silt"] "serial-write-msg20" "uint8_t serial_write_msg20(silt_layout_SerialMsg20 msg) {"
+  , expectFailureFilesWithSuffix "limine message length mismatch" ["examples/limine.silt"] badMessageLengthMismatchSuffix
+  , expectFreestandingCodegenFiles "limine panic oom marker M codegen" ["examples/limine-panic.silt"] "kernel-panic-oom" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(77ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  , expectNormalizedFiles "limine layout-values message normalization" ["examples/limine.silt"] "limine-ok-message" "(layout SerialMsg20 ((b0 (u64 83)) (b1 (u64 73)) (b2 (u64 76)) (b3 (u64 84)) (b4 (u64 95)) (b5 (u64 76)) (b6 (u64 73)) (b7 (u64 77)) (b8 (u64 73)) (b9 (u64 78)) (b10 (u64 69)) (b11 (u64 95)) (b12 (u64 81)) (b13 (u64 69)) (b14 (u64 77)) (b15 (u64 85)) (b16 (u64 95)) (b17 (u64 79)) (b18 (u64 75)) (b19 (u64 10))))"
+  , expectNormalizedFiles "limine boot state normalization" ["examples/limine.silt"] "boot-state-ready" "(layout BootState ((phase (u64 1)) (code (u64 66))))"
+  , expectNormalizedFiles "limine boot manifest acceptance normalization" ["examples/limine.silt"] "boot-state-ready-accepted" "True"
+  , expectFreestandingCodegenFiles "limine serial slice writer signature" ["examples/limine-serial.silt"] "serial-write-slice20" "uint8_t serial_write_slice20(silt_layout_SerialSlice slice) {"
+  , expectFreestandingCodegenFiles "limine serial slice length guard" ["examples/limine-serial.silt"] "serial-write-slice20" "== 20ULL"
+  , expectFreestandingCodegenFiles "limine serial slice byte load" ["examples/limine-serial.silt"] "serial-write-slice20" "uint8_t byte_2 = (*((uint8_t*)"
+  , expectNormalizedFiles "limine static byte slice length normalization" ["examples/limine.silt"] "limine-ok-slice-len" "(u64 20)"
+  , expectNormalizedFiles "limine base revision marker normalization" ["examples/limine.silt"] "limine-base-revision-value" "(layout LimineBaseRevision ((magic0 (u64 17966595237268006600)) (magic1 (u64 7672788277485857756)) (revision (u64 3))))"
+  , expectFreestandingCodegenFiles "limine request start section codegen" ["examples/limine.silt"] "limine-entry" "silt_value_limine_requests_start __attribute__((used, section(\".limine_requests_start\"), aligned(8)))"
+  , expectFreestandingCodegenFiles "limine HHDM request section codegen" ["examples/limine.silt"] "limine-entry" "silt_value_limine_hhdm_request __attribute__((used, section(\".limine_requests\"), aligned(8)))"
+  , expectFreestandingCodegenFiles "limine HHDM response load codegen" ["examples/limine.silt"] "limine-entry" "silt_layout_LimineHhdmResponse response_"
+  , expectFreestandingCodegenFiles "limine HHDM marker codegen" ["examples/limine.silt"] "limine-entry" "__asm__ volatile (\"outb %0, %1\" : : \"a\"((uint8_t)(72ULL)), \"Nd\"((uint16_t)(1016ULL)));"
+  , expectNormalizedFiles "limine Memmap request normalization" ["examples/limine.silt"] "limine-memmap-request-value" "(layout LimineMemmapRequest ((id0 (u64 14389525486399949704)) (id1 (u64 757423339400917115)) (id2 (u64 7480265251536666735)) (id3 (u64 16358389823600082018)) (revision (u64 0)) (response ((ptr-from-addr LimineMemmapResponse) (addr 0)))))"
+  , expectFreestandingCodegenFiles "limine Memmap request section codegen" ["examples/limine.silt"] "limine-entry" "silt_value_limine_memmap_request __attribute__((used, section(\".limine_requests\"), aligned(8)))"
+  , expectFreestandingCodegenFiles "limine Memmap response load codegen" ["examples/limine.silt"] "limine-entry" "silt_layout_LimineMemmapResponse response_"
+  , expectFreestandingCodegenFiles "limine Memmap entry pointer load codegen" ["examples/limine.silt"] "limine-entry" "uintptr_t first_entry_ptr_"
+  , expectFreestandingCodegenFiles "limine Memmap entry load codegen" ["examples/limine.silt"] "limine-entry" "silt_layout_LimineMemmapEntry first_entry_"
+  , expectFreestandingCodegenFiles "limine Memmap marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_memmap_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 77u, 69u, 77u, 77u, 65u, 80u, 95u, 81u, 69u, 77u, 85u, 95u, 79u, 75u, 10u};"
+  , expectNormalizedFiles "limine boot info readiness normalization" ["examples/limine.silt"] "boot-info-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine boot info static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_boot_info[40] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine boot info store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_BootInfo*)(((uintptr_t)&silt_cell_limine_boot_info[0])))) = BootInfo_"
+  , expectFreestandingCodegenFiles "limine boot info load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_BootInfo info_"
+  , expectFreestandingCodegenFiles "limine boot info marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_boot_info_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 73u, 78u, 70u, 79u, 95u, 79u, 75u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine boot info first end normalization" ["examples/limine.silt"] "boot-info-sample-first-end" "(u64 4096)"
+  , expectNormalizedFiles "limine boot info direct-map base normalization" ["examples/limine.silt"] "boot-info-sample-direct-map-first-base" "(u64 4096)"
+  , expectNormalizedFiles "limine boot info direct-map end normalization" ["examples/limine.silt"] "boot-info-sample-direct-map-first-end" "(u64 8192)"
+  , expectNormalizedFiles "limine boot info span validity normalization" ["examples/limine.silt"] "boot-info-sample-first-span-valid" "True"
+  , expectFreestandingCodegenFiles "limine boot span marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_boot_span_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 83u, 80u, 65u, 78u, 95u, 79u, 75u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel span normalization" ["examples/limine.silt"] "kernel-span-sample" "(layout KernelBootSpan ((physical-base (u64 0)) (physical-end (u64 4096)) (direct-base (u64 4096)) (direct-end (u64 8192)) (kind (u64 0))))"
+  , expectNormalizedFiles "limine kernel span readiness normalization" ["examples/limine.silt"] "kernel-span-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel span static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_span[40] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel span store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelBootSpan*)(((uintptr_t)&silt_cell_limine_kernel_span[0])))) = KernelBootSpan_"
+  , expectFreestandingCodegenFiles "limine kernel span load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelBootSpan span_"
+  , expectFreestandingCodegenFiles "limine kernel span marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_kernel_span_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 75u, 69u, 82u, 78u, 69u, 76u, 95u, 83u, 80u, 65u, 78u, 95u, 79u, 75u, 10u};"
+  , expectNormalizedFiles "limine kernel span page count normalization" ["examples/limine.silt"] "kernel-span-sample-page-count" "(u64 1)"
+  , expectNormalizedFiles "limine kernel span has pages normalization" ["examples/limine.silt"] "kernel-span-sample-has-pages" "True"
+  , expectFreestandingCodegenFiles "limine kernel page count static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_page_count[8] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel page count store from Silt" ["examples/limine.silt"] "limine-entry" "(*((uint64_t*)(((uintptr_t)&silt_cell_limine_kernel_page_count[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel page count load from Silt" ["examples/limine.silt"] "limine-entry" "uint64_t page_count_"
+  , expectFreestandingCodegenFiles "limine kernel pages marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_kernel_pages_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 75u, 80u, 65u, 71u, 69u, 83u, 95u, 79u, 75u, 33u, 33u, 33u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel boot policy normalization" ["examples/limine.silt"] "kernel-boot-policy-sample" "(layout KernelBootPolicy ((required-pages (u64 1)) (available-pages (u64 1)) (accepted (u64 1))))"
+  , expectNormalizedFiles "limine kernel boot policy readiness normalization" ["examples/limine.silt"] "kernel-boot-policy-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel policy static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_policy[24] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel policy store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelBootPolicy*)(((uintptr_t)&silt_cell_limine_kernel_policy[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel policy load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelBootPolicy policy_"
+  , expectFreestandingCodegenFiles "limine boot policy marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_boot_policy_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 80u, 79u, 76u, 73u, 67u, 89u, 95u, 79u, 75u, 10u};"
+  , expectNormalizedFiles "limine kernel boot plan normalization" ["examples/limine.silt"] "kernel-boot-plan-sample" "(layout KernelBootPlan ((physical-base (u64 0)) (direct-base (u64 4096)) (page-count (u64 1)) (accepted (u64 1))))"
+  , expectNormalizedFiles "limine kernel boot plan readiness normalization" ["examples/limine.silt"] "kernel-boot-plan-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel plan static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_plan[32] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel plan store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelBootPlan*)(((uintptr_t)&silt_cell_limine_kernel_plan[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel plan load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelBootPlan plan_"
+  , expectFreestandingCodegenFiles "limine boot plan marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_boot_plan_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 66u, 79u, 79u, 84u, 95u, 80u, 76u, 65u, 78u, 95u, 79u, 75u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel boot plan invariant normalization" ["examples/limine.silt"] "kernel-boot-plan-invariant-sample" "(layout KernelBootPlanInvariant ((nonzero-pages (u64 1)) (accepted (u64 1)) (direct-map-above-physical (u64 1))))"
+  , expectNormalizedFiles "limine kernel boot plan invariant readiness normalization" ["examples/limine.silt"] "kernel-boot-plan-invariant-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel plan invariant static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_plan_invariant[24] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel plan invariant store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelBootPlanInvariant*)(((uintptr_t)&silt_cell_limine_kernel_plan_invariant[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel plan invariant load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelBootPlanInvariant invariant_"
+  , expectFreestandingCodegenFiles "limine plan invariant marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_plan_invariant_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 80u, 76u, 65u, 78u, 95u, 73u, 78u, 86u, 95u, 79u, 75u, 33u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame candidate normalization" ["examples/limine.silt"] "kernel-frame-candidate-sample" "(layout KernelFrameCandidate ((physical-base (u64 0)) (direct-base (u64 4096)) (page-count (u64 1)) (kind (u64 0)) (ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame candidate readiness normalization" ["examples/limine.silt"] "kernel-frame-candidate-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame candidate static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_candidate[40] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame candidate store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameCandidate*)(((uintptr_t)&silt_cell_limine_kernel_frame_candidate[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame candidate load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameCandidate candidate_"
+  , expectFreestandingCodegenFiles "limine frame candidate marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_candidate_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 67u, 65u, 78u, 68u, 95u, 79u, 75u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame eligibility normalization" ["examples/limine.silt"] "kernel-frame-eligibility-sample" "(layout KernelFrameEligibility ((candidate-ready (u64 1)) (usable-kind (u64 1)) (physical-page-aligned (u64 1)) (direct-page-aligned (u64 1)) (nonzero-pages (u64 1)) (eligible (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame eligibility readiness normalization" ["examples/limine.silt"] "kernel-frame-eligibility-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame eligibility static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_eligibility[48] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame eligibility store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameEligibility*)(((uintptr_t)&silt_cell_limine_kernel_frame_eligibility[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame eligibility load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameEligibility eligibility_"
+  , expectFreestandingCodegenFiles "limine frame eligibility marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_eligibility_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 69u, 76u, 73u, 71u, 95u, 79u, 75u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame reservation intent normalization" ["examples/limine.silt"] "kernel-frame-reservation-intent-sample" "(layout KernelFrameReservationIntent ((physical-base (u64 0)) (direct-base (u64 4096)) (page-count (u64 1)) (candidate-ready (u64 1)) (eligible (u64 1)) (requested (u64 1)) (intent-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame reservation intent readiness normalization" ["examples/limine.silt"] "kernel-frame-reservation-intent-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame reservation intent static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_reservation_intent[56] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame reservation intent store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameReservationIntent*)(((uintptr_t)&silt_cell_limine_kernel_frame_reservation_intent[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame reservation intent load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameReservationIntent intent_"
+  , expectFreestandingCodegenFiles "limine frame reservation marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_reservation_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 82u, 69u, 83u, 86u, 95u, 79u, 75u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame reservation invariant normalization" ["examples/limine.silt"] "kernel-frame-reservation-invariant-sample" "(layout KernelFrameReservationInvariant ((candidate-ready (u64 1)) (eligible (u64 1)) (requested (u64 1)) (nonzero-pages (u64 1)) (span-ordered (u64 1)) (intent-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame reservation invariant readiness normalization" ["examples/limine.silt"] "kernel-frame-reservation-invariant-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame reservation invariant static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_reservation_invariant[48] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame reservation invariant store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameReservationInvariant*)(((uintptr_t)&silt_cell_limine_kernel_frame_reservation_invariant[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame reservation invariant load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameReservationInvariant invariant_"
+  , expectFreestandingCodegenFiles "limine frame reservation invariant marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_reservation_invariant_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 82u, 69u, 83u, 86u, 95u, 73u, 78u, 86u, 95u, 79u, 75u, 33u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame reservation state normalization" ["examples/limine.silt"] "kernel-frame-reservation-state-sample" "(layout KernelFrameReservationState ((physical-base (u64 0)) (direct-base (u64 4096)) (page-count (u64 1)) (previous-reserved (u64 0)) (reserved (u64 1)) (intent-ready (u64 1)) (invariant-ready (u64 1)) (state-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame reservation state readiness normalization" ["examples/limine.silt"] "kernel-frame-reservation-state-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame reservation state static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_reservation_state[64] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame reservation state store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameReservationState*)(((uintptr_t)&silt_cell_limine_kernel_frame_reservation_state[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame reservation state load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameReservationState state_"
+  , expectFreestandingCodegenFiles "limine frame reservation state marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_reservation_state_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 82u, 83u, 86u, 68u, 95u, 79u, 75u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame free-list seed normalization" ["examples/limine.silt"] "kernel-frame-free-list-seed-sample" "(layout KernelFrameFreeListSeed ((reserved-base (u64 0)) (free-base (u64 4096)) (free-direct-base (u64 8192)) (reserved-count (u64 1)) (free-count (u64 1)) (state-ready (u64 1)) (free-ready (u64 1)) (seed-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame free-list seed readiness normalization" ["examples/limine.silt"] "kernel-frame-free-list-seed-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame free-list seed static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_free_list_seed[64] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame free-list seed store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameFreeListSeed*)(((uintptr_t)&silt_cell_limine_kernel_frame_free_list_seed[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame free-list seed load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameFreeListSeed seed_"
+  , expectFreestandingCodegenFiles "limine frame free-list seed marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_free_list_seed_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 76u, 73u, 83u, 84u, 95u, 83u, 69u, 69u, 68u, 95u, 79u, 75u, 33u, 10u};"
+  , expectNormalizedFiles "limine live frame pool seed normalization" ["examples/limine.silt"] "kernel-frame-pool-live-seeded-sample" "(layout KernelFramePoolLiveState ((reserved-base (u64 0)) (next-free-base (u64 4096)) (next-free-direct-base (u64 8192)) (reserved-count (u64 1)) (free-count (u64 1)) (last-allocated-base (u64 0)) (last-allocated-direct-base (u64 0)) (phase (u64 0)) (ready (u64 1))))"
+  , expectNormalizedFiles "limine live frame pool seed readiness normalization" ["examples/limine.silt"] "kernel-frame-pool-live-seeded-sample-ready" "True"
+  , expectNormalizedFiles "limine live frame pool allocated normalization" ["examples/limine.silt"] "kernel-frame-pool-live-allocated-sample" "(layout KernelFramePoolLiveState ((reserved-base (u64 0)) (next-free-base (u64 8192)) (next-free-direct-base (u64 12288)) (reserved-count (u64 2)) (free-count (u64 0)) (last-allocated-base (u64 4096)) (last-allocated-direct-base (u64 8192)) (phase (u64 1)) (ready (u64 1))))"
+  , expectNormalizedFiles "limine live frame pool allocated readiness normalization" ["examples/limine.silt"] "kernel-frame-pool-live-allocated-sample-ready" "True"
+  , expectNormalizedFiles "limine live frame pool restored normalization" ["examples/limine.silt"] "kernel-frame-pool-live-restored-sample" "(layout KernelFramePoolLiveState ((reserved-base (u64 0)) (next-free-base (u64 4096)) (next-free-direct-base (u64 8192)) (reserved-count (u64 1)) (free-count (u64 1)) (last-allocated-base (u64 4096)) (last-allocated-direct-base (u64 8192)) (phase (u64 2)) (ready (u64 1))))"
+  , expectNormalizedFiles "limine live frame pool restored readiness normalization" ["examples/limine.silt"] "kernel-frame-pool-live-restored-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine live frame pool static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_pool_live_state[72] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine live frame pool store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFramePoolLiveState*)(((uintptr_t)&silt_cell_limine_kernel_frame_pool_live_state[0])))) ="
+  , expectFreestandingCodegenFiles "limine live frame pool load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFramePoolLiveState restored_"
+  , expectFreestandingCodegenFiles "limine live frame pool marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_pool_live_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 80u, 79u, 79u, 76u, 95u, 76u, 73u, 86u, 69u, 95u, 79u, 75u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame alloc-one state normalization" ["examples/limine.silt"] "kernel-frame-alloc-one-state-sample" "(layout KernelFrameAllocOneState ((allocated-base (u64 4096)) (allocated-direct-base (u64 8192)) (reserved-count-before (u64 1)) (free-count-before (u64 1)) (reserved-count-after (u64 2)) (free-count-after (u64 0)) (allocated-count (u64 1)) (alloc-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame alloc-one readiness normalization" ["examples/limine.silt"] "kernel-frame-alloc-one-state-sample-ready" "True"
+  , expectNormalizedFiles "limine kernel frame free-one state normalization" ["examples/limine.silt"] "kernel-frame-free-one-state-sample" "(layout KernelFrameFreeOneState ((freed-base (u64 4096)) (freed-direct-base (u64 8192)) (reserved-count-before (u64 2)) (free-count-before (u64 0)) (reserved-count-after (u64 1)) (free-count-after (u64 1)) (released-count (u64 1)) (free-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame free-one readiness normalization" ["examples/limine.silt"] "kernel-frame-free-one-state-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame alloc-one static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_alloc_one_state[64] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame free-one static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_free_one_state[64] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame alloc-one store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocOneState*)(((uintptr_t)&silt_cell_limine_kernel_frame_alloc_one_state[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame alloc-one load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocOneState state_"
+  , expectFreestandingCodegenFiles "limine kernel frame free-one store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameFreeOneState*)(((uintptr_t)&silt_cell_limine_kernel_frame_free_one_state[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame free-one load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameFreeOneState freed_"
+  , expectFreestandingCodegenFiles "limine frame alloc-one marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_alloc_one_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 79u, 78u, 69u, 95u, 79u, 75u, 33u, 33u, 10u};"
+  , expectFreestandingCodegenFiles "limine frame free-one marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_free_one_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 69u, 69u, 95u, 79u, 78u, 69u, 95u, 79u, 75u, 33u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame allocator state normalization" ["examples/limine.silt"] "kernel-frame-allocator-state-sample" "(layout KernelFrameAllocatorState ((initial-reserved-count (u64 1)) (initial-free-count (u64 1)) (allocated-base (u64 4096)) (allocated-direct-base (u64 8192)) (reserved-count-after-alloc (u64 2)) (free-count-after-alloc (u64 0)) (allocated-count (u64 1)) (released-count (u64 1)) (final-reserved-count (u64 1)) (final-free-count (u64 1)) (alloc-ready (u64 1)) (free-ready (u64 1)) (allocator-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame allocator readiness normalization" ["examples/limine.silt"] "kernel-frame-allocator-state-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame allocator static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_allocator_state[104] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame allocator state store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocatorState*)(((uintptr_t)&silt_cell_limine_kernel_frame_allocator_state[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame allocator state load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocatorState allocator_"
+  , expectFreestandingCodegenFiles "limine frame allocator state marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_allocator_state_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 83u, 84u, 65u, 84u, 69u, 33u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame allocator alloc API result normalization" ["examples/limine.silt"] "kernel-frame-allocator-alloc-result-sample" "(layout KernelFrameAllocatorAllocResult ((input-reserved-count (u64 1)) (input-free-count (u64 1)) (allocated-base (u64 4096)) (allocated-direct-base (u64 8192)) (output-reserved-count (u64 2)) (output-free-count (u64 0)) (allocated-count (u64 1)) (state-ready (u64 1)) (alloc-ready (u64 1)) (api-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame allocator alloc API readiness normalization" ["examples/limine.silt"] "kernel-frame-allocator-alloc-result-sample-ready" "True"
+  , expectNormalizedFiles "limine kernel frame allocator free API result normalization" ["examples/limine.silt"] "kernel-frame-allocator-free-result-sample" "(layout KernelFrameAllocatorFreeResult ((input-reserved-count (u64 2)) (input-free-count (u64 0)) (freed-base (u64 4096)) (freed-direct-base (u64 8192)) (output-reserved-count (u64 1)) (output-free-count (u64 1)) (released-count (u64 1)) (state-ready (u64 1)) (free-ready (u64 1)) (api-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame allocator free API readiness normalization" ["examples/limine.silt"] "kernel-frame-allocator-free-result-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame allocator alloc API static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_allocator_alloc_result[80] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame allocator free API static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_allocator_free_result[80] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame allocator alloc API result store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocatorAllocResult*)(((uintptr_t)&silt_cell_limine_kernel_frame_allocator_alloc_result[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame allocator alloc API result load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocatorAllocResult result_"
+  , expectFreestandingCodegenFiles "limine kernel frame allocator free API result store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocatorFreeResult*)(((uintptr_t)&silt_cell_limine_kernel_frame_allocator_free_result[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame allocator free API result load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocatorFreeResult result_"
+  , expectFreestandingCodegenFiles "limine frame allocator alloc API marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_allocator_alloc_api_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 65u, 80u, 73u, 95u, 79u, 75u, 33u, 33u, 10u};"
+  , expectFreestandingCodegenFiles "limine frame allocator free API marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_allocator_free_api_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 69u, 69u, 95u, 65u, 80u, 73u, 95u, 79u, 75u, 33u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame allocator semantics state normalization" ["examples/limine.silt"] "kernel-frame-allocator-semantics-state-sample" "(layout KernelFrameAllocatorSemanticsState ((initial-free-count (u64 1)) (post-alloc-free-count (u64 0)) (alloc-progress-ready (u64 1)) (post-free-free-count (u64 1)) (reusable-base (u64 4096)) (reusable-direct-base (u64 8192)) (reusable-count (u64 1)) (alloc-api-ready (u64 1)) (free-api-ready (u64 1)) (reuse-ready (u64 1)) (semantics-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame allocator semantics readiness normalization" ["examples/limine.silt"] "kernel-frame-allocator-semantics-state-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame allocator semantics static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_allocator_semantics_state[88] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame allocator semantics state store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameAllocatorSemanticsState*)(((uintptr_t)&silt_cell_limine_kernel_frame_allocator_semantics_state[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame allocator semantics state load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameAllocatorSemanticsState semantics_"
+  , expectFreestandingCodegenFiles "limine frame allocator semantics marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_allocator_semantics_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 83u, 69u, 77u, 95u, 79u, 75u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel frame lease normalization" ["examples/limine.silt"] "kernel-frame-lease-sample" "(layout KernelFrameLease ((physical-base (u64 4096)) (direct-base (u64 8192)) (acquired-count (u64 1)) (released-count (u64 1)) (post-alloc-free-count (u64 0)) (post-free-free-count (u64 1)) (alloc-progress-ready (u64 1)) (reuse-ready (u64 1)) (same-frame (u64 1)) (semantics-ready (u64 1)) (lease-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel frame lease readiness normalization" ["examples/limine.silt"] "kernel-frame-lease-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel frame lease static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_frame_lease[88] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel frame lease store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelFrameLease*)(((uintptr_t)&silt_cell_limine_kernel_frame_lease[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel frame lease load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelFrameLease lease_"
+  , expectFreestandingCodegenFiles "limine frame lease marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_frame_lease_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 70u, 82u, 65u, 77u, 69u, 95u, 76u, 69u, 65u, 83u, 69u, 33u, 33u, 33u, 10u};"
+  , expectNormalizedFiles "limine kernel allocator handoff normalization" ["examples/limine.silt"] "kernel-allocator-handoff-sample" "(layout KernelAllocatorHandoff ((allocator-ready (u64 1)) (semantics-ready (u64 1)) (lease-ready (u64 1)) (physical-base (u64 4096)) (direct-base (u64 8192)) (initial-free-count (u64 1)) (post-alloc-free-count (u64 0)) (post-free-free-count (u64 1)) (acquired-count (u64 1)) (released-count (u64 1)) (same-frame (u64 1)) (handoff-ready (u64 1))))"
+  , expectNormalizedFiles "limine kernel allocator handoff readiness normalization" ["examples/limine.silt"] "kernel-allocator-handoff-sample-ready" "True"
+  , expectFreestandingCodegenFiles "limine kernel allocator handoff static cell bss from Silt" ["examples/limine.silt"] "limine-entry" "static uint8_t silt_cell_limine_kernel_allocator_handoff[96] __attribute__((section(\".bss.silt\"), aligned(8)));"
+  , expectFreestandingCodegenFiles "limine kernel allocator handoff store from Silt" ["examples/limine.silt"] "limine-entry" "(*((silt_layout_KernelAllocatorHandoff*)(((uintptr_t)&silt_cell_limine_kernel_allocator_handoff[0])))) ="
+  , expectFreestandingCodegenFiles "limine kernel allocator handoff load from Silt" ["examples/limine.silt"] "limine-entry" "silt_layout_KernelAllocatorHandoff handoff_"
+  , expectFreestandingCodegenFiles "limine allocator handoff marker rodata codegen" ["examples/limine.silt"] "limine-entry" "static const uint8_t silt_static_limine_allocator_handoff_ok_bytes[20] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u, 95u, 65u, 76u, 76u, 79u, 67u, 95u, 72u, 65u, 78u, 68u, 79u, 70u, 70u, 33u, 10u};"
+  , expectFailure "target-contract limine lower-half address" badTargetContractLimineAddressSource
+  , expectFailure "boot-contract unknown target" badBootContractUnknownTargetSource
+  , expectFailure "boot-contract target mismatch" badBootContractTargetMismatchSource
+  , expectFailure "boot-contract duplicate clause" badBootContractDuplicateClauseSource
+  ]
+
+runChecks :: [IO Bool] -> IO ()
+runChecks checks = do
+  results <- sequence checks
+  if and results
     then putStrLn "silt-test: all checks passed"
     else exitFailure
 
@@ -685,20 +718,27 @@ expectFormatParses label source =
               putStrLn ("FAIL [" ++ label ++ "] formatted output changed the S-expression tree")
               pure False
 
-expectPackageFile :: String -> FilePath -> String -> Int -> IO Bool
-expectPackageFile label path expectedName expectedTargetCount = do
+expectPackageFile :: String -> FilePath -> String -> [(PackageTargetKind, String)] -> IO Bool
+expectPackageFile label path expectedName expectedTargets = do
   source <- readFile path
   case parsePackageSource source of
     Left err -> do
       putStrLn ("FAIL [" ++ label ++ "] expected package parse success, got: " ++ err)
       pure False
     Right package
-      | packageName package == expectedName && length (packageTargets package) == expectedTargetCount -> do
+      | packageName package == expectedName && packageTargetSummaries package == expectedTargets -> do
           putStrLn ("PASS [" ++ label ++ "]")
           pure True
       | otherwise -> do
           putStrLn ("FAIL [" ++ label ++ "] parsed unexpected package: " ++ show package)
+          putStrLn ("expected package name: " ++ expectedName)
+          putStrLn ("expected targets: " ++ show expectedTargets)
+          putStrLn ("actual targets: " ++ show (packageTargetSummaries package))
           pure False
+
+packageTargetSummaries :: Package -> [(PackageTargetKind, String)]
+packageTargetSummaries package =
+  [(packageTargetKind target, packageTargetName target) | target <- packageTargets package]
 
 expectPackageFailureFile :: String -> FilePath -> String -> IO Bool
 expectPackageFailureFile label path expectedFragment = do
