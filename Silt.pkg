@@ -90,4 +90,14 @@
       stdlib/text.silt
       stdlib/hosted.silt
       examples/text-prefix.silt)
-    (entry text-prefix-test)))
+    (entry text-prefix-test))
+  (test
+    text-suffix-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/text-suffix.silt)
+    (entry text-suffix-test)))

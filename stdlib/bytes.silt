@@ -120,3 +120,22 @@
       ((False) (pure cap Bool False))
       ((True)
        (byte-slice-eq cap (byte-slice-take bytes (byte-slice-len prefix)) prefix)))))
+
+(claim
+  byte-slice-ends-with
+  (Pi ((cap 0 Type) (bytes ByteSlice) (suffix ByteSlice)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-ends-with
+  (fn
+    ((cap 0 Type) (bytes ByteSlice) (suffix ByteSlice))
+    (match
+      (u64-lte (byte-slice-len suffix) (byte-slice-len bytes))
+      ((False) (pure cap Bool False))
+      ((True)
+       (byte-slice-eq
+         cap
+         (byte-slice-drop
+           bytes
+           (u64-sub (byte-slice-len bytes) (byte-slice-len suffix)))
+         suffix)))))
