@@ -53,7 +53,7 @@ main = do
   ok13r <- expectPackageFailureFile "package rejects parent source" "test/fixtures/packages/bad-parent-source.pkg" "source path cannot contain '..'"
   ok13s <- expectPackageFailureFile "package rejects duplicate targets" "test/fixtures/packages/duplicate-targets.pkg" "package target names must be unique"
   ok13t <- expectPackageFailureFile "package rejects dependency clause for v0" "test/fixtures/packages/unsupported-clause.pkg" "unsupported target clause"
-  ok13u <- expectPackageFile "root platform package parses" "Silt.pkg" "silt-platform" 15
+  ok13u <- expectPackageFile "root platform package parses" "Silt.pkg" "silt-platform" 17
   ok13v <- expectCheckFiles "stdlib hosted seed bundle" stdlibHostedSources
   ok13w <- expectNormalizedFiles "stdlib option sample normalization" stdlibHostedSources "stdlib-option-sample" "(u64 42)"
   ok13x <- expectNormalizedFiles "stdlib result sample normalization" stdlibHostedSources "stdlib-result-sample" "(u64 7)"
@@ -114,7 +114,20 @@ main = do
   ok13z31 <- expectCodegenFiles "text prefix loop codegen" textPrefixSources "text-prefix-test" "for (uint64_t index_"
   ok13z32 <- expectCodegenFiles "text prefix byte load codegen" textPrefixSources "text-prefix-test" "(*((uint8_t*)"
   ok13z33 <- expectCodegenFiles "text prefix byte compare codegen" textPrefixSources "text-prefix-test" "== right_byte_"
-  ok13z35 <- expectCheckFiles "text suffix example bundle" textSuffixSources
+  ok13z35 <-
+    fmap and $
+      sequence
+        [ expectCheckFiles "text suffix example bundle" textSuffixSources
+        , expectCheckFiles "text scan example bundle" textScanSources
+        , expectCodegenFiles "text scan find result layout codegen" textScanSources "text-scan-test" "silt_layout_ByteFindResult"
+        , expectCodegenFiles "text scan byte split layout codegen" textScanSources "text-scan-test" "silt_layout_ByteSplitFirst"
+        , expectCodegenFiles "text scan text split layout codegen" textScanSources "text-scan-test" "silt_layout_TextSplitFirst"
+        , expectCodegenFiles "text scan loop codegen" textScanSources "text-scan-test" "for (uint64_t index_"
+        , expectCodegenFiles "text scan load codegen" textScanSources "text-scan-test" "(*((uint8_t*)"
+        , expectCodegenFiles "text scan needle compare codegen" textScanSources "text-scan-test" "== ((uint8_t)58u)"
+        , expectCodegenFiles "text scan split-after codegen" textScanSources "text-scan-test" "+ 1ULL) * 1ULL)"
+        , expectCodegenFiles "text scan split-after base check codegen" textScanSources "text-scan-test" "(5ULL * 1ULL)"
+        ]
   ok13z36 <- expectCodegenFiles "text suffix loop codegen" textSuffixSources "text-suffix-test" "for (uint64_t index_"
   ok13z37 <- expectCodegenFiles "text suffix byte load codegen" textSuffixSources "text-suffix-test" "(*((uint8_t*)"
   ok13z38 <- expectCodegenFiles "text suffix byte compare codegen" textSuffixSources "text-suffix-test" "== right_byte_"
@@ -143,7 +156,22 @@ main = do
         , expectNormalizedFiles "ASCII whitespace boundary test normalization" asciiPredicateSources "ascii-whitespace-boundary-test" "True"
         , expectNormalizedFiles "ASCII predicate test normalization" asciiPredicateSources "ascii-predicate-test" "True"
         ]
-  ok13z41 <- expectCheckFiles "ASCII slice predicate example bundle" asciiSlicePredicateSources
+  ok13z41 <-
+    fmap and $
+      sequence
+        [ expectCheckFiles "ASCII slice predicate example bundle" asciiSlicePredicateSources
+        , expectCheckFiles "ASCII trim example bundle" asciiTrimSources
+        , expectCodegenFiles "ASCII trim state layout codegen" asciiTrimSources "ascii-trim-test" "silt_layout_AsciiTrimState"
+        , expectCodegenFiles "ASCII trim loop codegen" asciiTrimSources "ascii-trim-test" "for (uint64_t index_"
+        , expectCodegenFiles "ASCII trim byte load codegen" asciiTrimSources "ascii-trim-test" "(*((uint8_t*)"
+        , expectCodegenFiles "ASCII trim whitespace lower-bound codegen" asciiTrimSources "ascii-trim-test" "9ULL <="
+        , expectCodegenFiles "ASCII trim whitespace space codegen" asciiTrimSources "ascii-trim-test" "== ((uint8_t)32u)"
+        , expectCodegenFiles "ASCII trim interior sample codegen" asciiTrimSources "ascii-trim-test" "silt_static_ascii_trim_interior_bytes"
+        , expectCodegenFiles "ASCII trim non-ASCII sample codegen" asciiTrimSources "ascii-trim-test" "silt_static_ascii_trim_non_ascii_bytes"
+        , expectCodegenFiles "ASCII trim start-offset codegen" asciiTrimSources "ascii-trim-test" "(2ULL * 1ULL)"
+        , expectCodegenFiles "ASCII trim all-whitespace offset codegen" asciiTrimSources "ascii-trim-test" "(3ULL * 1ULL)"
+        , expectCodegenFiles "ASCII trim parse value codegen" asciiTrimSources "ascii-trim-test" "42ULL"
+        ]
   ok13z42 <- expectCodegenFiles "ASCII slice predicate loop codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "for (uint64_t index_"
   ok13z43 <- expectCodegenFiles "ASCII slice predicate byte load codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "(*((uint8_t*)"
   ok13z44 <- expectCodegenFiles "ASCII slice digit lower-bound codegen" asciiSlicePredicateSources "ascii-slice-predicate-test" "48ULL <="
@@ -2925,6 +2953,16 @@ textSuffixSources =
   , "examples/text-suffix.silt"
   ]
 
+textScanSources :: [FilePath]
+textScanSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/text-scan.silt"
+  ]
+
 asciiPredicateSources :: [FilePath]
 asciiPredicateSources =
   [ "stdlib/core.silt"
@@ -2942,6 +2980,19 @@ asciiSlicePredicateSources =
   , "stdlib/ascii-slice.silt"
   , "stdlib/hosted.silt"
   , "examples/ascii-slice-predicates.silt"
+  ]
+
+asciiTrimSources :: [FilePath]
+asciiTrimSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/ascii.silt"
+  , "stdlib/ascii-slice.silt"
+  , "stdlib/ascii-decimal.silt"
+  , "stdlib/hosted.silt"
+  , "examples/ascii-trim.silt"
   ]
 
 asciiDecimalSources :: [FilePath]

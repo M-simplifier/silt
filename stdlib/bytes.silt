@@ -2,6 +2,10 @@
 
 (layout ByteSlice 16 8 ((base (Ptr U8) 0) (len U64 8)))
 
+(layout ByteFindResult 16 8 ((found Bool 0) (index U64 8)))
+
+(layout ByteSplitFirst 40 8 ((found Bool 0) (before ByteSlice 8) (after ByteSlice 24)))
+
 (claim byte-slice-from (Pi ((base (Ptr U8)) (len U64)) ByteSlice))
 
 (def
@@ -15,6 +19,52 @@
 (claim byte-slice-len (Pi ((slice ByteSlice)) U64))
 
 (def byte-slice-len (fn ((slice ByteSlice)) (field ByteSlice len slice)))
+
+(claim byte-find-result (Pi ((found Bool) (index U64)) ByteFindResult))
+
+(def
+  byte-find-result
+  (fn ((found Bool) (index U64)) (layout-values ByteFindResult found index)))
+
+(claim byte-find-result-found (Pi ((result ByteFindResult)) Bool))
+
+(def
+  byte-find-result-found
+  (fn ((result ByteFindResult)) (field ByteFindResult found result)))
+
+(claim byte-find-result-index (Pi ((result ByteFindResult)) U64))
+
+(def
+  byte-find-result-index
+  (fn ((result ByteFindResult)) (field ByteFindResult index result)))
+
+(claim
+  byte-split-first
+  (Pi ((found Bool) (before ByteSlice) (after ByteSlice)) ByteSplitFirst))
+
+(def
+  byte-split-first
+  (fn
+    ((found Bool) (before ByteSlice) (after ByteSlice))
+    (layout-values ByteSplitFirst found before after)))
+
+(claim byte-split-first-found (Pi ((result ByteSplitFirst)) Bool))
+
+(def
+  byte-split-first-found
+  (fn ((result ByteSplitFirst)) (field ByteSplitFirst found result)))
+
+(claim byte-split-first-before (Pi ((result ByteSplitFirst)) ByteSlice))
+
+(def
+  byte-split-first-before
+  (fn ((result ByteSplitFirst)) (field ByteSplitFirst before result)))
+
+(claim byte-split-first-after (Pi ((result ByteSplitFirst)) ByteSlice))
+
+(def
+  byte-split-first-after
+  (fn ((result ByteSplitFirst)) (field ByteSplitFirst after result)))
 
 (claim byte-slice-at (Pi ((slice ByteSlice) (index U64)) (Ptr U8)))
 
@@ -55,6 +105,121 @@
        (byte-slice-from
          (ptr-step U8 (byte-slice-base slice) count)
          (u64-sub (byte-slice-len slice) count))))))
+
+(claim
+  byte-slice-find-byte
+  (Pi ((cap 0 Type) (bytes ByteSlice) (needle U8)) (Eff cap cap ByteFindResult)))
+
+(def
+  byte-slice-find-byte
+  (fn
+    ((cap 0 Type) (bytes ByteSlice) (needle U8))
+    (nat-elim
+      (Eff cap cap ByteFindResult)
+      (pure cap ByteFindResult (byte-find-result False (byte-slice-len bytes)))
+      (fn
+        ((index Nat) (rec (Eff cap cap ByteFindResult)))
+        (bind
+          cap
+          cap
+          cap
+          ByteFindResult
+          ByteFindResult
+          rec
+          (fn
+            ((previous 1 ByteFindResult))
+            (let-layout
+              ByteFindResult
+              ((found found) (index found-index))
+              previous
+              (match
+                found
+                ((True) (pure cap ByteFindResult (byte-find-result True found-index)))
+                ((False)
+                 (bind
+                   cap
+                   cap
+                   cap
+                   U8
+                   ByteFindResult
+                   (load cap U8 (byte-slice-at bytes (nat-to-u64 index)))
+                   (fn
+                     ((byte 1 U8))
+                     (match
+                       (u8-eq byte needle)
+                       ((False)
+                        (pure cap ByteFindResult (byte-find-result False found-index)))
+                       ((True)
+                        (pure
+                          cap
+                          ByteFindResult
+                          (byte-find-result True (nat-to-u64 index)))))))))))))
+      (u64-to-nat (byte-slice-len bytes)))))
+
+(claim
+  byte-slice-contains-byte
+  (Pi ((cap 0 Type) (bytes ByteSlice) (needle U8)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-contains-byte
+  (fn
+    ((cap 0 Type) (bytes ByteSlice) (needle U8))
+    (bind
+      cap
+      cap
+      cap
+      ByteFindResult
+      Bool
+      (byte-slice-find-byte cap bytes needle)
+      (fn
+        ((result 1 ByteFindResult))
+        (let-layout
+          ByteFindResult
+          ((found found) (index 0 ignored-index))
+          result
+          (pure cap Bool found))))))
+
+(claim
+  byte-slice-split-first-byte
+  (Pi ((cap 0 Type) (bytes ByteSlice) (needle U8)) (Eff cap cap ByteSplitFirst)))
+
+(def
+  byte-slice-split-first-byte
+  (fn
+    ((cap 0 Type) (bytes ByteSlice) (needle U8))
+    (bind
+      cap
+      cap
+      cap
+      ByteFindResult
+      ByteSplitFirst
+      (byte-slice-find-byte cap bytes needle)
+      (fn
+        ((result 1 ByteFindResult))
+        (let-layout
+          ByteFindResult
+          ((found found) (index index))
+          result
+          (match
+            found
+            ((False)
+             (pure
+               cap
+               ByteSplitFirst
+               (byte-split-first
+                 False
+                 bytes
+                 (byte-slice-from
+                   (ptr-step U8 (byte-slice-base bytes) (byte-slice-len bytes))
+                   (u64 0)))))
+            ((True)
+             (pure
+               cap
+               ByteSplitFirst
+               (byte-split-first
+                 True
+                 (byte-slice-take bytes index)
+                 (byte-slice-drop bytes (u64-add index (u64 1))))))))))))
 
 (claim
   byte-slice-eq

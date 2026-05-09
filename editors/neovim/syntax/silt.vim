@@ -26,11 +26,17 @@ syntax keyword siltForm
       \ ascii-decimal-u64-is-invalid ascii-decimal-u64-result
       \ ascii-decimal-u64-step ascii-decimal-u64-valid
       \ ascii-decimal-u64-value
+      \ ascii-trim-state
       \ byte-slice-all-ascii-alnum byte-slice-all-ascii-digits
       \ byte-slice-all-ascii-hex-digits byte-slice-all-ascii-whitespace
       \ byte-slice-at byte-slice-base byte-slice-drop byte-slice-from
-      \ byte-slice-ends-with byte-slice-eq byte-slice-is-empty byte-slice-len
+      \ byte-find-result byte-find-result-found byte-find-result-index
+      \ byte-split-first byte-split-first-after byte-split-first-before
+      \ byte-split-first-found
+      \ byte-slice-contains-byte byte-slice-ends-with byte-slice-eq
+      \ byte-slice-find-byte byte-slice-is-empty byte-slice-len
       \ byte-slice-parse-ascii-u64 byte-slice-starts-with byte-slice-take
+      \ byte-slice-split-first-byte byte-slice-trim-ascii-whitespace
       \ host-arg-base host-arg-count host-arg-len host-arg-text
       \ host-env-base host-env-has host-env-len host-env-present host-env-text
       \ host-file-read-base host-file-read-len host-file-read-ok
@@ -44,15 +50,18 @@ syntax keyword siltForm
       \ ptr-add ptr-field ptr-from-addr ptr-step ptr-to-addr result-and-then
       \ result-error-or result-is-ok result-map result-map-err result-unwrap-or size-of
       \ store store-field store-fields the u8 u8-eq u8-to-u64 u64
-      \ text-base text-byte-at text-drop text-from-bytes text-is-empty
+      \ text-base text-byte-at text-contains-byte text-drop text-find-byte
+      \ text-from-bytes text-is-empty
       \ text-ends-with text-eq text-len text-parse-ascii-u64 text-starts-with text-take
+      \ text-split-first text-split-first-after text-split-first-before
+      \ text-split-first-byte text-split-first-found text-trim-ascii-whitespace
       \ text-view-from text-all-ascii-alnum text-all-ascii-digits
       \ text-all-ascii-hex-digits text-all-ascii-whitespace
       \ u64-add u64-and u64-div u64-eq u64-lt u64-lte u64-mul u64-or
       \ u64-rem u64-shl u64-shr u64-sub u64-to-nat u64-to-u8 u64-xor
       \ with-fields x86-in8 x86-out8
 
-syntax keyword siltType Addr AsciiDecimalU64 AsciiDecimalU64Buffer AsciiDecimalU64FormatState Bool Console Heap HostReadFileResult Nat Ptr Type U8 U64 Unit
+syntax keyword siltType Addr AsciiDecimalU64 AsciiDecimalU64Buffer AsciiDecimalU64FormatState AsciiTrimState Bool ByteFindResult ByteSplitFirst Console Heap HostReadFileResult Nat Ptr TextSplitFirst Type U8 U64 Unit
 syntax keyword siltConstant False S True Z tt
 
 syntax match siltParen "[()]"

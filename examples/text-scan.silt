@@ -1,0 +1,472 @@
+; Byte/text find-byte examples over explicit byte-backed views.
+
+; This does not claim generic substring search, UTF-8 validation, dynamic
+
+; strings, allocation, or parser combinators.
+
+(static-bytes
+  text-find-subject-bytes
+  ((u8 83) (u8 73) (u8 76) (u8 84) (u8 58) (u8 52) (u8 50)))
+
+(claim text-find-subject-bytes-view ByteSlice)
+
+(def
+  text-find-subject-bytes-view
+  (byte-slice-from text-find-subject-bytes text-find-subject-bytes-len))
+
+(claim text-find-empty-bytes-view ByteSlice)
+
+(def text-find-empty-bytes-view (byte-slice-from text-find-subject-bytes (u64 0)))
+
+(claim text-find-subject-text-view TextView)
+
+(def
+  text-find-subject-text-view
+  (text-view-from text-find-subject-bytes text-find-subject-bytes-len))
+
+(claim text-find-empty-text-view TextView)
+
+(def text-find-empty-text-view (text-view-from text-find-subject-bytes (u64 0)))
+
+(claim text-find-bool-same (Pi ((left Bool) (right Bool)) Bool))
+
+(def
+  text-find-bool-same
+  (fn ((left Bool) (right Bool)) (match left ((False) (bool-not right)) ((True) right))))
+
+(claim
+  text-find-result-is
+  (Pi ((result ByteFindResult) (expected-found Bool) (expected-index U64)) Bool))
+
+(def
+  text-find-result-is
+  (fn
+    ((result ByteFindResult) (expected-found Bool) (expected-index U64))
+    (let-layout
+      ByteFindResult
+      ((found found) (index index))
+      result
+      (bool-and
+        (text-find-bool-same found expected-found)
+        (u64-eq index expected-index)))))
+
+(claim
+  text-find-effect-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO ByteFindResult))
+     (expected-found Bool)
+     (expected-index U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-find-effect-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO ByteFindResult))
+     (expected-found Bool)
+     (expected-index U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      ByteFindResult
+      Bool
+      value
+      (fn
+        ((result 1 ByteFindResult))
+        (let-layout
+          ByteFindResult
+          ((found found) (index index))
+          result
+          (pure
+            HostIO
+            Bool
+            (bool-and
+              (text-find-bool-same found expected-found)
+              (u64-eq index expected-index))))))))
+
+(claim
+  text-find-effect-and
+  (Pi
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-find-effect-and
+  (fn
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      left
+      (fn
+        ((left-value 1 Bool))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          Bool
+          right
+          (fn
+            ((right-value 1 Bool))
+            (pure HostIO Bool (bool-and left-value right-value))))))))
+
+(claim
+  text-find-effect-not
+  (Pi ((value 1 (Eff HostIO HostIO Bool))) (Eff HostIO HostIO Bool)))
+
+(def
+  text-find-effect-not
+  (fn
+    ((value 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      value
+      (fn ((inner 1 Bool)) (pure HostIO Bool (bool-not inner))))))
+
+(claim
+  text-find-byte-split-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO ByteSplitFirst))
+     (expected-found Bool)
+     (expected-before-base (Ptr U8))
+     (expected-before-len U64)
+     (expected-after-base (Ptr U8))
+     (expected-after-len U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-find-byte-split-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO ByteSplitFirst))
+     (expected-found Bool)
+     (expected-before-base (Ptr U8))
+     (expected-before-len U64)
+     (expected-after-base (Ptr U8))
+     (expected-after-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      ByteSplitFirst
+      Bool
+      value
+      (fn
+        ((result 1 ByteSplitFirst))
+        (let-layout
+          ByteSplitFirst
+          ((found found) (before before) (after after))
+          result
+          (pure
+            HostIO
+            Bool
+            (bool-and
+              (text-find-bool-same found expected-found)
+              (bool-and
+                (addr-eq
+                  (ptr-to-addr U8 (byte-slice-base before))
+                  (ptr-to-addr U8 expected-before-base))
+                (bool-and
+                  (u64-eq (byte-slice-len before) expected-before-len)
+                  (bool-and
+                    (addr-eq
+                      (ptr-to-addr U8 (byte-slice-base after))
+                      (ptr-to-addr U8 expected-after-base))
+                    (u64-eq (byte-slice-len after) expected-after-len)))))))))))
+
+(claim
+  text-find-text-split-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO TextSplitFirst))
+     (expected-found Bool)
+     (expected-before-base (Ptr U8))
+     (expected-before-len U64)
+     (expected-after-base (Ptr U8))
+     (expected-after-len U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-find-text-split-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO TextSplitFirst))
+     (expected-found Bool)
+     (expected-before-base (Ptr U8))
+     (expected-before-len U64)
+     (expected-after-base (Ptr U8))
+     (expected-after-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextSplitFirst
+      Bool
+      value
+      (fn
+        ((result 1 TextSplitFirst))
+        (let-layout
+          TextSplitFirst
+          ((found found) (before before) (after after))
+          result
+          (pure
+            HostIO
+            Bool
+            (bool-and
+              (text-find-bool-same found expected-found)
+              (bool-and
+                (addr-eq
+                  (ptr-to-addr U8 (text-base before))
+                  (ptr-to-addr U8 expected-before-base))
+                (bool-and
+                  (u64-eq (text-len before) expected-before-len)
+                  (bool-and
+                    (addr-eq
+                      (ptr-to-addr U8 (text-base after))
+                      (ptr-to-addr U8 expected-after-base))
+                    (u64-eq (text-len after) expected-after-len)))))))))))
+
+(claim text-find-byte-colon-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-find-byte-colon-result
+  (byte-slice-find-byte HostIO text-find-subject-bytes-view (u8 58)))
+
+(claim text-find-byte-leading-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-find-byte-leading-result
+  (byte-slice-find-byte HostIO text-find-subject-bytes-view (u8 83)))
+
+(claim text-find-byte-final-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-find-byte-final-result
+  (byte-slice-find-byte HostIO text-find-subject-bytes-view (u8 50)))
+
+(claim text-find-byte-missing-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-find-byte-missing-result
+  (byte-slice-find-byte HostIO text-find-subject-bytes-view (u8 88)))
+
+(claim text-find-byte-empty-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-find-byte-empty-result
+  (byte-slice-find-byte HostIO text-find-empty-bytes-view (u8 83)))
+
+(claim text-find-text-colon-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-find-text-colon-result
+  (text-find-byte HostIO text-find-subject-text-view (u8 58)))
+
+(claim text-find-text-missing-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-find-text-missing-result
+  (text-find-byte HostIO text-find-subject-text-view (u8 88)))
+
+(claim text-find-text-empty-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-find-text-empty-result
+  (text-find-byte HostIO text-find-empty-text-view (u8 83)))
+
+(claim text-find-byte-contains-result (Eff HostIO HostIO Bool))
+
+(def
+  text-find-byte-contains-result
+  (byte-slice-contains-byte HostIO text-find-subject-bytes-view (u8 84)))
+
+(claim text-find-byte-missing-contains-result (Eff HostIO HostIO Bool))
+
+(def
+  text-find-byte-missing-contains-result
+  (byte-slice-contains-byte HostIO text-find-subject-bytes-view (u8 88)))
+
+(claim text-find-text-contains-result (Eff HostIO HostIO Bool))
+
+(def
+  text-find-text-contains-result
+  (text-contains-byte HostIO text-find-subject-text-view (u8 52)))
+
+(claim text-find-text-missing-contains-result (Eff HostIO HostIO Bool))
+
+(def
+  text-find-text-missing-contains-result
+  (text-contains-byte HostIO text-find-subject-text-view (u8 88)))
+
+(claim text-find-byte-split-colon-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-find-byte-split-colon-result
+  (byte-slice-split-first-byte HostIO text-find-subject-bytes-view (u8 58)))
+
+(claim text-find-byte-split-leading-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-find-byte-split-leading-result
+  (byte-slice-split-first-byte HostIO text-find-subject-bytes-view (u8 83)))
+
+(claim text-find-byte-split-final-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-find-byte-split-final-result
+  (byte-slice-split-first-byte HostIO text-find-subject-bytes-view (u8 50)))
+
+(claim text-find-byte-split-missing-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-find-byte-split-missing-result
+  (byte-slice-split-first-byte HostIO text-find-subject-bytes-view (u8 88)))
+
+(claim text-find-byte-split-empty-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-find-byte-split-empty-result
+  (byte-slice-split-first-byte HostIO text-find-empty-bytes-view (u8 83)))
+
+(claim text-find-text-split-colon-result (Eff HostIO HostIO TextSplitFirst))
+
+(def
+  text-find-text-split-colon-result
+  (text-split-first-byte HostIO text-find-subject-text-view (u8 58)))
+
+(claim text-find-text-split-missing-result (Eff HostIO HostIO TextSplitFirst))
+
+(def
+  text-find-text-split-missing-result
+  (text-split-first-byte HostIO text-find-subject-text-view (u8 88)))
+
+(claim text-find-text-split-empty-result (Eff HostIO HostIO TextSplitFirst))
+
+(def
+  text-find-text-split-empty-result
+  (text-split-first-byte HostIO text-find-empty-text-view (u8 83)))
+
+(claim text-find-byte-result-test (Eff HostIO HostIO Bool))
+
+(def
+  text-find-byte-result-test
+  (text-find-effect-and
+    (text-find-effect-result-is text-find-byte-colon-result True (u64 4))
+    (text-find-effect-and
+      (text-find-effect-result-is text-find-byte-leading-result True (u64 0))
+      (text-find-effect-and
+        (text-find-effect-result-is text-find-byte-final-result True (u64 6))
+        (text-find-effect-and
+          (text-find-effect-result-is text-find-byte-missing-result False (u64 7))
+          (text-find-effect-result-is text-find-byte-empty-result False (u64 0)))))))
+
+(claim text-find-text-result-test (Eff HostIO HostIO Bool))
+
+(def
+  text-find-text-result-test
+  (text-find-effect-and
+    (text-find-effect-result-is text-find-text-colon-result True (u64 4))
+    (text-find-effect-and
+      (text-find-effect-result-is text-find-text-missing-result False (u64 7))
+      (text-find-effect-result-is text-find-text-empty-result False (u64 0)))))
+
+(claim text-find-contains-test (Eff HostIO HostIO Bool))
+
+(def
+  text-find-contains-test
+  (text-find-effect-and
+    text-find-byte-contains-result
+    (text-find-effect-and
+      (text-find-effect-not text-find-byte-missing-contains-result)
+      (text-find-effect-and
+        text-find-text-contains-result
+        (text-find-effect-not text-find-text-missing-contains-result)))))
+
+(claim text-find-byte-split-test (Eff HostIO HostIO Bool))
+
+(def
+  text-find-byte-split-test
+  (text-find-effect-and
+    (text-find-byte-split-result-is
+      text-find-byte-split-colon-result
+      True
+      text-find-subject-bytes
+      (u64 4)
+      (ptr-step U8 text-find-subject-bytes (u64 5))
+      (u64 2))
+    (text-find-effect-and
+      (text-find-byte-split-result-is
+        text-find-byte-split-leading-result
+        True
+        text-find-subject-bytes
+        (u64 0)
+        (ptr-step U8 text-find-subject-bytes (u64 1))
+        (u64 6))
+      (text-find-effect-and
+        (text-find-byte-split-result-is
+          text-find-byte-split-final-result
+          True
+          text-find-subject-bytes
+          (u64 6)
+          (ptr-step U8 text-find-subject-bytes (u64 7))
+          (u64 0))
+        (text-find-effect-and
+          (text-find-byte-split-result-is
+            text-find-byte-split-missing-result
+            False
+            text-find-subject-bytes
+            (u64 7)
+            (ptr-step U8 text-find-subject-bytes (u64 7))
+            (u64 0))
+          (text-find-byte-split-result-is
+            text-find-byte-split-empty-result
+            False
+            text-find-subject-bytes
+            (u64 0)
+            text-find-subject-bytes
+            (u64 0)))))))
+
+(claim text-find-text-split-test (Eff HostIO HostIO Bool))
+
+(def
+  text-find-text-split-test
+  (text-find-effect-and
+    (text-find-text-split-result-is
+      text-find-text-split-colon-result
+      True
+      text-find-subject-bytes
+      (u64 4)
+      (ptr-step U8 text-find-subject-bytes (u64 5))
+      (u64 2))
+    (text-find-effect-and
+      (text-find-text-split-result-is
+        text-find-text-split-missing-result
+        False
+        text-find-subject-bytes
+        (u64 7)
+        (ptr-step U8 text-find-subject-bytes (u64 7))
+        (u64 0))
+      (text-find-text-split-result-is
+        text-find-text-split-empty-result
+        False
+        text-find-subject-bytes
+        (u64 0)
+        text-find-subject-bytes
+        (u64 0)))))
+
+(claim text-scan-test (Eff HostIO HostIO Bool))
+
+(def
+  text-scan-test
+  (text-find-effect-and
+    text-find-byte-result-test
+    (text-find-effect-and
+      text-find-text-result-test
+      (text-find-effect-and
+        text-find-contains-test
+        (text-find-effect-and text-find-byte-split-test text-find-text-split-test)))))

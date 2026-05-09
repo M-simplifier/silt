@@ -104,8 +104,10 @@ scripts/verify-text-eq.sh
 scripts/verify-text-view-helpers.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
+scripts/verify-text-scan.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
+scripts/verify-ascii-trim.sh
 scripts/verify-ascii-decimal-u64.sh
 scripts/verify-ascii-decimal-u64-format.sh
 scripts/verify-hosted-size-report.sh
