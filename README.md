@@ -82,6 +82,8 @@ production kernel.
   input and config files, splits a tiny `expected: N` ASCII config shape, trims
   fields, checks the key, parses the expected length, and reports the actual
   input length through file/stdout/status paths.
+- A small hosted helper layer for reused diagnostic/status sequencing and
+  caller-buffer decimal writes to stdout or explicit file paths.
 
 ## Quick Checks
 

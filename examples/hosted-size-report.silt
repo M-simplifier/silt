@@ -238,18 +238,7 @@
   hosted-size-report-diagnostic
   (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
 
-(def
-  hosted-size-report-diagnostic
-  (fn
-    ((message TextView) (status U64))
-    (bind
-      HostIO
-      HostIO
-      HostIO
-      Unit
-      U64
-      (host-write-error-text message)
-      (fn ((done 1 Unit)) (let ((ignored 0 done)) (pure HostIO U64 status))))))
+(def hosted-size-report-diagnostic host-status-with-error-text)
 
 (claim
   hosted-size-report-finish-status
@@ -309,56 +298,35 @@
                HostIO
                HostIO
                HostIO
-               TextView
+               Bool
                U64
-               (ascii-decimal-u64-format-into
-                 HostIO
+               (host-write-file-u64-decimal
                  hosted-size-report-file-buffer
+                 (text-view-from output-base output-len)
                  actual-len)
                (fn
-                 ((file-text 1 TextView))
-                 (bind
-                   HostIO
-                   HostIO
-                   HostIO
-                   Bool
-                   U64
-                   (host-write-file (text-view-from output-base output-len) file-text)
-                   (fn
-                     ((written 1 Bool))
-                     (match
-                       written
-                       ((False)
-                        (hosted-size-report-diagnostic
-                          hosted-size-report-write-failed-text
-                          hosted-size-report-write-failed))
-                       ((True)
-                        (bind
-                          HostIO
-                          HostIO
-                          HostIO
-                          TextView
-                          U64
-                          (ascii-decimal-u64-format-into
-                            HostIO
-                            hosted-size-report-stdout-buffer
-                            actual-len)
-                          (fn
-                            ((stdout-text 1 TextView))
-                            (bind
-                              HostIO
-                              HostIO
-                              HostIO
-                              Unit
-                              U64
-                              (host-write-text stdout-text)
-                              (fn
-                                ((done 1 Unit))
-                                (let
-                                  ((ignored 0 done))
-                                  (hosted-size-report-finish-status
-                                    expected-value
-                                    actual-len)))))))))))))))))))
+                 ((written 1 Bool))
+                 (match
+                   written
+                   ((False)
+                    (hosted-size-report-diagnostic
+                      hosted-size-report-write-failed-text
+                      hosted-size-report-write-failed))
+                   ((True)
+                    (bind
+                      HostIO
+                      HostIO
+                      HostIO
+                      Unit
+                      U64
+                      (host-write-u64-decimal
+                        hosted-size-report-stdout-buffer
+                        actual-len)
+                      (fn
+                        ((done 1 Unit))
+                        (let
+                          ((ignored 0 done))
+                          (hosted-size-report-finish-status expected-value actual-len)))))))))))))))
 
 (claim hosted-size-report-main (Eff HostIO HostIO U64))
 

@@ -19,9 +19,13 @@ hosted_config_report_sources=(
   stdlib/ascii-slice.silt
   stdlib/ascii-decimal.silt
   stdlib/hosted.silt
+  stdlib/hosted-decimal.silt
   examples/hosted-config-report.silt
 )
 
+grep -Fq 'host-status-with-error-text' examples/hosted-config-report.silt
+grep -Fq 'host-write-file-u64-decimal' examples/hosted-config-report.silt
+grep -Fq 'host-write-u64-decimal' examples/hosted-config-report.silt
 "$silt_bin" check "${hosted_config_report_sources[@]}" >/dev/null
 
 hosted_config_report_c="$("$silt_bin" emit-c-bundle "${hosted_config_report_sources[@]}" -- hosted-config-report-main)"

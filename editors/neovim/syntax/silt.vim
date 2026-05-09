@@ -42,8 +42,11 @@ syntax keyword siltForm
       \ host-file-read-base host-file-read-len host-file-read-ok
       \ host-file-write-bytes host-put-byte host-put-error-byte
       \ host-read-file host-read-file-ok host-read-file-result
+      \ host-format-u64-decimal
       \ host-seq host-write-error-byte host-write-error-byte-at
       \ host-write-error-text host-write-error-text-n host-write-file
+      \ host-status-after host-status-with-error-text
+      \ host-write-file-u64-decimal host-write-u64-decimal
       \ host-write-text let-layout let-load-layout list-head-or list-is-empty
       \ list-tail-or load match nat-case nat-elim pure
       \ option-and-then option-is-some option-map option-unwrap-or

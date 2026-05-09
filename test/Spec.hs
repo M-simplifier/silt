@@ -192,6 +192,7 @@ main = do
   ok13z59 <- expectCodegenFiles "ASCII decimal U64 format max sample codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "silt_static_ascii_decimal_format_max_bytes"
   ok13z60 <- expectNormalizedFiles "ASCII decimal U64 format full state guard normalization" asciiDecimalFormatSources "ascii-decimal-format-full-state-should-not-write" "False"
   ok13z61 <- expectCodegenFiles "ASCII decimal U64 format capacity guard codegen" asciiDecimalFormatSources "ascii-decimal-u64-format-test" "< 20ULL"
+  ok13z61a <- expectCheckFiles "hosted decimal helper bundle" hostedDecimalSources
   ok13z62 <- expectCheckFiles "hosted size report pressure app bundle" hostedSizeReportSources
   ok13z63 <- expectCodegenFiles "hosted size report arg count codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_arg_count"
   ok13z64 <- expectCodegenFiles "hosted size report arg base codegen" hostedSizeReportSources "hosted-size-report-main" "silt_host_arg_base"
@@ -595,7 +596,7 @@ main = do
   ok171 <- expectFailure "boot-contract unknown target" badBootContractUnknownTargetSource
   ok172 <- expectFailure "boot-contract target mismatch" badBootContractTargetMismatchSource
   ok173 <- expectFailure "boot-contract duplicate clause" badBootContractDuplicateClauseSource
-  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok13g, ok13h, ok13i, ok13j, ok13k, ok13l, ok13m, ok13n, ok13o, ok13p, ok13p1, ok13p2, ok13p3, ok13q, ok13r, ok13s, ok13t, ok13u, ok13v, ok13w, ok13x, ok13y, ok13z, ok13z34, ok13z1, ok13z2, ok13z3, ok13z4, ok13z5, ok13z6, ok13z7, ok13z8, ok13z9, ok13z10, ok13z11, ok13z12, ok13z13, ok13z14, ok13z15, ok13z16, ok13z17, ok13z18, ok13z19, ok13z20, ok13z21, ok13z22, ok13z23, ok13z24, ok13z25, ok13z26, ok13z27, ok13z28, ok13z29, ok13z30, ok13z31, ok13z32, ok13z33, ok13z35, ok13z36, ok13z37, ok13z38, ok13z39, ok13z40, ok13z41, ok13z42, ok13z43, ok13z44, ok13z45, ok13z46, ok13z47, ok13z48, ok13z49, ok13z50, ok13z51, ok13z52, ok13z53, ok13z54, ok13z55, ok13z56, ok13z57, ok13z58, ok13z59, ok13z60, ok13z61, ok13z62, ok13z63, ok13z64, ok13z65, ok13z66, ok13z67, ok13z68, ok13z69, ok13z70, ok13z71, ok13z72, ok13z73, ok13z74, ok13z75, ok13z76, ok13z77, ok13z78, ok13z79, ok13z80, ok13z81, ok13z82, ok13z83, ok13z84, ok13z85, ok13z86, ok13z87, ok13z88, ok13z89, ok14, ok15, ok16, ok17, ok18, ok18a, ok18b, ok19, ok20, ok21, ok22, ok23, ok23a, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok39q, ok39r, ok39s, ok39t, ok39u, ok39v, ok39w, ok39x, ok39y, ok39z, ok40, ok41, ok42, ok43, ok43a, ok43b, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok67b, ok67c, ok67d, ok67e, ok67f, ok67g, ok68, ok69, ok70, ok70b, ok70c, ok70d, ok70e, ok70f, ok70g, ok70h, ok70i, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169a, ok169a1, ok169a2, ok169a3, ok169a4, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok169o1, ok169o2, ok169p, ok169q, ok169r, ok169s, ok169t, ok169u, ok169v, ok169w, ok169x, ok169y, ok169z, ok169aa, ok169ab, ok169ac, ok169ad, ok169ae, ok169af, ok169ag, ok169ah, ok169ai, ok169aj, ok169ak, ok169al, ok169am, ok169an, ok169ao, ok169ap, ok169aq, ok169ar, ok169as, ok169at, ok169au, ok169av, ok169aw, ok169ax, ok169ay, ok169ba, ok169bb, ok169bc, ok169bd, ok169be, ok169bf, ok169bg, ok169bh, ok169bi, ok169bj, ok169bk, ok169bl, ok169bm, ok169bn, ok169bo, ok169bp, ok169bq, ok169br, ok169bs, ok169bt, ok169bu, ok169bv, ok169bw, ok169bx, ok169by, ok169bz, ok169ca, ok169cb, ok169cc, ok169cd, ok169ce, ok169cf, ok169cg, ok169ch, ok169ci, ok169cj, ok169ck, ok169cl, ok169cm, ok169cn, ok169co, ok169cp, ok169cq, ok169cr, ok169cs, ok169ct, ok169cu, ok169cv, ok169cw, ok169cx, ok169cy, ok169cz, ok169da, ok169db, ok169dc, ok169dc1, ok169dc2, ok169dc3, ok169dc4, ok169dc5, ok169dc6, ok169dc7, ok169dc8, ok169dc9, ok169dc10, ok169dd, ok169de, ok169df, ok169dg, ok169dh, ok169di, ok169dj, ok169dk, ok169dl, ok169dm, ok169dn, ok169do, ok169dp, ok169dq, ok169dr, ok169ds, ok169dt, ok169du, ok169dv, ok169dw, ok169dx, ok169dy, ok169dz, ok169ea, ok169eb, ok169ec, ok169ed, ok169ee, ok169ef, ok169eg, ok169eh, ok169ei, ok169ej, ok169ek, ok169el, ok169em, ok169en, ok169eo, ok169ep, ok169eq, ok169er, ok169es, ok169et, ok169eu, ok169ev, ok169ew, ok169ex, ok169ey, ok170, ok171, ok172, ok173]
+  if and [ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8, ok9, ok10, ok11, ok12, ok13, ok13b, ok13c, ok13d, ok13e, ok13f, ok13g, ok13h, ok13i, ok13j, ok13k, ok13l, ok13m, ok13n, ok13o, ok13p, ok13p1, ok13p2, ok13p3, ok13q, ok13r, ok13s, ok13t, ok13u, ok13v, ok13w, ok13x, ok13y, ok13z, ok13z34, ok13z1, ok13z2, ok13z3, ok13z4, ok13z5, ok13z6, ok13z7, ok13z8, ok13z9, ok13z10, ok13z11, ok13z12, ok13z13, ok13z14, ok13z15, ok13z16, ok13z17, ok13z18, ok13z19, ok13z20, ok13z21, ok13z22, ok13z23, ok13z24, ok13z25, ok13z26, ok13z27, ok13z28, ok13z29, ok13z30, ok13z31, ok13z32, ok13z33, ok13z35, ok13z36, ok13z37, ok13z38, ok13z39, ok13z40, ok13z41, ok13z42, ok13z43, ok13z44, ok13z45, ok13z46, ok13z47, ok13z48, ok13z49, ok13z50, ok13z51, ok13z52, ok13z53, ok13z54, ok13z55, ok13z56, ok13z57, ok13z58, ok13z59, ok13z60, ok13z61, ok13z61a, ok13z62, ok13z63, ok13z64, ok13z65, ok13z66, ok13z67, ok13z68, ok13z69, ok13z70, ok13z71, ok13z72, ok13z73, ok13z74, ok13z75, ok13z76, ok13z77, ok13z78, ok13z79, ok13z80, ok13z81, ok13z82, ok13z83, ok13z84, ok13z85, ok13z86, ok13z87, ok13z88, ok13z89, ok14, ok15, ok16, ok17, ok18, ok18a, ok18b, ok19, ok20, ok21, ok22, ok23, ok23a, ok24, ok25, ok26, ok27, ok28, ok29, ok30, ok31, ok32, ok33, ok34, ok35, ok36, ok37, ok38, ok39, ok39b, ok39c, ok39d, ok39e, ok39f, ok39g, ok39h, ok39i, ok39j, ok39k, ok39l, ok39m, ok39n, ok39o, ok39p, ok39q, ok39r, ok39s, ok39t, ok39u, ok39v, ok39w, ok39x, ok39y, ok39z, ok40, ok41, ok42, ok43, ok43a, ok43b, ok44, ok45, ok46, ok47, ok48, ok49, ok50, ok51, ok52, ok53, ok54, ok55, ok56, ok57, ok58, ok59, ok60, ok61, ok62, ok63, ok64, ok65, ok66, ok67, ok67b, ok67c, ok67d, ok67e, ok67f, ok67g, ok68, ok69, ok70, ok70b, ok70c, ok70d, ok70e, ok70f, ok70g, ok70h, ok70i, ok71, ok71b, ok72, ok73, ok74, ok75, ok76, ok77, ok78, ok79, ok80, ok81, ok82, ok83, ok84, ok85, ok86, ok87, ok88, ok89, ok90, ok91, ok92, ok93, ok94, ok95, ok96, ok97, ok98, ok99, ok100, ok101, ok102, ok103, ok104, ok105, ok106, ok107, ok108, ok109, ok110, ok111, ok112, ok113, ok114, ok115, ok116, ok117, ok118, ok119, ok120, ok121, ok122, ok123, ok124, ok125, ok126, ok127, ok128, ok129, ok130, ok131, ok132, ok133, ok134, ok135, ok136, ok137, ok138, ok139, ok140, ok141, ok142, ok143, ok144, ok145, ok146, ok147, ok148, ok149, ok150, ok151, ok152, ok153, ok154, ok155, ok156, ok157, ok158, ok159, ok160, ok161, ok162, ok163, ok164, ok165, ok166, ok167, ok168, ok169, ok169a, ok169a1, ok169a2, ok169a3, ok169a4, ok169b, ok169c, ok169d, ok169e, ok169f, ok169g, ok169h, ok169i, ok169j, ok169k, ok169l, ok169m, ok169n, ok169o, ok169o1, ok169o2, ok169p, ok169q, ok169r, ok169s, ok169t, ok169u, ok169v, ok169w, ok169x, ok169y, ok169z, ok169aa, ok169ab, ok169ac, ok169ad, ok169ae, ok169af, ok169ag, ok169ah, ok169ai, ok169aj, ok169ak, ok169al, ok169am, ok169an, ok169ao, ok169ap, ok169aq, ok169ar, ok169as, ok169at, ok169au, ok169av, ok169aw, ok169ax, ok169ay, ok169ba, ok169bb, ok169bc, ok169bd, ok169be, ok169bf, ok169bg, ok169bh, ok169bi, ok169bj, ok169bk, ok169bl, ok169bm, ok169bn, ok169bo, ok169bp, ok169bq, ok169br, ok169bs, ok169bt, ok169bu, ok169bv, ok169bw, ok169bx, ok169by, ok169bz, ok169ca, ok169cb, ok169cc, ok169cd, ok169ce, ok169cf, ok169cg, ok169ch, ok169ci, ok169cj, ok169ck, ok169cl, ok169cm, ok169cn, ok169co, ok169cp, ok169cq, ok169cr, ok169cs, ok169ct, ok169cu, ok169cv, ok169cw, ok169cx, ok169cy, ok169cz, ok169da, ok169db, ok169dc, ok169dc1, ok169dc2, ok169dc3, ok169dc4, ok169dc5, ok169dc6, ok169dc7, ok169dc8, ok169dc9, ok169dc10, ok169dd, ok169de, ok169df, ok169dg, ok169dh, ok169di, ok169dj, ok169dk, ok169dl, ok169dm, ok169dn, ok169do, ok169dp, ok169dq, ok169dr, ok169ds, ok169dt, ok169du, ok169dv, ok169dw, ok169dx, ok169dy, ok169dz, ok169ea, ok169eb, ok169ec, ok169ed, ok169ee, ok169ef, ok169eg, ok169eh, ok169ei, ok169ej, ok169ek, ok169el, ok169em, ok169en, ok169eo, ok169ep, ok169eq, ok169er, ok169es, ok169et, ok169eu, ok169ev, ok169ew, ok169ex, ok169ey, ok170, ok171, ok172, ok173]
     then putStrLn "silt-test: all checks passed"
     else exitFailure
 
@@ -3033,6 +3034,18 @@ asciiDecimalFormatSources =
   , "examples/ascii-decimal-u64-format.silt"
   ]
 
+hostedDecimalSources :: [FilePath]
+hostedDecimalSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/ascii.silt"
+  , "stdlib/ascii-decimal.silt"
+  , "stdlib/hosted.silt"
+  , "stdlib/hosted-decimal.silt"
+  ]
+
 hostedSizeReportSources :: [FilePath]
 hostedSizeReportSources =
   [ "stdlib/core.silt"
@@ -3042,6 +3055,7 @@ hostedSizeReportSources =
   , "stdlib/ascii.silt"
   , "stdlib/ascii-decimal.silt"
   , "stdlib/hosted.silt"
+  , "stdlib/hosted-decimal.silt"
   , "examples/hosted-size-report.silt"
   ]
 
@@ -3055,6 +3069,7 @@ hostedConfigReportSources =
   , "stdlib/ascii-slice.silt"
   , "stdlib/ascii-decimal.silt"
   , "stdlib/hosted.silt"
+  , "stdlib/hosted-decimal.silt"
   , "examples/hosted-config-report.silt"
   ]
 

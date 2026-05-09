@@ -70,6 +70,7 @@
       stdlib/ascii.silt
       stdlib/ascii-decimal.silt
       stdlib/hosted.silt
+      stdlib/hosted-decimal.silt
       examples/hosted-size-report.silt)
     (entry hosted-size-report-main))
   (bin
@@ -83,6 +84,7 @@
       stdlib/ascii-slice.silt
       stdlib/ascii-decimal.silt
       stdlib/hosted.silt
+      stdlib/hosted-decimal.silt
       examples/hosted-config-report.silt)
     (entry hosted-config-report-main))
   (test
