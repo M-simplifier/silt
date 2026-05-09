@@ -74,10 +74,7 @@
     (entry hosted-size-report-main))
   (test
     ascii-test
-    (sources
-      stdlib/core.silt
-      stdlib/ascii.silt
-      examples/ascii-predicates.silt)
+    (sources stdlib/core.silt stdlib/ascii.silt examples/ascii-predicates.silt)
     (entry ascii-predicate-test))
   (test
     ascii-slice-test
@@ -91,6 +88,19 @@
       stdlib/hosted.silt
       examples/ascii-slice-predicates.silt)
     (entry ascii-slice-predicate-test))
+  (test
+    ascii-trim-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/ascii.silt
+      stdlib/ascii-slice.silt
+      stdlib/ascii-decimal.silt
+      stdlib/hosted.silt
+      examples/ascii-trim.silt)
+    (entry ascii-trim-test))
   (test
     ascii-decimal-u64-test
     (sources
@@ -155,4 +165,14 @@
       stdlib/text.silt
       stdlib/hosted.silt
       examples/text-suffix.silt)
-    (entry text-suffix-test)))
+    (entry text-suffix-test))
+  (test
+    text-scan-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/text-scan.silt)
+    (entry text-scan-test)))

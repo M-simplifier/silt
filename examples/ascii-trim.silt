@@ -1,0 +1,347 @@
+; ASCII whitespace trim examples over explicit byte-backed views.
+
+; This does not claim Unicode whitespace, allocation, dynamic strings, or
+
+; parser combinators.
+
+(static-bytes
+  ascii-trim-subject-bytes
+  ((u8 32) (u8 9) (u8 83) (u8 73) (u8 76) (u8 84) (u8 10) (u8 32)))
+
+(static-bytes ascii-trim-clean-bytes ((u8 83) (u8 73) (u8 76) (u8 84)))
+
+(static-bytes ascii-trim-all-space-bytes ((u8 32) (u8 9) (u8 10)))
+
+(static-bytes ascii-trim-leading-bytes ((u8 32) (u8 83) (u8 73)))
+
+(static-bytes ascii-trim-trailing-bytes ((u8 83) (u8 73) (u8 10)))
+
+(static-bytes ascii-trim-interior-bytes ((u8 83) (u8 32) (u8 73)))
+
+(static-bytes ascii-trim-non-ascii-bytes ((u8 32) (u8 195) (u8 32)))
+
+(static-bytes ascii-trim-parse-bytes ((u8 32) (u8 52) (u8 50) (u8 10)))
+
+(claim ascii-trim-subject-bytes-view ByteSlice)
+
+(def
+  ascii-trim-subject-bytes-view
+  (byte-slice-from ascii-trim-subject-bytes ascii-trim-subject-bytes-len))
+
+(claim ascii-trim-clean-bytes-view ByteSlice)
+
+(def
+  ascii-trim-clean-bytes-view
+  (byte-slice-from ascii-trim-clean-bytes ascii-trim-clean-bytes-len))
+
+(claim ascii-trim-all-space-bytes-view ByteSlice)
+
+(def
+  ascii-trim-all-space-bytes-view
+  (byte-slice-from ascii-trim-all-space-bytes ascii-trim-all-space-bytes-len))
+
+(claim ascii-trim-leading-bytes-view ByteSlice)
+
+(def
+  ascii-trim-leading-bytes-view
+  (byte-slice-from ascii-trim-leading-bytes ascii-trim-leading-bytes-len))
+
+(claim ascii-trim-trailing-bytes-view ByteSlice)
+
+(def
+  ascii-trim-trailing-bytes-view
+  (byte-slice-from ascii-trim-trailing-bytes ascii-trim-trailing-bytes-len))
+
+(claim ascii-trim-interior-bytes-view ByteSlice)
+
+(def
+  ascii-trim-interior-bytes-view
+  (byte-slice-from ascii-trim-interior-bytes ascii-trim-interior-bytes-len))
+
+(claim ascii-trim-non-ascii-bytes-view ByteSlice)
+
+(def
+  ascii-trim-non-ascii-bytes-view
+  (byte-slice-from ascii-trim-non-ascii-bytes ascii-trim-non-ascii-bytes-len))
+
+(claim ascii-trim-empty-bytes-view ByteSlice)
+
+(def ascii-trim-empty-bytes-view (byte-slice-from ascii-trim-subject-bytes (u64 0)))
+
+(claim ascii-trim-subject-text-view TextView)
+
+(def
+  ascii-trim-subject-text-view
+  (text-view-from ascii-trim-subject-bytes ascii-trim-subject-bytes-len))
+
+(claim ascii-trim-all-space-text-view TextView)
+
+(def
+  ascii-trim-all-space-text-view
+  (text-view-from ascii-trim-all-space-bytes ascii-trim-all-space-bytes-len))
+
+(claim ascii-trim-parse-text-view TextView)
+
+(def
+  ascii-trim-parse-text-view
+  (text-view-from ascii-trim-parse-bytes ascii-trim-parse-bytes-len))
+
+(claim
+  ascii-trim-byte-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO ByteSlice))
+     (expected-base (Ptr U8))
+     (expected-len U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-trim-byte-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO ByteSlice))
+     (expected-base (Ptr U8))
+     (expected-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      ByteSlice
+      Bool
+      value
+      (fn
+        ((result 1 ByteSlice))
+        (let-layout
+          ByteSlice
+          ((base base) (len len))
+          result
+          (pure
+            HostIO
+            Bool
+            (bool-and
+              (addr-eq (ptr-to-addr U8 base) (ptr-to-addr U8 expected-base))
+              (u64-eq len expected-len))))))))
+
+(claim
+  ascii-trim-text-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO TextView)) (expected-base (Ptr U8)) (expected-len U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-trim-text-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO TextView)) (expected-base (Ptr U8)) (expected-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextView
+      Bool
+      value
+      (fn
+        ((result 1 TextView))
+        (let-layout
+          TextView
+          ((base base) (len len))
+          result
+          (pure
+            HostIO
+            Bool
+            (bool-and
+              (addr-eq (ptr-to-addr U8 base) (ptr-to-addr U8 expected-base))
+              (u64-eq len expected-len))))))))
+
+(claim
+  ascii-trim-effect-and
+  (Pi
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-trim-effect-and
+  (fn
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      left
+      (fn
+        ((left-value 1 Bool))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          Bool
+          right
+          (fn
+            ((right-value 1 Bool))
+            (pure HostIO Bool (bool-and left-value right-value))))))))
+
+(claim
+  ascii-trim-parse-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO AsciiDecimalU64)) (expected U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  ascii-trim-parse-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO AsciiDecimalU64)) (expected U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      AsciiDecimalU64
+      Bool
+      value
+      (fn
+        ((result 1 AsciiDecimalU64))
+        (pure HostIO Bool (ascii-decimal-u64-has-value result expected))))))
+
+(claim ascii-trim-byte-main-result (Eff HostIO HostIO ByteSlice))
+
+(def
+  ascii-trim-byte-main-result
+  (byte-slice-trim-ascii-whitespace HostIO ascii-trim-subject-bytes-view))
+
+(claim ascii-trim-byte-clean-result (Eff HostIO HostIO ByteSlice))
+
+(def
+  ascii-trim-byte-clean-result
+  (byte-slice-trim-ascii-whitespace HostIO ascii-trim-clean-bytes-view))
+
+(claim ascii-trim-byte-all-space-result (Eff HostIO HostIO ByteSlice))
+
+(def
+  ascii-trim-byte-all-space-result
+  (byte-slice-trim-ascii-whitespace HostIO ascii-trim-all-space-bytes-view))
+
+(claim ascii-trim-byte-leading-result (Eff HostIO HostIO ByteSlice))
+
+(def
+  ascii-trim-byte-leading-result
+  (byte-slice-trim-ascii-whitespace HostIO ascii-trim-leading-bytes-view))
+
+(claim ascii-trim-byte-trailing-result (Eff HostIO HostIO ByteSlice))
+
+(def
+  ascii-trim-byte-trailing-result
+  (byte-slice-trim-ascii-whitespace HostIO ascii-trim-trailing-bytes-view))
+
+(claim ascii-trim-byte-interior-result (Eff HostIO HostIO ByteSlice))
+
+(def
+  ascii-trim-byte-interior-result
+  (byte-slice-trim-ascii-whitespace HostIO ascii-trim-interior-bytes-view))
+
+(claim ascii-trim-byte-non-ascii-result (Eff HostIO HostIO ByteSlice))
+
+(def
+  ascii-trim-byte-non-ascii-result
+  (byte-slice-trim-ascii-whitespace HostIO ascii-trim-non-ascii-bytes-view))
+
+(claim ascii-trim-byte-empty-result (Eff HostIO HostIO ByteSlice))
+
+(def
+  ascii-trim-byte-empty-result
+  (byte-slice-trim-ascii-whitespace HostIO ascii-trim-empty-bytes-view))
+
+(claim ascii-trim-text-main-result (Eff HostIO HostIO TextView))
+
+(def
+  ascii-trim-text-main-result
+  (text-trim-ascii-whitespace HostIO ascii-trim-subject-text-view))
+
+(claim ascii-trim-text-all-space-result (Eff HostIO HostIO TextView))
+
+(def
+  ascii-trim-text-all-space-result
+  (text-trim-ascii-whitespace HostIO ascii-trim-all-space-text-view))
+
+(claim ascii-trim-parse-result (Eff HostIO HostIO AsciiDecimalU64))
+
+(def
+  ascii-trim-parse-result
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    TextView
+    AsciiDecimalU64
+    (text-trim-ascii-whitespace HostIO ascii-trim-parse-text-view)
+    (fn ((trimmed 1 TextView)) (text-parse-ascii-u64 HostIO trimmed))))
+
+(claim ascii-trim-byte-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-trim-byte-test
+  (ascii-trim-effect-and
+    (ascii-trim-byte-result-is
+      ascii-trim-byte-main-result
+      (ptr-step U8 ascii-trim-subject-bytes (u64 2))
+      (u64 4))
+    (ascii-trim-effect-and
+      (ascii-trim-byte-result-is
+        ascii-trim-byte-clean-result
+        ascii-trim-clean-bytes
+        (u64 4))
+      (ascii-trim-effect-and
+        (ascii-trim-byte-result-is
+          ascii-trim-byte-all-space-result
+          (ptr-step U8 ascii-trim-all-space-bytes (u64 3))
+          (u64 0))
+        (ascii-trim-effect-and
+          (ascii-trim-byte-result-is
+            ascii-trim-byte-empty-result
+            ascii-trim-subject-bytes
+            (u64 0))
+          (ascii-trim-effect-and
+            (ascii-trim-byte-result-is
+              ascii-trim-byte-leading-result
+              (ptr-step U8 ascii-trim-leading-bytes (u64 1))
+              (u64 2))
+            (ascii-trim-effect-and
+              (ascii-trim-byte-result-is
+                ascii-trim-byte-trailing-result
+                ascii-trim-trailing-bytes
+                (u64 2))
+              (ascii-trim-effect-and
+                (ascii-trim-byte-result-is
+                  ascii-trim-byte-interior-result
+                  ascii-trim-interior-bytes
+                  (u64 3))
+                (ascii-trim-byte-result-is
+                  ascii-trim-byte-non-ascii-result
+                  (ptr-step U8 ascii-trim-non-ascii-bytes (u64 1))
+                  (u64 1))))))))))
+
+(claim ascii-trim-text-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-trim-text-test
+  (ascii-trim-effect-and
+    (ascii-trim-text-result-is
+      ascii-trim-text-main-result
+      (ptr-step U8 ascii-trim-subject-bytes (u64 2))
+      (u64 4))
+    (ascii-trim-text-result-is
+      ascii-trim-text-all-space-result
+      (ptr-step U8 ascii-trim-all-space-bytes (u64 3))
+      (u64 0))))
+
+(claim ascii-trim-parse-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-trim-parse-test
+  (ascii-trim-parse-result-is ascii-trim-parse-result (u64 42)))
+
+(claim ascii-trim-test (Eff HostIO HostIO Bool))
+
+(def
+  ascii-trim-test
+  (ascii-trim-effect-and
+    ascii-trim-byte-test
+    (ascii-trim-effect-and ascii-trim-text-test ascii-trim-parse-test)))

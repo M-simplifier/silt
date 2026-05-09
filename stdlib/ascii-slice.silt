@@ -4,6 +4,37 @@
 
 ; Unicode categories, locale-sensitive behavior, or allocation.
 
+(layout AsciiTrimState 24 8 ((found Bool 0) (start U64 8) (end U64 16)))
+
+(claim ascii-trim-state (Pi ((found Bool) (start U64) (end U64)) AsciiTrimState))
+
+(def
+  ascii-trim-state
+  (fn
+    ((found Bool) (start U64) (end U64))
+    (layout-values AsciiTrimState found start end)))
+
+(claim
+  ascii-trim-step
+  (Pi ((index U64) (state AsciiTrimState) (byte U8)) AsciiTrimState))
+
+(def
+  ascii-trim-step
+  (fn
+    ((index U64) (state AsciiTrimState) (byte U8))
+    (let-layout
+      AsciiTrimState
+      ((found found) (start start) (end end))
+      state
+      (match
+        (ascii-byte-is-whitespace byte)
+        ((True) (ascii-trim-state found start end))
+        ((False)
+         (match
+           found
+           ((False) (ascii-trim-state True index (u64-add index (u64 1))))
+           ((True) (ascii-trim-state True start (u64-add index (u64 1))))))))))
+
 (claim
   byte-slice-all-ascii-digits
   (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap Bool)))
@@ -183,3 +214,90 @@
     (byte-slice-all-ascii-whitespace
       cap
       (byte-slice-from (text-base text) (text-len text)))))
+
+(claim
+  byte-slice-trim-ascii-whitespace
+  (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap ByteSlice)))
+
+(def
+  byte-slice-trim-ascii-whitespace
+  (fn
+    ((cap 0 Type) (bytes ByteSlice))
+    (bind
+      cap
+      cap
+      cap
+      AsciiTrimState
+      ByteSlice
+      (nat-elim
+        (Eff cap cap AsciiTrimState)
+        (pure
+          cap
+          AsciiTrimState
+          (ascii-trim-state False (byte-slice-len bytes) (byte-slice-len bytes)))
+        (fn
+          ((index Nat) (rec (Eff cap cap AsciiTrimState)))
+          (bind
+            cap
+            cap
+            cap
+            AsciiTrimState
+            AsciiTrimState
+            rec
+            (fn
+              ((state 1 AsciiTrimState))
+              (bind
+                cap
+                cap
+                cap
+                U8
+                AsciiTrimState
+                (load cap U8 (byte-slice-at bytes (nat-to-u64 index)))
+                (fn
+                  ((byte 1 U8))
+                  (pure
+                    cap
+                    AsciiTrimState
+                    (ascii-trim-step (nat-to-u64 index) state byte)))))))
+        (u64-to-nat (byte-slice-len bytes)))
+      (fn
+        ((state 1 AsciiTrimState))
+        (let-layout
+          AsciiTrimState
+          ((found found) (start start) (end end))
+          state
+          (match
+            found
+            ((False)
+             (pure
+               cap
+               ByteSlice
+               (byte-slice-from
+                 (ptr-step U8 (byte-slice-base bytes) (byte-slice-len bytes))
+                 (u64 0))))
+            ((True)
+             (pure
+               cap
+               ByteSlice
+               (byte-slice-from
+                 (ptr-step U8 (byte-slice-base bytes) start)
+                 (u64-sub end start))))))))))
+
+(claim
+  text-trim-ascii-whitespace
+  (Pi ((cap 0 Type) (text TextView)) (Eff cap cap TextView)))
+
+(def
+  text-trim-ascii-whitespace
+  (fn
+    ((cap 0 Type) (text TextView))
+    (bind
+      cap
+      cap
+      cap
+      ByteSlice
+      TextView
+      (byte-slice-trim-ascii-whitespace
+        cap
+        (byte-slice-from (text-base text) (text-len text)))
+      (fn ((bytes 1 ByteSlice)) (pure cap TextView (text-from-bytes bytes))))))

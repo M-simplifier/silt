@@ -4,6 +4,8 @@
 
 (layout TextView 16 8 ((base (Ptr U8) 0) (len U64 8)))
 
+(layout TextSplitFirst 40 8 ((found Bool 0) (before TextView 8) (after TextView 24)))
+
 (claim text-view-from (Pi ((base (Ptr U8)) (len U64)) TextView))
 
 (def text-view-from (fn ((base (Ptr U8)) (len U64)) (layout-values TextView base len)))
@@ -29,6 +31,34 @@
 (def
   text-byte-at
   (fn ((text TextView) (index U64)) (ptr-step U8 (text-base text) index)))
+
+(claim
+  text-split-first
+  (Pi ((found Bool) (before TextView) (after TextView)) TextSplitFirst))
+
+(def
+  text-split-first
+  (fn
+    ((found Bool) (before TextView) (after TextView))
+    (layout-values TextSplitFirst found before after)))
+
+(claim text-split-first-found (Pi ((result TextSplitFirst)) Bool))
+
+(def
+  text-split-first-found
+  (fn ((result TextSplitFirst)) (field TextSplitFirst found result)))
+
+(claim text-split-first-before (Pi ((result TextSplitFirst)) TextView))
+
+(def
+  text-split-first-before
+  (fn ((result TextSplitFirst)) (field TextSplitFirst before result)))
+
+(claim text-split-first-after (Pi ((result TextSplitFirst)) TextView))
+
+(def
+  text-split-first-after
+  (fn ((result TextSplitFirst)) (field TextSplitFirst after result)))
 
 (claim text-is-empty (Pi ((text TextView)) Bool))
 
@@ -88,3 +118,55 @@
       cap
       (byte-slice-from (text-base text) (text-len text))
       (byte-slice-from (text-base suffix) (text-len suffix)))))
+
+(claim
+  text-find-byte
+  (Pi ((cap 0 Type) (text TextView) (needle U8)) (Eff cap cap ByteFindResult)))
+
+(def
+  text-find-byte
+  (fn
+    ((cap 0 Type) (text TextView) (needle U8))
+    (byte-slice-find-byte cap (byte-slice-from (text-base text) (text-len text)) needle)))
+
+(claim
+  text-contains-byte
+  (Pi ((cap 0 Type) (text TextView) (needle U8)) (Eff cap cap Bool)))
+
+(def
+  text-contains-byte
+  (fn
+    ((cap 0 Type) (text TextView) (needle U8))
+    (byte-slice-contains-byte
+      cap
+      (byte-slice-from (text-base text) (text-len text))
+      needle)))
+
+(claim
+  text-split-first-byte
+  (Pi ((cap 0 Type) (text TextView) (needle U8)) (Eff cap cap TextSplitFirst)))
+
+(def
+  text-split-first-byte
+  (fn
+    ((cap 0 Type) (text TextView) (needle U8))
+    (bind
+      cap
+      cap
+      cap
+      ByteSplitFirst
+      TextSplitFirst
+      (byte-slice-split-first-byte
+        cap
+        (byte-slice-from (text-base text) (text-len text))
+        needle)
+      (fn
+        ((result 1 ByteSplitFirst))
+        (let-layout
+          ByteSplitFirst
+          ((found found) (before before) (after after))
+          result
+          (pure
+            cap
+            TextSplitFirst
+            (text-split-first found (text-from-bytes before) (text-from-bytes after))))))))

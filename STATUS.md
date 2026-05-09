@@ -31,14 +31,17 @@ Silt currently demonstrates:
   `take`, and `drop`; byte-wise equality through `byte-slice-eq` and
   `text-eq`; prefix checks through `byte-slice-starts-with` and
   `text-starts-with`; suffix checks through `byte-slice-ends-with` and
-  `text-ends-with`; pure ASCII byte predicates over `U8` for digit,
-  lower/upper alpha, alpha, alnum, hexadecimal digit, literal space, and ASCII
-  whitespace classification; narrow all-ASCII slice/text predicates over
+  `text-ends-with`; first-byte find/contains/split helpers over explicit
+  `ByteSlice` / `TextView` values; pure ASCII byte predicates over `U8` for
+  digit, lower/upper alpha, alpha, alnum, hexadecimal digit, literal space, and
+  ASCII whitespace classification; narrow all-ASCII slice/text predicates over
   explicit `ByteSlice` / `TextView` values for all-digits, all-alnum,
-  all-hex-digits, and all-whitespace checks; a narrow ASCII decimal `U64`
-  parser over explicit `ByteSlice` / `TextView` values that rejects empty input,
-  non-digits, and overflow through an API-shaped `AsciiDecimalU64` layout
-  result; narrow ASCII decimal `U64` formatting into caller-provided
+  all-hex-digits, and all-whitespace checks; narrow ASCII whitespace trimming
+  over explicit `ByteSlice` / `TextView` values, returning allocation-free
+  views into the original byte storage; a narrow ASCII decimal `U64` parser over
+  explicit `ByteSlice` / `TextView` values that rejects empty input, non-digits,
+  and overflow through an API-shaped `AsciiDecimalU64` layout result; narrow
+  ASCII decimal `U64` formatting into caller-provided
   `AsciiDecimalU64Buffer` storage, returning an explicit `TextView` over the
   written bytes; an explicit `Nat` / `U64` bridge; and a first-order hosted
   text-output path that lowers through `nat-elim` to a C loop; and explicit hosted
@@ -53,9 +56,9 @@ Silt currently demonstrates:
   `hosted-write-file`, `hosted-cat`, and `hosted-size-report` package examples
   that compile, run, print, read, write, or report through the hosted package
   harness, and exercise process status where relevant, plus `text-eq-test`,
-  `text-prefix-test`, `text-suffix-test`, `ascii-test`, `ascii-slice-test`,
-  `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
-  targets
+  `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `ascii-test`,
+  `ascii-slice-test`, `ascii-trim-test`, `ascii-decimal-u64-test`, and
+  `ascii-decimal-u64-format-test` as package test targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -98,8 +101,10 @@ scripts/verify-stdlib-core-combinators.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
+scripts/verify-text-scan.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
+scripts/verify-ascii-trim.sh
 scripts/verify-ascii-decimal-u64.sh
 scripts/verify-ascii-decimal-u64-format.sh
 scripts/verify-text-view-helpers.sh
@@ -143,11 +148,13 @@ Silt does not currently claim:
 - Unicode categories, locale-sensitive behavior, case conversion, UTF-8
   validation, generic strings, arrays, dynamic slices, allocator-backed
   byte/text buffers, substring/search/general scanning APIs beyond the current
-  narrow all-ASCII class checks, ASCII decimal `U64` parser, and ASCII decimal
-  `U64` formatter, collation, or text-normalization APIs
-- decimal signs, radix prefixes, separators, whitespace trimming, detailed
-  parse-error categories, signed formatting, radix formatting, padding,
-  alignment, locale formatting, or a general parser/formatter-combinator library
+  first-byte find/contains/split helpers, narrow all-ASCII class checks, ASCII
+  decimal `U64` parser, ASCII decimal `U64` formatter, and narrow ASCII
+  whitespace trimming, collation, or text-normalization APIs
+- decimal signs, radix prefixes, separators, whitespace trimming beyond the
+  narrow ASCII view helper, detailed parse-error categories, signed formatting,
+  radix formatting, padding, alignment, locale formatting, or a general
+  parser/formatter-combinator library
 - a complete Limine or memory-map parser
 - a general allocator
 - a mutating free-list allocator
