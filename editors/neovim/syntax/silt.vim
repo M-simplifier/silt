@@ -36,7 +36,8 @@ syntax keyword siltForm
       \ byte-slice-contains-byte byte-slice-ends-with byte-slice-eq
       \ byte-slice-find-byte byte-slice-is-empty byte-slice-len
       \ byte-slice-parse-ascii-u64 byte-slice-starts-with byte-slice-take
-      \ byte-slice-split-first-byte byte-slice-trim-ascii-whitespace
+      \ byte-slice-split-first-byte byte-slice-split-first-lf
+      \ byte-slice-trim-ascii-whitespace
       \ host-arg-base host-arg-count host-arg-len host-arg-text
       \ host-env-base host-env-has host-env-len host-env-present host-env-text
       \ host-file-read-base host-file-read-len host-file-read-ok
@@ -57,7 +58,8 @@ syntax keyword siltForm
       \ text-from-bytes text-is-empty
       \ text-ends-with text-eq text-len text-parse-ascii-u64 text-starts-with text-take
       \ text-split-first text-split-first-after text-split-first-before
-      \ text-split-first-byte text-split-first-found text-trim-ascii-whitespace
+      \ text-split-first-byte text-split-first-found text-split-first-lf
+      \ text-trim-ascii-whitespace
       \ text-view-from text-all-ascii-alnum text-all-ascii-digits
       \ text-all-ascii-hex-digits text-all-ascii-whitespace
       \ u64-add u64-and u64-div u64-eq u64-lt u64-lte u64-mul u64-or

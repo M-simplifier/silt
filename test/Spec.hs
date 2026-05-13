@@ -87,6 +87,7 @@ main = runChecks
       , (PackageTest, "text-prefix-test")
       , (PackageTest, "text-suffix-test")
       , (PackageTest, "text-scan-test")
+      , (PackageTest, "text-line-test")
       ]
   , expectCheckFiles "stdlib hosted seed bundle" stdlibHostedSources
   , expectNormalizedFiles "stdlib option sample normalization" stdlibHostedSources "stdlib-option-sample" "(u64 42)"
@@ -161,6 +162,14 @@ main = runChecks
       , expectCodegenFiles "text scan needle compare codegen" textScanSources "text-scan-test" "== ((uint8_t)58u)"
       , expectCodegenFiles "text scan split-after codegen" textScanSources "text-scan-test" "+ 1ULL) * 1ULL)"
       , expectCodegenFiles "text scan split-after base check codegen" textScanSources "text-scan-test" "(5ULL * 1ULL)"
+      ]
+  , expectAll
+      [ expectCheckFiles "text line example bundle" textLineSources
+      , expectCodegenFiles "text line byte split layout codegen" textLineSources "text-line-test" "silt_layout_ByteSplitFirst"
+      , expectCodegenFiles "text line text split layout codegen" textLineSources "text-line-test" "silt_layout_TextSplitFirst"
+      , expectCodegenFiles "text line LF compare codegen" textLineSources "text-line-test" "== ((uint8_t)10u)"
+      , expectCodegenFiles "text line split-after codegen" textLineSources "text-line-test" "+ 1ULL) * 1ULL)"
+      , expectCodegenFiles "text line LF exclusion base check codegen" textLineSources "text-line-test" "(4ULL * 1ULL)"
       ]
   , expectCheckFiles "ASCII predicate example bundle" asciiPredicateSources
   , fmap and $
@@ -3016,6 +3025,16 @@ textScanSources =
   , "stdlib/text.silt"
   , "stdlib/hosted.silt"
   , "examples/text-scan.silt"
+  ]
+
+textLineSources :: [FilePath]
+textLineSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/text-lines.silt"
   ]
 
 asciiPredicateSources :: [FilePath]

@@ -1,0 +1,355 @@
+; LF line-splitting examples over explicit byte-backed views.
+
+; This does not claim CRLF handling, Unicode line boundaries, split-all,
+
+; dynamic strings, allocation, or parser combinators.
+
+(static-bytes
+  text-line-two-bytes
+  ((u8 65) (u8 66) (u8 67) (u8 10) (u8 68) (u8 69) (u8 70)))
+
+(static-bytes text-line-leading-bytes ((u8 10) (u8 65) (u8 66) (u8 67)))
+
+(static-bytes text-line-final-bytes ((u8 65) (u8 66) (u8 67) (u8 10)))
+
+(static-bytes text-line-no-lf-bytes ((u8 65) (u8 66) (u8 67)))
+
+(claim text-line-two-byte-view ByteSlice)
+
+(def
+  text-line-two-byte-view
+  (byte-slice-from text-line-two-bytes text-line-two-bytes-len))
+
+(claim text-line-leading-byte-view ByteSlice)
+
+(def
+  text-line-leading-byte-view
+  (byte-slice-from text-line-leading-bytes text-line-leading-bytes-len))
+
+(claim text-line-final-byte-view ByteSlice)
+
+(def
+  text-line-final-byte-view
+  (byte-slice-from text-line-final-bytes text-line-final-bytes-len))
+
+(claim text-line-no-lf-byte-view ByteSlice)
+
+(def
+  text-line-no-lf-byte-view
+  (byte-slice-from text-line-no-lf-bytes text-line-no-lf-bytes-len))
+
+(claim text-line-empty-byte-view ByteSlice)
+
+(def text-line-empty-byte-view (byte-slice-from text-line-two-bytes (u64 0)))
+
+(claim text-line-two-text-view TextView)
+
+(def
+  text-line-two-text-view
+  (text-view-from text-line-two-bytes text-line-two-bytes-len))
+
+(claim text-line-leading-text-view TextView)
+
+(def
+  text-line-leading-text-view
+  (text-view-from text-line-leading-bytes text-line-leading-bytes-len))
+
+(claim text-line-final-text-view TextView)
+
+(def
+  text-line-final-text-view
+  (text-view-from text-line-final-bytes text-line-final-bytes-len))
+
+(claim text-line-no-lf-text-view TextView)
+
+(def
+  text-line-no-lf-text-view
+  (text-view-from text-line-no-lf-bytes text-line-no-lf-bytes-len))
+
+(claim text-line-empty-text-view TextView)
+
+(def text-line-empty-text-view (text-view-from text-line-two-bytes (u64 0)))
+
+(claim text-line-bool-same (Pi ((left Bool) (right Bool)) Bool))
+
+(def
+  text-line-bool-same
+  (fn ((left Bool) (right Bool)) (match left ((False) (bool-not right)) ((True) right))))
+
+(claim
+  text-line-effect-and
+  (Pi
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-line-effect-and
+  (fn
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      left
+      (fn
+        ((left-value 1 Bool))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          Bool
+          right
+          (fn
+            ((right-value 1 Bool))
+            (pure HostIO Bool (bool-and left-value right-value))))))))
+
+(claim
+  text-line-byte-split-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO ByteSplitFirst))
+     (expected-found Bool)
+     (expected-before-base (Ptr U8))
+     (expected-before-len U64)
+     (expected-after-base (Ptr U8))
+     (expected-after-len U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-line-byte-split-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO ByteSplitFirst))
+     (expected-found Bool)
+     (expected-before-base (Ptr U8))
+     (expected-before-len U64)
+     (expected-after-base (Ptr U8))
+     (expected-after-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      ByteSplitFirst
+      Bool
+      value
+      (fn
+        ((result 1 ByteSplitFirst))
+        (let-layout
+          ByteSplitFirst
+          ((found found) (before before) (after after))
+          result
+          (pure
+            HostIO
+            Bool
+            (bool-and
+              (text-line-bool-same found expected-found)
+              (bool-and
+                (addr-eq
+                  (ptr-to-addr U8 (byte-slice-base before))
+                  (ptr-to-addr U8 expected-before-base))
+                (bool-and
+                  (u64-eq (byte-slice-len before) expected-before-len)
+                  (bool-and
+                    (addr-eq
+                      (ptr-to-addr U8 (byte-slice-base after))
+                      (ptr-to-addr U8 expected-after-base))
+                    (u64-eq (byte-slice-len after) expected-after-len)))))))))))
+
+(claim
+  text-line-text-split-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO TextSplitFirst))
+     (expected-found Bool)
+     (expected-before-base (Ptr U8))
+     (expected-before-len U64)
+     (expected-after-base (Ptr U8))
+     (expected-after-len U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-line-text-split-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO TextSplitFirst))
+     (expected-found Bool)
+     (expected-before-base (Ptr U8))
+     (expected-before-len U64)
+     (expected-after-base (Ptr U8))
+     (expected-after-len U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextSplitFirst
+      Bool
+      value
+      (fn
+        ((result 1 TextSplitFirst))
+        (let-layout
+          TextSplitFirst
+          ((found found) (before before) (after after))
+          result
+          (pure
+            HostIO
+            Bool
+            (bool-and
+              (text-line-bool-same found expected-found)
+              (bool-and
+                (addr-eq
+                  (ptr-to-addr U8 (text-base before))
+                  (ptr-to-addr U8 expected-before-base))
+                (bool-and
+                  (u64-eq (text-len before) expected-before-len)
+                  (bool-and
+                    (addr-eq
+                      (ptr-to-addr U8 (text-base after))
+                      (ptr-to-addr U8 expected-after-base))
+                    (u64-eq (text-len after) expected-after-len)))))))))))
+
+(claim text-line-byte-two-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-line-byte-two-result
+  (byte-slice-split-first-lf HostIO text-line-two-byte-view))
+
+(claim text-line-byte-leading-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-line-byte-leading-result
+  (byte-slice-split-first-lf HostIO text-line-leading-byte-view))
+
+(claim text-line-byte-final-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-line-byte-final-result
+  (byte-slice-split-first-lf HostIO text-line-final-byte-view))
+
+(claim text-line-byte-missing-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-line-byte-missing-result
+  (byte-slice-split-first-lf HostIO text-line-no-lf-byte-view))
+
+(claim text-line-byte-empty-result (Eff HostIO HostIO ByteSplitFirst))
+
+(def
+  text-line-byte-empty-result
+  (byte-slice-split-first-lf HostIO text-line-empty-byte-view))
+
+(claim text-line-text-two-result (Eff HostIO HostIO TextSplitFirst))
+
+(def text-line-text-two-result (text-split-first-lf HostIO text-line-two-text-view))
+
+(claim text-line-text-leading-result (Eff HostIO HostIO TextSplitFirst))
+
+(def
+  text-line-text-leading-result
+  (text-split-first-lf HostIO text-line-leading-text-view))
+
+(claim text-line-text-final-result (Eff HostIO HostIO TextSplitFirst))
+
+(def text-line-text-final-result (text-split-first-lf HostIO text-line-final-text-view))
+
+(claim text-line-text-missing-result (Eff HostIO HostIO TextSplitFirst))
+
+(def
+  text-line-text-missing-result
+  (text-split-first-lf HostIO text-line-no-lf-text-view))
+
+(claim text-line-text-empty-result (Eff HostIO HostIO TextSplitFirst))
+
+(def text-line-text-empty-result (text-split-first-lf HostIO text-line-empty-text-view))
+
+(claim text-line-byte-split-test (Eff HostIO HostIO Bool))
+
+(def
+  text-line-byte-split-test
+  (text-line-effect-and
+    (text-line-byte-split-result-is
+      text-line-byte-two-result
+      True
+      text-line-two-bytes
+      (u64 3)
+      (ptr-step U8 text-line-two-bytes (u64 4))
+      (u64 3))
+    (text-line-effect-and
+      (text-line-byte-split-result-is
+        text-line-byte-leading-result
+        True
+        text-line-leading-bytes
+        (u64 0)
+        (ptr-step U8 text-line-leading-bytes (u64 1))
+        (u64 3))
+      (text-line-effect-and
+        (text-line-byte-split-result-is
+          text-line-byte-final-result
+          True
+          text-line-final-bytes
+          (u64 3)
+          (ptr-step U8 text-line-final-bytes (u64 4))
+          (u64 0))
+        (text-line-effect-and
+          (text-line-byte-split-result-is
+            text-line-byte-missing-result
+            False
+            text-line-no-lf-bytes
+            (u64 3)
+            (ptr-step U8 text-line-no-lf-bytes (u64 3))
+            (u64 0))
+          (text-line-byte-split-result-is
+            text-line-byte-empty-result
+            False
+            text-line-two-bytes
+            (u64 0)
+            text-line-two-bytes
+            (u64 0)))))))
+
+(claim text-line-text-split-test (Eff HostIO HostIO Bool))
+
+(def
+  text-line-text-split-test
+  (text-line-effect-and
+    (text-line-text-split-result-is
+      text-line-text-two-result
+      True
+      text-line-two-bytes
+      (u64 3)
+      (ptr-step U8 text-line-two-bytes (u64 4))
+      (u64 3))
+    (text-line-effect-and
+      (text-line-text-split-result-is
+        text-line-text-leading-result
+        True
+        text-line-leading-bytes
+        (u64 0)
+        (ptr-step U8 text-line-leading-bytes (u64 1))
+        (u64 3))
+      (text-line-effect-and
+        (text-line-text-split-result-is
+          text-line-text-final-result
+          True
+          text-line-final-bytes
+          (u64 3)
+          (ptr-step U8 text-line-final-bytes (u64 4))
+          (u64 0))
+        (text-line-effect-and
+          (text-line-text-split-result-is
+            text-line-text-missing-result
+            False
+            text-line-no-lf-bytes
+            (u64 3)
+            (ptr-step U8 text-line-no-lf-bytes (u64 3))
+            (u64 0))
+          (text-line-text-split-result-is
+            text-line-text-empty-result
+            False
+            text-line-two-bytes
+            (u64 0)
+            text-line-two-bytes
+            (u64 0)))))))
+
+(claim text-line-test (Eff HostIO HostIO Bool))
+
+(def
+  text-line-test
+  (text-line-effect-and text-line-byte-split-test text-line-text-split-test))

@@ -32,9 +32,10 @@ Silt currently demonstrates:
   `text-eq`; prefix checks through `byte-slice-starts-with` and
   `text-starts-with`; suffix checks through `byte-slice-ends-with` and
   `text-ends-with`; first-byte find/contains/split helpers over explicit
-  `ByteSlice` / `TextView` values; pure ASCII byte predicates over `U8` for
-  digit, lower/upper alpha, alpha, alnum, hexadecimal digit, literal space, and
-  ASCII whitespace classification; narrow all-ASCII slice/text predicates over
+  `ByteSlice` / `TextView` values; LF-oriented first-line split helpers over
+  explicit `ByteSlice` / `TextView` values; pure ASCII byte predicates over
+  `U8` for digit, lower/upper alpha, alpha, alnum, hexadecimal digit, literal
+  space, and ASCII whitespace classification; narrow all-ASCII slice/text predicates over
   explicit `ByteSlice` / `TextView` values for all-digits, all-alnum,
   all-hex-digits, and all-whitespace checks; narrow ASCII whitespace trimming
   over explicit `ByteSlice` / `TextView` values, returning allocation-free
@@ -57,8 +58,8 @@ Silt currently demonstrates:
   `hosted-config-report` package examples that compile, run, print, read,
   write, or report through the hosted package harness, and exercise process
   status where relevant, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `text-scan-test`, `ascii-test`, `ascii-slice-test`,
-  `ascii-trim-test`, `ascii-decimal-u64-test`, and
+  `text-suffix-test`, `text-scan-test`, `text-line-test`, `ascii-test`,
+  `ascii-slice-test`, `ascii-trim-test`, `ascii-decimal-u64-test`, and
   `ascii-decimal-u64-format-test` as package test targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
@@ -112,6 +113,7 @@ scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
 scripts/verify-text-scan.sh
+scripts/verify-text-lines.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-trim.sh
@@ -157,9 +159,10 @@ Silt does not currently claim:
 - inferred ownership or a full aliasing discipline
 - runtime representation for generic ADTs or general closure conversion
 - Unicode categories, locale-sensitive behavior, case conversion, UTF-8
-  validation, generic strings, arrays, dynamic slices, allocator-backed
-  byte/text buffers, substring/search/general scanning APIs beyond the current
-  first-byte find/contains/split helpers, narrow all-ASCII class checks, ASCII
+  validation, CRLF normalization, split-all line APIs, generic strings, arrays,
+  dynamic slices, allocator-backed byte/text buffers, substring/search/general
+  scanning APIs beyond the current first-byte find/contains/split helpers,
+  LF-oriented first-line split helpers, narrow all-ASCII class checks, ASCII
   decimal `U64` parser, ASCII decimal `U64` formatter, and narrow ASCII
   whitespace trimming, collation, or text-normalization APIs
 - decimal signs, radix prefixes, separators, whitespace trimming beyond the

@@ -222,6 +222,14 @@
                  (byte-slice-drop bytes (u64-add index (u64 1))))))))))))
 
 (claim
+  byte-slice-split-first-lf
+  (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap ByteSplitFirst)))
+
+(def
+  byte-slice-split-first-lf
+  (fn ((cap 0 Type) (bytes ByteSlice)) (byte-slice-split-first-byte cap bytes (u8 10))))
+
+(claim
   byte-slice-eq
   (Pi ((cap 0 Type) (left ByteSlice) (right ByteSlice)) (Eff cap cap Bool)))
 

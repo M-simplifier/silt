@@ -105,6 +105,7 @@ scripts/verify-text-view-helpers.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
 scripts/verify-text-scan.sh
+scripts/verify-text-lines.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-trim.sh
