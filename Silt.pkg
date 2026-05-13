@@ -190,4 +190,14 @@
       stdlib/text.silt
       stdlib/hosted.silt
       examples/text-scan.silt)
-    (entry text-scan-test)))
+    (entry text-scan-test))
+  (test
+    text-line-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/text-lines.silt)
+    (entry text-line-test)))

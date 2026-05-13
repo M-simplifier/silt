@@ -170,3 +170,11 @@
             cap
             TextSplitFirst
             (text-split-first found (text-from-bytes before) (text-from-bytes after))))))))
+
+(claim
+  text-split-first-lf
+  (Pi ((cap 0 Type) (text TextView)) (Eff cap cap TextSplitFirst)))
+
+(def
+  text-split-first-lf
+  (fn ((cap 0 Type) (text TextView)) (text-split-first-byte cap text (u8 10))))

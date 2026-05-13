@@ -50,11 +50,12 @@ production kernel.
   / `text-starts-with`, suffix checks through `byte-slice-ends-with` /
   `text-ends-with`, first-byte find/contains/split results, pure ASCII byte
   predicates for digit, alpha, alnum, hexadecimal, space, and whitespace
-  classification, narrow all-ASCII slice/text predicates for digits, alnum,
-  hexadecimal digits, and whitespace, narrow ASCII whitespace trimming over
-  explicit views, a checked ASCII decimal `U64` parser with empty-input,
-  non-digit, and overflow rejection, caller-buffer-based ASCII decimal `U64`
-  formatting into an explicit `TextView`, an explicit `Nat` / `U64` bridge, and
+  classification, LF-oriented first-line split helpers, narrow all-ASCII
+  slice/text predicates for digits, alnum, hexadecimal digits, and whitespace,
+  narrow ASCII whitespace trimming over explicit views, a checked ASCII decimal
+  `U64` parser with empty-input, non-digit, and overflow rejection,
+  caller-buffer-based ASCII decimal `U64` formatting into an explicit
+  `TextView`, an explicit `Nat` / `U64` bridge, and
   a first-order hosted text-output path that lowers through `nat-elim` to a C
   loop, plus explicit hosted process-argument and environment text views,
   first-order hosted file-write over explicit `TextView` path/body values, and
@@ -65,8 +66,8 @@ production kernel.
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, and
   `hosted-size-report` / `hosted-config-report`, that build and run through
   the package spine, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `text-scan-test`, `ascii-test`, `ascii-slice-test`,
-  `ascii-trim-test`, `ascii-decimal-u64-test`, and
+  `text-suffix-test`, `text-scan-test`, `text-line-test`, `ascii-test`,
+  `ascii-slice-test`, `ascii-trim-test`, `ascii-decimal-u64-test`, and
   `ascii-decimal-u64-format-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
@@ -105,6 +106,7 @@ scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
 scripts/verify-text-scan.sh
+scripts/verify-text-lines.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-trim.sh
