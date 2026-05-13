@@ -48,11 +48,12 @@ production kernel.
   bounded pure view helpers for empty/take/drop, byte-wise equality through
   `byte-slice-eq` / `text-eq`, prefix checks through `byte-slice-starts-with`
   / `text-starts-with`, suffix checks through `byte-slice-ends-with` /
-  `text-ends-with`, first-byte find/contains/split results, pure ASCII byte
+  `text-ends-with`, first-byte find/contains/split results, LF-oriented
+  first-line split helpers, single-byte count helpers, pure ASCII byte
   predicates for digit, alpha, alnum, hexadecimal, space, and whitespace
-  classification, LF-oriented first-line split helpers, narrow all-ASCII
-  slice/text predicates for digits, alnum, hexadecimal digits, and whitespace,
-  narrow ASCII whitespace trimming over explicit views, a checked ASCII decimal
+  classification, narrow all-ASCII slice/text predicates for digits, alnum,
+  hexadecimal digits, and whitespace, narrow ASCII whitespace trimming over
+  explicit views, a checked ASCII decimal
   `U64` parser with empty-input, non-digit, and overflow rejection,
   caller-buffer-based ASCII decimal `U64` formatting into an explicit
   `TextView`, an explicit `Nat` / `U64` bridge, and
@@ -66,9 +67,10 @@ production kernel.
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, and
   `hosted-size-report` / `hosted-config-report`, that build and run through
   the package spine, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `text-scan-test`, `text-line-test`, `ascii-test`,
-  `ascii-slice-test`, `ascii-trim-test`, `ascii-decimal-u64-test`, and
-  `ascii-decimal-u64-format-test` as package test targets.
+  `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
+  `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
+  `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
+  targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.
@@ -107,6 +109,7 @@ scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
 scripts/verify-text-scan.sh
 scripts/verify-text-lines.sh
+scripts/verify-text-count.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-trim.sh

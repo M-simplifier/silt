@@ -32,9 +32,9 @@ allocator handoff case study with a bounded live frame-pool cell update. It
 also has early platform tooling: canonical formatting, lint through
 formatter/parser/checker facts, a single-local-package hosted
 new/build/run/test/doc CLI spine, hosted stdlib seed with byte/text, ASCII
-predicate, ASCII decimal parse/format, text output, process-argument reads,
-environment lookup, first-order file writes and reads with read-status
-observation, and lightweight Neovim filetype/syntax files.
+predicate, single-byte count, ASCII decimal parse/format, text output,
+process-argument reads, environment lookup, first-order file writes and reads
+with read-status observation, and lightweight Neovim filetype/syntax files.
 
 Silt is not a production compiler, package ecosystem, mature editor/LSP
 platform, self-hosted compiler, finished operating system, general allocator,
@@ -106,6 +106,7 @@ scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
 scripts/verify-text-scan.sh
 scripts/verify-text-lines.sh
+scripts/verify-text-count.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-trim.sh

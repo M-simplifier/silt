@@ -1,0 +1,184 @@
+; Byte/text count-byte examples over explicit byte-backed views.
+
+; This counts one byte value across a bounded view. It does not claim split-all,
+
+; substring search, dynamic strings, allocation, parser combinators, or Unicode.
+
+(static-bytes text-count-many-bytes ((u8 65) (u8 10) (u8 66) (u8 10) (u8 10) (u8 67)))
+
+(static-bytes text-count-alpha-bytes ((u8 65) (u8 65) (u8 66) (u8 65)))
+
+(static-bytes text-count-none-bytes ((u8 65) (u8 66) (u8 67)))
+
+(claim text-count-many-byte-view ByteSlice)
+
+(def
+  text-count-many-byte-view
+  (byte-slice-from text-count-many-bytes text-count-many-bytes-len))
+
+(claim text-count-alpha-byte-view ByteSlice)
+
+(def
+  text-count-alpha-byte-view
+  (byte-slice-from text-count-alpha-bytes text-count-alpha-bytes-len))
+
+(claim text-count-none-byte-view ByteSlice)
+
+(def
+  text-count-none-byte-view
+  (byte-slice-from text-count-none-bytes text-count-none-bytes-len))
+
+(claim text-count-empty-byte-view ByteSlice)
+
+(def text-count-empty-byte-view (byte-slice-from text-count-many-bytes (u64 0)))
+
+(claim text-count-many-text-view TextView)
+
+(def
+  text-count-many-text-view
+  (text-view-from text-count-many-bytes text-count-many-bytes-len))
+
+(claim text-count-alpha-text-view TextView)
+
+(def
+  text-count-alpha-text-view
+  (text-view-from text-count-alpha-bytes text-count-alpha-bytes-len))
+
+(claim text-count-none-text-view TextView)
+
+(def
+  text-count-none-text-view
+  (text-view-from text-count-none-bytes text-count-none-bytes-len))
+
+(claim text-count-empty-text-view TextView)
+
+(def text-count-empty-text-view (text-view-from text-count-many-bytes (u64 0)))
+
+(claim
+  text-count-effect-and
+  (Pi
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-count-effect-and
+  (fn
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      left
+      (fn
+        ((left-value 1 Bool))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          Bool
+          right
+          (fn
+            ((right-value 1 Bool))
+            (pure HostIO Bool (bool-and left-value right-value))))))))
+
+(claim
+  text-count-result-is
+  (Pi ((value 1 (Eff HostIO HostIO U64)) (expected U64)) (Eff HostIO HostIO Bool)))
+
+(def
+  text-count-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO U64)) (expected U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      U64
+      Bool
+      value
+      (fn ((actual 1 U64)) (pure HostIO Bool (u64-eq actual expected))))))
+
+(claim text-count-byte-lf-result (Eff HostIO HostIO U64))
+
+(def
+  text-count-byte-lf-result
+  (byte-slice-count-byte HostIO text-count-many-byte-view (u8 10)))
+
+(claim text-count-byte-alpha-result (Eff HostIO HostIO U64))
+
+(def
+  text-count-byte-alpha-result
+  (byte-slice-count-byte HostIO text-count-alpha-byte-view (u8 65)))
+
+(claim text-count-byte-missing-result (Eff HostIO HostIO U64))
+
+(def
+  text-count-byte-missing-result
+  (byte-slice-count-byte HostIO text-count-none-byte-view (u8 10)))
+
+(claim text-count-byte-empty-result (Eff HostIO HostIO U64))
+
+(def
+  text-count-byte-empty-result
+  (byte-slice-count-byte HostIO text-count-empty-byte-view (u8 10)))
+
+(claim text-count-byte-lf-wrapper-result (Eff HostIO HostIO U64))
+
+(def
+  text-count-byte-lf-wrapper-result
+  (byte-slice-count-lf HostIO text-count-many-byte-view))
+
+(claim text-count-text-byte-result (Eff HostIO HostIO U64))
+
+(def
+  text-count-text-byte-result
+  (text-count-byte HostIO text-count-alpha-text-view (u8 65)))
+
+(claim text-count-text-missing-result (Eff HostIO HostIO U64))
+
+(def
+  text-count-text-missing-result
+  (text-count-byte HostIO text-count-none-text-view (u8 10)))
+
+(claim text-count-text-empty-result (Eff HostIO HostIO U64))
+
+(def
+  text-count-text-empty-result
+  (text-count-byte HostIO text-count-empty-text-view (u8 10)))
+
+(claim text-count-text-lf-result (Eff HostIO HostIO U64))
+
+(def text-count-text-lf-result (text-count-lf HostIO text-count-many-text-view))
+
+(claim text-count-byte-test (Eff HostIO HostIO Bool))
+
+(def
+  text-count-byte-test
+  (text-count-effect-and
+    (text-count-result-is text-count-byte-lf-result (u64 3))
+    (text-count-effect-and
+      (text-count-result-is text-count-byte-alpha-result (u64 3))
+      (text-count-effect-and
+        (text-count-result-is text-count-byte-missing-result (u64 0))
+        (text-count-effect-and
+          (text-count-result-is text-count-byte-empty-result (u64 0))
+          (text-count-result-is text-count-byte-lf-wrapper-result (u64 3)))))))
+
+(claim text-count-text-test (Eff HostIO HostIO Bool))
+
+(def
+  text-count-text-test
+  (text-count-effect-and
+    (text-count-result-is text-count-text-byte-result (u64 3))
+    (text-count-effect-and
+      (text-count-result-is text-count-text-missing-result (u64 0))
+      (text-count-effect-and
+        (text-count-result-is text-count-text-empty-result (u64 0))
+        (text-count-result-is text-count-text-lf-result (u64 3))))))
+
+(claim text-count-test (Eff HostIO HostIO Bool))
+
+(def text-count-test (text-count-effect-and text-count-byte-test text-count-text-test))

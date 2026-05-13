@@ -88,6 +88,7 @@ main = runChecks
       , (PackageTest, "text-suffix-test")
       , (PackageTest, "text-scan-test")
       , (PackageTest, "text-line-test")
+      , (PackageTest, "text-count-test")
       ]
   , expectCheckFiles "stdlib hosted seed bundle" stdlibHostedSources
   , expectNormalizedFiles "stdlib option sample normalization" stdlibHostedSources "stdlib-option-sample" "(u64 42)"
@@ -170,6 +171,14 @@ main = runChecks
       , expectCodegenFiles "text line LF compare codegen" textLineSources "text-line-test" "== ((uint8_t)10u)"
       , expectCodegenFiles "text line split-after codegen" textLineSources "text-line-test" "+ 1ULL) * 1ULL)"
       , expectCodegenFiles "text line LF exclusion base check codegen" textLineSources "text-line-test" "(4ULL * 1ULL)"
+      ]
+  , expectAll
+      [ expectCheckFiles "text count example bundle" textCountSources
+      , expectCodegenFiles "text count loop codegen" textCountSources "text-count-test" "for (uint64_t index_"
+      , expectCodegenFiles "text count load codegen" textCountSources "text-count-test" "(*((uint8_t*)"
+      , expectCodegenFiles "text count LF compare codegen" textCountSources "text-count-test" "== ((uint8_t)10u)"
+      , expectCodegenFiles "text count non-LF compare codegen" textCountSources "text-count-test" "== ((uint8_t)65u)"
+      , expectCodegenFiles "text count static multi-hit codegen" textCountSources "text-count-test" "silt_static_text_count_many_bytes"
       ]
   , expectCheckFiles "ASCII predicate example bundle" asciiPredicateSources
   , fmap and $
@@ -3035,6 +3044,16 @@ textLineSources =
   , "stdlib/text.silt"
   , "stdlib/hosted.silt"
   , "examples/text-lines.silt"
+  ]
+
+textCountSources :: [FilePath]
+textCountSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/text-count.silt"
   ]
 
 asciiPredicateSources :: [FilePath]
