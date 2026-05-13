@@ -178,3 +178,22 @@
 (def
   text-split-first-lf
   (fn ((cap 0 Type) (text TextView)) (text-split-first-byte cap text (u8 10))))
+
+(claim
+  text-count-byte
+  (Pi ((cap 0 Type) (text TextView) (needle U8)) (Eff cap cap U64)))
+
+(def
+  text-count-byte
+  (fn
+    ((cap 0 Type) (text TextView) (needle U8))
+    (byte-slice-count-byte
+      cap
+      (byte-slice-from (text-base text) (text-len text))
+      needle)))
+
+(claim text-count-lf (Pi ((cap 0 Type) (text TextView)) (Eff cap cap U64)))
+
+(def
+  text-count-lf
+  (fn ((cap 0 Type) (text TextView)) (text-count-byte cap text (u8 10))))

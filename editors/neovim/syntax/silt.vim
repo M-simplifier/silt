@@ -33,7 +33,8 @@ syntax keyword siltForm
       \ byte-find-result byte-find-result-found byte-find-result-index
       \ byte-split-first byte-split-first-after byte-split-first-before
       \ byte-split-first-found
-      \ byte-slice-contains-byte byte-slice-ends-with byte-slice-eq
+      \ byte-slice-contains-byte byte-slice-count-byte byte-slice-count-lf
+      \ byte-slice-ends-with byte-slice-eq
       \ byte-slice-find-byte byte-slice-is-empty byte-slice-len
       \ byte-slice-parse-ascii-u64 byte-slice-starts-with byte-slice-take
       \ byte-slice-split-first-byte byte-slice-split-first-lf
@@ -54,7 +55,8 @@ syntax keyword siltForm
       \ ptr-add ptr-field ptr-from-addr ptr-step ptr-to-addr result-and-then
       \ result-error-or result-is-ok result-map result-map-err result-unwrap-or size-of
       \ store store-field store-fields the u8 u8-eq u8-to-u64 u64
-      \ text-base text-byte-at text-contains-byte text-drop text-find-byte
+      \ text-base text-byte-at text-contains-byte text-count-byte text-count-lf
+      \ text-drop text-find-byte
       \ text-from-bytes text-is-empty
       \ text-ends-with text-eq text-len text-parse-ascii-u64 text-starts-with text-take
       \ text-split-first text-split-first-after text-split-first-before

@@ -230,6 +230,51 @@
   (fn ((cap 0 Type) (bytes ByteSlice)) (byte-slice-split-first-byte cap bytes (u8 10))))
 
 (claim
+  byte-slice-count-byte
+  (Pi ((cap 0 Type) (bytes ByteSlice) (needle U8)) (Eff cap cap U64)))
+
+(def
+  byte-slice-count-byte
+  (fn
+    ((cap 0 Type) (bytes ByteSlice) (needle U8))
+    (nat-elim
+      (Eff cap cap U64)
+      (pure cap U64 (u64 0))
+      (fn
+        ((index Nat) (rec (Eff cap cap U64)))
+        (bind
+          cap
+          cap
+          cap
+          U64
+          U64
+          rec
+          (fn
+            ((count 1 U64))
+            (bind
+              cap
+              cap
+              cap
+              U8
+              U64
+              (load cap U8 (byte-slice-at bytes (nat-to-u64 index)))
+              (fn
+                ((byte 1 U8))
+                (let
+                  ((increment
+                     (the
+                       U64
+                       (match (u8-eq byte needle) ((False) (u64 0)) ((True) (u64 1))))))
+                  (pure cap U64 (u64-add count increment))))))))
+      (u64-to-nat (byte-slice-len bytes)))))
+
+(claim byte-slice-count-lf (Pi ((cap 0 Type) (bytes ByteSlice)) (Eff cap cap U64)))
+
+(def
+  byte-slice-count-lf
+  (fn ((cap 0 Type) (bytes ByteSlice)) (byte-slice-count-byte cap bytes (u8 10))))
+
+(claim
   byte-slice-eq
   (Pi ((cap 0 Type) (left ByteSlice) (right ByteSlice)) (Eff cap cap Bool)))
 

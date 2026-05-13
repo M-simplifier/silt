@@ -99,9 +99,12 @@ scripts/verify-hosted-file-read.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh
+scripts/verify-text-scan.sh
 scripts/verify-text-lines.sh
+scripts/verify-text-count.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
+scripts/verify-ascii-trim.sh
 scripts/verify-ascii-decimal-u64.sh
 scripts/verify-ascii-decimal-u64-format.sh
 scripts/verify-text-view-helpers.sh
@@ -132,9 +135,12 @@ cabal run silt -- doc
 cabal run silt -- test text-eq-test
 cabal run silt -- test text-prefix-test
 cabal run silt -- test text-suffix-test
+cabal run silt -- test text-scan-test
 cabal run silt -- test text-line-test
+cabal run silt -- test text-count-test
 cabal run silt -- test ascii-test
 cabal run silt -- test ascii-slice-test
+cabal run silt -- test ascii-trim-test
 cabal run silt -- test ascii-decimal-u64-test
 cabal run silt -- test ascii-decimal-u64-format-test
 ```
