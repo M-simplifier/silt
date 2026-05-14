@@ -1,4 +1,5 @@
 module Silt.CLI (main) where
+import Control.Exception (evaluate)
 import Control.Monad (when)
 import Data.Char (isSpace)
 import Data.List (isInfixOf)
@@ -58,13 +59,19 @@ main = do
       case parseSExprs input of
         Left err -> die err
         Right sexprs -> mapM_ print sexprs
+    ["fmt", "--write"] ->
+      die "silt fmt --write requires at least one file"
+    ("fmt" : "--write" : paths) | not (null paths) && "--" `notElem` paths -> do
+      mapM_ formatWrite paths
+    ["fmt", "--check"] ->
+      die "silt fmt --check requires at least one file"
+    ("fmt" : "--check" : paths) | not (null paths) && "--" `notElem` paths -> do
+      results <- mapM formatCheck paths
+      if and results then pure () else exitFailure
     ["fmt", path] -> do
       input <- readFile path
       output <- either die pure (formatSExprSource input)
       putStr output
-    ("fmt" : "--check" : paths) | not (null paths) -> do
-      results <- mapM formatCheck paths
-      if and results then pure () else exitFailure
     ("lint" : paths) | not (null paths) && "--" `notElem` paths -> do
       diagnostics <- lintProgramPaths paths
       case diagnostics of
@@ -152,6 +159,7 @@ usage =
     , "  silt doc"
     , "  silt sexpr FILE"
     , "  silt fmt FILE"
+    , "  silt fmt --write FILE..."
     , "  silt fmt --check FILE..."
     , "  silt lint FILE..."
     , "  silt diagnostics --json FILE..."
@@ -189,6 +197,13 @@ formatCheck path = do
       | otherwise -> do
           hPutStrLn stderr (path ++ ": needs formatting")
           pure False
+
+formatWrite :: FilePath -> IO ()
+formatWrite path = do
+  input <- readFile path
+  output <- either die pure (formatSExprSource input)
+  _ <- evaluate (length output)
+  writeFile path output
 
 splitSourcesAndNames :: [String] -> Maybe ([FilePath], [Name])
 splitSourcesAndNames args =

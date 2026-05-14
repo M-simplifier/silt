@@ -40,9 +40,10 @@ cabal run silt -- test ascii-decimal-u64-format-test
 ```bash
 cabal run silt -- fmt examples/data.silt
 cabal run silt -- fmt --check test/fixtures/format/clean.silt
+cabal run silt -- fmt --write test/fixtures/format/clean.silt
 ```
 
-`fmt` は、現在のS式source subsetをcanonicalな形に整形します。`--check` は入力がすでにその形かどうかだけを確認します。
+`fmt` は、現在のS式source subsetをcanonicalな形に整形します。`--check` は入力がすでにその形かどうかだけを確認し、`--write` は対象fileをin-placeでcanonicalな形に書き戻します。
 
 ## linter / editor files
 

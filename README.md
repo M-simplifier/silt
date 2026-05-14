@@ -35,7 +35,8 @@ production kernel.
   projection, loads, stores, and layout literals.
 - `static-bytes`, `static-cell`, and `static-value` for checked rodata, bss, and
   section-backed objects.
-- A canonical formatter/checker for the current S-expression source subset.
+- A canonical formatter for the current S-expression source subset, with stdout,
+  check, and in-place write modes.
 - A language-aware lint spine that combines canonical formatting checks with
   parser/checker diagnostics.
 - A machine-readable diagnostics seed, `silt diagnostics --json FILE...`, that
