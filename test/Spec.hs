@@ -77,6 +77,7 @@ main = runChecks
       , (PackageBin, "hosted-cat")
       , (PackageBin, "hosted-size-report")
       , (PackageBin, "hosted-config-report")
+      , (PackageBin, "hosted-lf-count")
       , (PackageTest, "ascii-test")
       , (PackageTest, "ascii-slice-test")
       , (PackageTest, "ascii-trim-test")
@@ -267,6 +268,16 @@ main = runChecks
   , expectCodegenFiles "hosted config report file write codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_file_write_bytes"
   , expectCodegenFiles "hosted config report stdout codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_put_byte(byte_"
   , expectCodegenFiles "hosted config report stderr codegen" hostedConfigReportSources "hosted-config-report-main" "silt_host_put_error_byte(byte_"
+  , expectCheckFiles "hosted LF count pressure app bundle" hostedLfCountSources
+  , expectCodegenFiles "hosted LF count arg count codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted LF count file read codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted LF count file-read status codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_file_read_ok"
+  , expectCodegenFiles "hosted LF count read result layout codegen" hostedLfCountSources "hosted-lf-count-main" "silt_layout_HostReadFileResult"
+  , expectCodegenFiles "hosted LF count loop codegen" hostedLfCountSources "hosted-lf-count-main" "for (uint64_t index_"
+  , expectCodegenFiles "hosted LF count LF compare codegen" hostedLfCountSources "hosted-lf-count-main" "== ((uint8_t)10u)"
+  , expectCodegenFiles "hosted LF count file write codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_file_write_bytes"
+  , expectCodegenFiles "hosted LF count stdout codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted LF count stderr codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_put_error_byte(byte_"
   , expectCheck "generic data" optionSource
   , expectCheck "recursive generic data" recursiveDataSource
   , expectFailure "missing claim" "(def nope Type)"
@@ -3149,6 +3160,19 @@ hostedConfigReportSources =
   , "stdlib/hosted.silt"
   , "stdlib/hosted-decimal.silt"
   , "examples/hosted-config-report.silt"
+  ]
+
+hostedLfCountSources :: [FilePath]
+hostedLfCountSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/ascii.silt"
+  , "stdlib/ascii-decimal.silt"
+  , "stdlib/hosted.silt"
+  , "stdlib/hosted-decimal.silt"
+  , "examples/hosted-lf-count.silt"
   ]
 
 textViewSources :: [FilePath]

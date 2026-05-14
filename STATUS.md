@@ -57,9 +57,10 @@ Silt currently demonstrates:
   byte/text writers
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
   `hosted-write-file`, `hosted-cat`, `hosted-size-report`, and
-  `hosted-config-report` package examples that compile, run, print, read,
-  write, or report through the hosted package harness, and exercise process
-  status where relevant, plus `text-eq-test`, `text-prefix-test`,
+  `hosted-config-report` / `hosted-lf-count` package examples that compile,
+  run, print, read, write, report, or count literal LF bytes through the hosted
+  package harness, and exercise process status where relevant, plus
+  `text-eq-test`, `text-prefix-test`,
   `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
   `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
   `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
@@ -88,6 +89,10 @@ Silt currently demonstrates:
   ASCII whitespace trimming, static key comparison, ASCII decimal parse/format,
   file write, stdout, stderr diagnostics, and process status in one checked
   runnable example
+- a hosted LF-count pressure-test package target, `hosted-lf-count`, that
+  combines process args, file read, literal-LF byte counting over an explicit
+  `TextView`, ASCII decimal formatting, file write, stdout, stderr diagnostics,
+  and process status in one checked runnable example
 - a small hosted helper layer for diagnostic/status sequencing and
   caller-buffer ASCII decimal writes to stdout or explicit file paths, used by
   the hosted pressure-test examples without claiming a general hosted app
@@ -130,6 +135,7 @@ scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
 scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
+scripts/verify-hosted-lf-count.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 scripts/verify-public.sh
@@ -166,9 +172,10 @@ Silt does not currently claim:
   validation, CRLF normalization, split-all line APIs, generic strings, arrays,
   dynamic slices, allocator-backed byte/text buffers, substring/search/general
   scanning APIs beyond the current single-byte find/contains/split/count
-  helpers, LF-oriented first-line split helpers, narrow all-ASCII class checks,
-  ASCII decimal `U64` parser, ASCII decimal `U64` formatter, and narrow ASCII
-  whitespace trimming, collation, or text-normalization APIs
+  helpers, LF-oriented first-line split helpers, literal LF-byte counting,
+  narrow all-ASCII class checks, ASCII decimal `U64` parser, ASCII decimal
+  `U64` formatter, and narrow ASCII whitespace trimming, collation, line
+  semantics beyond literal LF bytes, or text-normalization APIs
 - decimal signs, radix prefixes, separators, whitespace trimming beyond the
   narrow ASCII view helper, detailed parse-error categories, signed formatting,
   radix formatting, padding, alignment, locale formatting, generic decimal

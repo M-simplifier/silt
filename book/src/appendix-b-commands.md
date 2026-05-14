@@ -115,6 +115,7 @@ scripts/verify-limine-bridge.sh
 scripts/verify-stdlib-core-combinators.sh
 scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
+scripts/verify-hosted-lf-count.sh
 ```
 
 ## package CLI
@@ -129,6 +130,8 @@ cabal run silt -- run hosted-size-report -- /tmp/silt-hosted-file.txt 10 /tmp/si
 cabal run silt -- build hosted-config-report
 printf 'expected: 10\n' >/tmp/silt-size-config.txt
 cabal run silt -- run hosted-config-report -- /tmp/silt-hosted-file.txt /tmp/silt-size-config.txt /tmp/silt-config-report.txt
+cabal run silt -- build hosted-lf-count
+cabal run silt -- run hosted-lf-count -- /tmp/silt-hosted-file.txt /tmp/silt-lf-count.txt
 cabal run silt -- test
 cabal run silt -- test stdlib-test
 cabal run silt -- doc

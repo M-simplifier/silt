@@ -87,6 +87,19 @@
       stdlib/hosted-decimal.silt
       examples/hosted-config-report.silt)
     (entry hosted-config-report-main))
+  (bin
+    hosted-lf-count
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/ascii.silt
+      stdlib/ascii-decimal.silt
+      stdlib/hosted.silt
+      stdlib/hosted-decimal.silt
+      examples/hosted-lf-count.silt)
+    (entry hosted-lf-count-main))
   (test
     ascii-test
     (sources stdlib/core.silt stdlib/ascii.silt examples/ascii-predicates.silt)

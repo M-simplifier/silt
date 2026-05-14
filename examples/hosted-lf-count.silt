@@ -1,0 +1,236 @@
+; Hosted LF-count pressure example.
+
+; Usage: hosted-lf-count INPUT OUTPUT
+
+; The program reads INPUT, counts literal LF bytes, writes the count to OUTPUT
+
+; and stdout, returns 0 on success, and reports narrow failure paths on stderr.
+
+(static-cell hosted-lf-count-file-buffer AsciiDecimalU64Buffer)
+
+(static-cell hosted-lf-count-stdout-buffer AsciiDecimalU64Buffer)
+
+(static-bytes
+  hosted-lf-count-usage-bytes
+  ((u8 117)
+   (u8 115)
+   (u8 97)
+   (u8 103)
+   (u8 101)
+   (u8 58)
+   (u8 32)
+   (u8 104)
+   (u8 111)
+   (u8 115)
+   (u8 116)
+   (u8 101)
+   (u8 100)
+   (u8 45)
+   (u8 108)
+   (u8 102)
+   (u8 45)
+   (u8 99)
+   (u8 111)
+   (u8 117)
+   (u8 110)
+   (u8 116)
+   (u8 32)
+   (u8 73)
+   (u8 78)
+   (u8 80)
+   (u8 85)
+   (u8 84)
+   (u8 32)
+   (u8 79)
+   (u8 85)
+   (u8 84)
+   (u8 80)
+   (u8 85)
+   (u8 84)
+   (u8 10)))
+
+(static-bytes
+  hosted-lf-count-read-failed-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 114)
+   (u8 101)
+   (u8 97)
+   (u8 100)
+   (u8 32)
+   (u8 102)
+   (u8 97)
+   (u8 105)
+   (u8 108)
+   (u8 101)
+   (u8 100)
+   (u8 10)))
+
+(static-bytes
+  hosted-lf-count-write-failed-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 119)
+   (u8 114)
+   (u8 105)
+   (u8 116)
+   (u8 101)
+   (u8 32)
+   (u8 102)
+   (u8 97)
+   (u8 105)
+   (u8 108)
+   (u8 101)
+   (u8 100)
+   (u8 10)))
+
+(claim hosted-lf-count-usage-text TextView)
+
+(def
+  hosted-lf-count-usage-text
+  (text-view-from hosted-lf-count-usage-bytes hosted-lf-count-usage-bytes-len))
+
+(claim hosted-lf-count-read-failed-text TextView)
+
+(def
+  hosted-lf-count-read-failed-text
+  (text-view-from
+    hosted-lf-count-read-failed-bytes
+    hosted-lf-count-read-failed-bytes-len))
+
+(claim hosted-lf-count-write-failed-text TextView)
+
+(def
+  hosted-lf-count-write-failed-text
+  (text-view-from
+    hosted-lf-count-write-failed-bytes
+    hosted-lf-count-write-failed-bytes-len))
+
+(claim hosted-lf-count-ok U64)
+
+(def hosted-lf-count-ok (u64 0))
+
+(claim hosted-lf-count-missing-args U64)
+
+(def hosted-lf-count-missing-args (u64 2))
+
+(claim hosted-lf-count-write-failed U64)
+
+(def hosted-lf-count-write-failed (u64 3))
+
+(claim hosted-lf-count-read-failed U64)
+
+(def hosted-lf-count-read-failed (u64 6))
+
+(claim
+  hosted-lf-count-diagnostic
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def hosted-lf-count-diagnostic host-status-with-error-text)
+
+(claim
+  hosted-lf-count-write
+  (Pi ((output-path TextView) (lf-count U64)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-lf-count-write
+  (fn
+    ((output-path TextView) (lf-count U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      U64
+      (host-write-file-u64-decimal hosted-lf-count-file-buffer output-path lf-count)
+      (fn
+        ((written 1 Bool))
+        (match
+          written
+          ((False)
+           (hosted-lf-count-diagnostic
+             hosted-lf-count-write-failed-text
+             hosted-lf-count-write-failed))
+          ((True)
+           (host-status-after
+             (host-write-u64-decimal hosted-lf-count-stdout-buffer lf-count)
+             hosted-lf-count-ok)))))))
+
+(claim hosted-lf-count-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-lf-count-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (match
+        (u64-eq count (u64 3))
+        ((False)
+         (hosted-lf-count-diagnostic
+           hosted-lf-count-usage-text
+           hosted-lf-count-missing-args))
+        ((True)
+         (bind
+           HostIO
+           HostIO
+           HostIO
+           TextView
+           U64
+           (host-arg-text (u64 1))
+           (fn
+             ((input-path 1 TextView))
+             (bind
+               HostIO
+               HostIO
+               HostIO
+               TextView
+               U64
+               (host-arg-text (u64 2))
+               (fn
+                 ((output-path 1 TextView))
+                 (bind
+                   HostIO
+                   HostIO
+                   HostIO
+                   HostReadFileResult
+                   U64
+                   (host-read-file-result input-path)
+                   (fn
+                     ((read-result 1 HostReadFileResult))
+                     (let-layout
+                       HostReadFileResult
+                       ((ok read-ok) (text body))
+                       read-result
+                       (match
+                         read-ok
+                         ((False)
+                          (hosted-lf-count-diagnostic
+                            hosted-lf-count-read-failed-text
+                            hosted-lf-count-read-failed))
+                         ((True)
+                          (bind
+                            HostIO
+                            HostIO
+                            HostIO
+                            U64
+                            U64
+                            (text-count-lf HostIO body)
+                            (fn
+                              ((lf-count 1 U64))
+                              (hosted-lf-count-write output-path lf-count)))))))))))))))))

@@ -65,10 +65,10 @@ production kernel.
   wrapper, and explicit stderr byte/text diagnostics.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, and
-  `hosted-size-report` / `hosted-config-report`, that build and run through
-  the package spine, plus `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
-  `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
+  `hosted-size-report` / `hosted-config-report` / `hosted-lf-count`, that
+  build and run through the package spine, plus `text-eq-test`,
+  `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `text-line-test`,
+  `text-count-test`, `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
   `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
   targets.
 - Freestanding C emission for the supported first-order subset.
@@ -85,6 +85,9 @@ production kernel.
   input and config files, splits a tiny `expected: N` ASCII config shape, trims
   fields, checks the key, parses the expected length, and reports the actual
   input length through file/stdout/status paths.
+- A hosted LF-count pressure-test bin, `hosted-lf-count`, that reads an input
+  file, counts literal LF bytes through explicit text views, and writes the
+  decimal count to an output file plus stdout with narrow diagnostics/statuses.
 - A small hosted helper layer for reused diagnostic/status sequencing and
   caller-buffer decimal writes to stdout or explicit file paths.
 
@@ -122,6 +125,7 @@ scripts/verify-x86_64-elf-backend.sh
 scripts/verify-limine-bridge.sh
 scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
+scripts/verify-hosted-lf-count.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 ```
