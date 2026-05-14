@@ -27,9 +27,10 @@ Silt currently demonstrates:
   package harness
 - a conservative standard-library seed with checker/normalizer-backed
   `Option`, `Result`, and `List` helpers, including map/and-then-style
-  combinators for `Option` and `Result`; explicit `ByteSlice` and `TextView`
-  views over `U8` / `Ptr U8`; bounded pure view helpers for empty checks,
-  `take`, and `drop`; byte-wise equality through `byte-slice-eq` and
+  combinators for `Option` and `Result`; pure `Nat` addition and multiplication
+  backed by `nat-elim`; explicit `ByteSlice` and `TextView` views over `U8` /
+  `Ptr U8`; bounded pure view helpers for empty checks, `take`, and `drop`;
+  byte-wise equality through `byte-slice-eq` and
   `text-eq`; prefix checks through `byte-slice-starts-with` and
   `text-starts-with`; suffix checks through `byte-slice-ends-with` and
   `text-ends-with`; first-byte find/contains/split helpers over explicit

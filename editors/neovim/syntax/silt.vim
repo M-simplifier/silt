@@ -50,7 +50,7 @@ syntax keyword siltForm
       \ host-status-after host-status-with-error-text
       \ host-write-file-u64-decimal host-write-u64-decimal
       \ host-write-text let-layout let-load-layout list-head-or list-is-empty
-      \ list-tail-or load match nat-case nat-elim pure
+      \ list-tail-or load match nat-add nat-case nat-elim nat-mul pure
       \ option-and-then option-is-some option-map option-unwrap-or
       \ ptr-add ptr-field ptr-from-addr ptr-step ptr-to-addr result-and-then
       \ result-error-or result-is-ok result-map result-map-err result-unwrap-or size-of
