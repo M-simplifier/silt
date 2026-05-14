@@ -1,5 +1,13 @@
 ; Nat is the induction surface; U64 is the machine-word surface.
 
+(claim nat-is-zero (Pi ((value Nat)) Bool))
+
+(def nat-is-zero (fn ((value Nat)) (match value ((Z) True) ((S predecessor) False))))
+
+(claim nat-pred (Pi ((value Nat)) Nat))
+
+(def nat-pred (fn ((value Nat)) (match value ((Z) Z) ((S predecessor) predecessor))))
+
 (claim nat-add (Pi ((left Nat) (right Nat)) Nat))
 
 (def
@@ -15,6 +23,39 @@
   (fn
     ((left Nat) (right Nat))
     (nat-elim Nat Z (fn ((index Nat) (rec Nat)) (nat-add right rec)) left)))
+
+(claim nat-sub-saturating (Pi ((left Nat) (right Nat)) Nat))
+
+(def
+  nat-sub-saturating
+  (fn
+    ((left Nat) (right Nat))
+    (nat-elim Nat left (fn ((index Nat) (rec Nat)) (nat-pred rec)) right)))
+
+(claim nat-lte (Pi ((left Nat) (right Nat)) Bool))
+
+(def
+  nat-lte
+  (fn ((left Nat) (right Nat)) (nat-is-zero (nat-sub-saturating left right))))
+
+(claim nat-eq (Pi ((left Nat) (right Nat)) Bool))
+
+(def
+  nat-eq
+  (fn
+    ((left Nat) (right Nat))
+    (match (nat-lte left right) ((False) False) ((True) (nat-lte right left)))))
+
+(claim nat-lt (Pi ((left Nat) (right Nat)) Bool))
+
+(def
+  nat-lt
+  (fn
+    ((left Nat) (right Nat))
+    (match
+      (nat-lte left right)
+      ((False) False)
+      ((True) (match (nat-eq left right) ((False) True) ((True) False))))))
 
 (claim nat-to-word (Pi ((value Nat)) U64))
 
