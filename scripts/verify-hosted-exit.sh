@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/lib/verify-hosted-app.sh"
 
-if [ "${SILT_SKIP_CABAL_TEST:-0}" != "1" ]; then
-  cabal test all
-fi
-cabal build exe:silt
-silt_bin="$(cabal list-bin exe:silt)"
+hosted_case_app=hosted-exit
+hosted_verify_setup
 
 hosted_exit_sources=(
   stdlib/core.silt
@@ -22,29 +19,21 @@ hosted_exit_sources=(
 "$silt_bin" check "${hosted_exit_sources[@]}" >/dev/null
 
 hosted_exit_c="$("$silt_bin" emit-c-bundle "${hosted_exit_sources[@]}" -- hosted-exit-main)"
-if ! grep -q 'silt_host_arg_count' <<<"$hosted_exit_c"; then
-  echo "hosted-exit did not call the hosted argument count boundary" >&2
-  exit 1
-fi
+require_c_fragment "$hosted_exit_c" 'silt_host_arg_count' \
+  "hosted-exit did not call the hosted argument count boundary"
 
 "$silt_bin" build hosted-exit >/dev/null
-ok_output="$("$silt_bin" run hosted-exit -- ok)"
-if [ "$ok_output" != "" ]; then
-  echo "unexpected hosted-exit success output: $ok_output" >&2
-  exit 1
-fi
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
 
-set +e
-missing_output="$("$silt_bin" run hosted-exit)"
-missing_status=$?
-set -e
-if [ "$missing_status" -ne 2 ]; then
-  echo "expected hosted-exit without argv[1] to exit 2, got $missing_status" >&2
-  exit 1
-fi
-if [ "$missing_output" != "" ]; then
-  echo "unexpected hosted-exit failure output: $missing_output" >&2
-  exit 1
-fi
+run_case ok "$silt_bin" run hosted-exit -- ok
+expect_status success 0
+expect_stdout_exact success ""
+expect_stderr_exact success ""
+
+run_case missing "$silt_bin" run hosted-exit
+expect_status "without argv[1]" 2
+expect_stdout_exact "without argv[1]" ""
+expect_stderr_exact "without argv[1]" ""
 
 git diff --check

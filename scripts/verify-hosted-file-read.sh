@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/lib/verify-hosted-app.sh"
 
-if [ "${SILT_SKIP_CABAL_TEST:-0}" != "1" ]; then
-  cabal test all
-fi
-cabal build exe:silt
-silt_bin="$(cabal list-bin exe:silt)"
+hosted_case_app=hosted-cat
+hosted_verify_setup
 
 hosted_file_sources=(
   stdlib/core.silt
@@ -22,18 +19,12 @@ hosted_file_sources=(
 "$silt_bin" check "${hosted_file_sources[@]}" >/dev/null
 
 hosted_file_c="$("$silt_bin" emit-c-bundle "${hosted_file_sources[@]}" -- hosted-cat-main)"
-if ! grep -q 'silt_host_file_read_base' <<<"$hosted_file_c"; then
-  echo "hosted-cat did not call the hosted file-read base boundary" >&2
-  exit 1
-fi
-if ! grep -q 'silt_host_file_read_len' <<<"$hosted_file_c"; then
-  echo "hosted-cat did not call the hosted file-read length boundary" >&2
-  exit 1
-fi
-if ! grep -q 'silt_host_put_byte(byte_' <<<"$hosted_file_c"; then
-  echo "hosted-cat did not write file text through hosted byte output" >&2
-  exit 1
-fi
+require_c_fragment "$hosted_file_c" 'silt_host_file_read_base' \
+  "hosted-cat did not call the hosted file-read base boundary"
+require_c_fragment "$hosted_file_c" 'silt_host_file_read_len' \
+  "hosted-cat did not call the hosted file-read length boundary"
+require_c_fragment "$hosted_file_c" 'silt_host_put_byte(byte_' \
+  "hosted-cat did not write file text through hosted byte output"
 
 "$silt_bin" build hosted-cat >/dev/null
 tmp_dir="$(mktemp -d)"
@@ -41,16 +32,14 @@ trap 'rm -rf "$tmp_dir"' EXIT
 in_file="$tmp_dir/silt-hosted-file.txt"
 printf 'SILT_READ' > "$in_file"
 
-cat_output="$("$silt_bin" run hosted-cat -- "$in_file")"
-if [ "$cat_output" != "SILT_READ" ]; then
-  echo "unexpected hosted-cat output: $cat_output" >&2
-  exit 1
-fi
+run_case read "$silt_bin" run hosted-cat -- "$in_file"
+expect_status read 0
+expect_stdout_exact read "SILT_READ"
+expect_stderr_exact read ""
 
-missing_output="$("$silt_bin" run hosted-cat -- "$tmp_dir/missing.txt")"
-if [ "$missing_output" != "" ]; then
-  echo "unexpected hosted-cat output for missing file: $missing_output" >&2
-  exit 1
-fi
+run_case missing "$silt_bin" run hosted-cat -- "$tmp_dir/missing.txt"
+expect_status missing 0
+expect_stdout_exact missing ""
+expect_stderr_exact missing ""
 
 git diff --check
