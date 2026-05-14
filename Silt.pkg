@@ -100,6 +100,16 @@
       stdlib/hosted-decimal.silt
       examples/hosted-lf-count.silt)
     (entry hosted-lf-count-main))
+  (bin
+    hosted-byte-search
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-byte-search.silt)
+    (entry hosted-byte-search-main))
   (test
     ascii-test
     (sources stdlib/core.silt stdlib/ascii.silt examples/ascii-predicates.silt)

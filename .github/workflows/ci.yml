@@ -22,6 +22,7 @@ on:
       - "scripts/verify-hosted-config-report.sh"
       - "scripts/verify-hosted-size-report.sh"
       - "scripts/verify-hosted-lf-count.sh"
+      - "scripts/verify-hosted-byte-search.sh"
       - "scripts/lib/**"
       - "scripts/verify-text-eq.sh"
       - "scripts/verify-text-prefix.sh"
@@ -110,6 +111,9 @@ jobs:
 
       - name: Verify hosted LF count
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-lf-count.sh
+
+      - name: Verify hosted byte search
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-byte-search.sh
 
       - name: Verify text equality
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-eq.sh

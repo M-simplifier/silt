@@ -34,7 +34,8 @@ formatter/parser/checker facts, a single-local-package hosted
 new/build/run/test/doc CLI spine, hosted stdlib seed with byte/text, ASCII
 predicate, single-byte count, ASCII decimal parse/format, text output,
 process-argument reads, environment lookup, first-order file writes and reads
-with read-status observation, and lightweight Neovim filetype/syntax files.
+with read-status observation, hosted size/config/LF-count/one-byte-search
+pressure examples, and lightweight Neovim filetype/syntax files.
 
 Silt is not a production compiler, package ecosystem, mature editor/LSP
 platform, self-hosted compiler, finished operating system, general allocator,
@@ -115,6 +116,7 @@ scripts/verify-ascii-decimal-u64-format.sh
 scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
 scripts/verify-hosted-lf-count.sh
+scripts/verify-hosted-byte-search.sh
 ```
 
 For backend, ABI, target, or boot bridge changes, add the relevant verifier:
