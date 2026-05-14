@@ -16,7 +16,8 @@ Silt currently demonstrates:
 - low-level runtime representations through `U8`, `U64`, `Addr`, `Ptr A`,
   `layout`, `static-bytes`, `static-cell`, and `static-value`
 - freestanding C emission for supported first-order definitions
-- a canonical formatter/checker for the current S-expression source subset
+- a canonical formatter for the current S-expression source subset, with stdout
+  formatting, non-mutating checks, and in-place writes
 - a lint spine that combines canonical formatting checks with source-bundle
   parsing and checker diagnostics
 - lightweight Neovim filetype and syntax files for the current public surface
