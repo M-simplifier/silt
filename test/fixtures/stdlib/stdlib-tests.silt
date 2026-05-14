@@ -211,6 +211,86 @@
 
 (def stdlib-nat-mul-zero-left-sample (nat-to-word (nat-mul Z (S (S (S Z))))))
 
+(claim stdlib-nat-pred-zero-sample U64)
+
+(def stdlib-nat-pred-zero-sample (nat-to-word (nat-pred Z)))
+
+(claim stdlib-nat-pred-succ-sample U64)
+
+(def stdlib-nat-pred-succ-sample (nat-to-word (nat-pred (S (S (S Z))))))
+
+(claim stdlib-nat-sub-sample U64)
+
+(def
+  stdlib-nat-sub-sample
+  (nat-to-word (nat-sub-saturating (S (S (S (S (S Z))))) (S (S Z)))))
+
+(claim stdlib-nat-sub-underflow-sample U64)
+
+(def
+  stdlib-nat-sub-underflow-sample
+  (nat-to-word (nat-sub-saturating (S (S Z)) (S (S (S (S (S Z))))))))
+
+(claim stdlib-nat-lte-true-sample Bool)
+
+(def stdlib-nat-lte-true-sample (nat-lte (S (S Z)) (S (S (S Z)))))
+
+(claim stdlib-nat-lte-equal-sample Bool)
+
+(def stdlib-nat-lte-equal-sample (nat-lte (S (S Z)) (S (S Z))))
+
+(claim stdlib-nat-lte-false-sample Bool)
+
+(def stdlib-nat-lte-false-sample (nat-lte (S (S (S Z))) (S (S Z))))
+
+(claim stdlib-nat-eq-true-sample Bool)
+
+(def stdlib-nat-eq-true-sample (nat-eq (S (S Z)) (S (S Z))))
+
+(claim stdlib-nat-eq-false-sample Bool)
+
+(def stdlib-nat-eq-false-sample (nat-eq (S (S Z)) (S (S (S Z)))))
+
+(claim stdlib-nat-lt-true-sample Bool)
+
+(def stdlib-nat-lt-true-sample (nat-lt (S (S Z)) (S (S (S Z)))))
+
+(claim stdlib-nat-lt-equal-sample Bool)
+
+(def stdlib-nat-lt-equal-sample (nat-lt (S (S Z)) (S (S Z))))
+
+(claim stdlib-nat-lt-false-sample Bool)
+
+(def stdlib-nat-lt-false-sample (nat-lt (S (S (S Z))) (S (S Z))))
+
+(claim stdlib-nat-order-test Bool)
+
+(def
+  stdlib-nat-order-test
+  (bool-and
+    (u64-eq stdlib-nat-pred-zero-sample (u64 0))
+    (bool-and
+      (u64-eq stdlib-nat-pred-succ-sample (u64 2))
+      (bool-and
+        (u64-eq stdlib-nat-sub-sample (u64 3))
+        (bool-and
+          (u64-eq stdlib-nat-sub-underflow-sample (u64 0))
+          (bool-and
+            stdlib-nat-lte-true-sample
+            (bool-and
+              stdlib-nat-lte-equal-sample
+              (bool-and
+                (bool-not stdlib-nat-lte-false-sample)
+                (bool-and
+                  stdlib-nat-eq-true-sample
+                  (bool-and
+                    (bool-not stdlib-nat-eq-false-sample)
+                    (bool-and
+                      stdlib-nat-lt-true-sample
+                      (bool-and
+                        (bool-not stdlib-nat-lt-equal-sample)
+                        (bool-not stdlib-nat-lt-false-sample)))))))))))))
+
 (claim stdlib-combinator-happy-test Bool)
 
 (def
@@ -267,7 +347,9 @@
               (u64-eq stdlib-nat-mul-sample (u64 6))
               (bool-and
                 (u64-eq stdlib-nat-mul-zero-sample (u64 0))
-                (u64-eq stdlib-nat-mul-zero-left-sample (u64 0))))))))))
+                (bool-and
+                  (u64-eq stdlib-nat-mul-zero-left-sample (u64 0))
+                  stdlib-nat-order-test)))))))))
 
 (claim stdlib-test Bool)
 

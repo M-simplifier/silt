@@ -48,7 +48,7 @@ production kernel.
   selected test-target execution, manifest-derived package docs, and exit status
   propagation through the hosted package harness.
 - A conservative standard-library seed: checker/normalizer-backed `Option`,
-  `Result`, and `List` helpers, pure `Nat` addition/multiplication, byte/text
+  `Result`, and `List` helpers, pure `Nat` arithmetic/order helpers, byte/text
   view types over `U8` and `Ptr U8`, bounded pure view helpers for
   empty/take/drop, byte-wise equality through `byte-slice-eq` / `text-eq`,
   prefix checks through `byte-slice-starts-with` / `text-starts-with`, suffix
