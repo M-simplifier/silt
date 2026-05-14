@@ -11,7 +11,7 @@ import Silt.Codegen.C
   )
 import Silt.Elab (CheckedDecl (..), checkProgram, normalizeDefinition, renderCheckedDecl)
 import Silt.Format (formatSExprSource)
-import Silt.Lint (lintProgramPaths, renderLintDiagnostic)
+import Silt.Lint (lintProgramPaths, renderLintDiagnostic, renderLintDiagnosticsJson)
 import Silt.PackageDoc (docPackage)
 import Silt.Parse (parseSExprs)
 import Silt.Source (readProgramBundle)
@@ -72,6 +72,10 @@ main = do
         _ -> do
           mapM_ (hPutStrLn stderr . renderLintDiagnostic) diagnostics
           exitFailure
+    ("diagnostics" : "--json" : paths) | not (null paths) && "--" `notElem` paths -> do
+      diagnostics <- lintProgramPaths paths
+      putStr (renderLintDiagnosticsJson diagnostics)
+      when (not (null diagnostics)) exitFailure
     ("check" : paths) | not (null paths) && "--" `notElem` paths -> do
       program <- loadProgramBundle paths
       checked <- either die pure (checkProgram program)
@@ -150,6 +154,7 @@ usage =
     , "  silt fmt FILE"
     , "  silt fmt --check FILE..."
     , "  silt lint FILE..."
+    , "  silt diagnostics --json FILE..."
     , "  silt parse FILE"
     , "  top-level (include relative-file.silt) is expanded for all commands except sexpr and fmt"
     , "  silt check FILE..."
