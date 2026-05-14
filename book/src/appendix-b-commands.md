@@ -48,10 +48,11 @@ cabal run silt -- fmt --check test/fixtures/format/clean.silt
 
 ```bash
 cabal run silt -- lint test/fixtures/lint/clean.silt
+cabal run silt -- diagnostics --json test/fixtures/lint/clean.silt
 scripts/verify-editor-tools.sh
 ```
 
-`lint` は、canonical formatting、source bundle parsing、checker diagnosticsをまとめて確認します。`editors/neovim/` には、現在のpublic surface向けの軽量なfiletype/syntax fileがあります。これはLSP、semantic highlighting、formatter adapter、package-manager pluginではありません。
+`lint` は、canonical formatting、source bundle parsing、checker diagnosticsをまとめて確認します。`diagnostics --json` は同じ事実を `silt.diagnostics.v0` JSONとして出力します。`editors/neovim/` には、現在のpublic surface向けの軽量なfiletype/syntax fileがあります。これはLSP、semantic highlighting、formatter adapter、package-manager pluginではありません。
 
 ## 型検査
 

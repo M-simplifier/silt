@@ -9,7 +9,7 @@ import Silt.Codegen.C
   )
 import Silt.Elab (checkProgram, normalizeDefinition)
 import Silt.Format (formatSExprSource)
-import Silt.Lint (lintProgramPaths, renderLintDiagnostic)
+import Silt.Lint (LintDiagnostic (..), lintProgramPaths, renderLintDiagnostic, renderLintDiagnosticsJson)
 import Silt.Package
   ( Package (..)
   , PackageTarget (..)
@@ -57,6 +57,14 @@ main = runChecks
   , expectLintSuccess "lint accepts canonical checked source" ["test/fixtures/lint/clean.silt"]
   , expectLintFailure "lint rejects non-canonical source" ["test/fixtures/lint/messy.silt"] "not canonical"
   , expectLintFailure "lint rejects ill-typed source" ["test/fixtures/lint/bad-check.silt"] "type mismatch"
+  , expectDiagnosticsJsonSuccess "diagnostics json accepts canonical checked source" ["test/fixtures/lint/clean.silt"]
+  , expectDiagnosticsJsonFailure "diagnostics json reports formatting" ["test/fixtures/lint/messy.silt"] "\"message\": \"not canonical; run silt fmt\""
+  , expectDiagnosticsJsonFailure "diagnostics json reports parse errors" ["test/fixtures/lint/bad-parse.silt"] "unclosed '('"
+  , expectDiagnosticsJsonFailure "diagnostics json reports checker errors" ["test/fixtures/lint/bad-check.silt"] "type mismatch"
+  , expectDiagnosticsJsonRender "diagnostics json escapes strings"
+      [LintDiagnostic (Just "quoted \"path\".silt") "line\nquote \"slash\\tab\t"]
+      "\\\"path\\\".silt"
+      "line\\nquote \\\"slash\\\\tab\\t"
   , expectPackageFile
       "package manifest parses"
       "test/fixtures/packages/hello/Silt.pkg"
@@ -835,6 +843,43 @@ expectLintFailure label paths expectedFragment = do
       | otherwise -> do
           putStrLn ("FAIL [" ++ label ++ "] expected fragment " ++ expectedFragment ++ ", got:\n" ++ output)
           pure False
+
+expectDiagnosticsJsonSuccess :: String -> [FilePath] -> IO Bool
+expectDiagnosticsJsonSuccess label paths = do
+  diagnostics <- lintProgramPaths paths
+  let output = renderLintDiagnosticsJson diagnostics
+  if "\"schema\": \"silt.diagnostics.v0\"" `isInfixOf` output
+    && "\"diagnostics\": [" `isInfixOf` output
+    && not ("\"severity\": \"error\"" `isInfixOf` output)
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] expected empty diagnostics JSON, got:\n" ++ output)
+      pure False
+
+expectDiagnosticsJsonFailure :: String -> [FilePath] -> String -> IO Bool
+expectDiagnosticsJsonFailure label paths expectedFragment = do
+  diagnostics <- lintProgramPaths paths
+  let output = renderLintDiagnosticsJson diagnostics
+  if expectedFragment `isInfixOf` output && "\"severity\": \"error\"" `isInfixOf` output
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] expected fragment " ++ expectedFragment ++ ", got:\n" ++ output)
+      pure False
+
+expectDiagnosticsJsonRender :: String -> [LintDiagnostic] -> String -> String -> IO Bool
+expectDiagnosticsJsonRender label diagnostics pathFragment messageFragment = do
+  let output = renderLintDiagnosticsJson diagnostics
+  if pathFragment `isInfixOf` output && messageFragment `isInfixOf` output
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] expected escaped fragments, got:\n" ++ output)
+      pure False
 
 expectFailure :: String -> String -> IO Bool
 expectFailure label source =

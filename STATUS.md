@@ -81,6 +81,10 @@ Silt currently demonstrates:
   `test`, and `doc`, including generated bin/test scaffolds, selected package
   test execution through `silt test TARGET`, and manifest-derived HTML package
   docs at `out/silt/doc/index.html`
+- a machine-readable diagnostics command, `silt diagnostics --json FILE...`,
+  that reuses current lint facts from canonical formatting, source-bundle
+  parsing, and checker diagnostics, emitting `silt.diagnostics.v0` JSON as an
+  editor/LSP/AI-tooling seed
 - a hosted CLI pressure-test package target, `hosted-size-report`, that combines
   process args, a first-order file read result layout, ASCII decimal
   parse/format, file write, stdout, stderr diagnostics, and process status in
@@ -163,7 +167,7 @@ Silt does not currently claim:
 - a package ecosystem, dependencies, workspaces, lockfiles, package publishing,
   package resolution, or selectable package templates
 - mature LSP/editor tooling, semantic highlighting, or formatter-on-save
-  integration
+  integration, or editor package-manager plugins
 - append modes, directory operations, path libraries, rich file-read error
   categories beyond the current success/failure status, allocator-backed Silt
   file buffers, process spawning, signals, stdout/stderr abstractions beyond

@@ -38,6 +38,9 @@ production kernel.
 - A canonical formatter/checker for the current S-expression source subset.
 - A language-aware lint spine that combines canonical formatting checks with
   parser/checker diagnostics.
+- A machine-readable diagnostics seed, `silt diagnostics --json FILE...`, that
+  reuses formatter/parser/checker lint facts and emits schema-tagged JSON for
+  editor, LSP, and AI-tooling experiments.
 - Lightweight Neovim filetype and syntax files for the current surface.
 - A single-local-package `Silt.pkg` spine with `new`, `build`, `run`, `test`,
   and `doc` for no-argument hosted entry functions, plus argument forwarding,
