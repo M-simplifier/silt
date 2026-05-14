@@ -114,6 +114,7 @@ scripts/verify-ascii-decimal-u64.sh
 scripts/verify-ascii-decimal-u64-format.sh
 scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
+scripts/verify-hosted-lf-count.sh
 ```
 
 For backend, ABI, target, or boot bridge changes, add the relevant verifier:
