@@ -179,6 +179,45 @@
   stdlib-list-tail-nil-sample
   (list-head-or U64 (u64 0) (list-tail-or U64 (Cons U64 (u64 55) (Nil U64)) (Nil U64))))
 
+(claim stdlib-list-head-option-sample U64)
+
+(def
+  stdlib-list-head-option-sample
+  (option-unwrap-or
+    U64
+    (u64 0)
+    (list-head-option U64 (Cons U64 (u64 9) (Cons U64 (u64 10) (Nil U64))))))
+
+(claim stdlib-list-head-option-nil-sample U64)
+
+(def
+  stdlib-list-head-option-nil-sample
+  (option-unwrap-or U64 (u64 77) (list-head-option U64 (Nil U64))))
+
+(claim stdlib-list-tail-option-sample U64)
+
+(def
+  stdlib-list-tail-option-sample
+  (list-head-or
+    U64
+    (u64 0)
+    (option-unwrap-or
+      (List U64)
+      (Nil U64)
+      (list-tail-option U64 (Cons U64 (u64 1) (Cons U64 (u64 2) (Nil U64)))))))
+
+(claim stdlib-list-tail-option-nil-sample U64)
+
+(def
+  stdlib-list-tail-option-nil-sample
+  (list-head-or
+    U64
+    (u64 0)
+    (option-unwrap-or
+      (List U64)
+      (Cons U64 (u64 55) (Nil U64))
+      (list-tail-option U64 (Nil U64)))))
+
 (claim stdlib-text-len-sample U64)
 
 (def stdlib-text-len-sample (text-len hosted-hello-text))
@@ -305,7 +344,11 @@
           (u64-eq stdlib-result-map-err-sample (u64 99))
           (bool-and
             (u64-eq stdlib-result-and-then-sample (u64 7))
-            (u64-eq stdlib-list-tail-sample (u64 2))))))))
+            (bool-and
+              (u64-eq stdlib-list-tail-sample (u64 2))
+              (bool-and
+                (u64-eq stdlib-list-head-option-sample (u64 9))
+                (u64-eq stdlib-list-tail-option-sample (u64 2))))))))))
 
 (claim stdlib-combinator-fallback-test Bool)
 
@@ -327,7 +370,11 @@
                 (bool-not stdlib-result-and-then-continuation-error-sample)
                 (bool-and
                   (u64-eq stdlib-result-error-ok-sample (u64 77))
-                  (u64-eq stdlib-list-tail-nil-sample (u64 55)))))))))))
+                  (bool-and
+                    (u64-eq stdlib-list-tail-nil-sample (u64 55))
+                    (bool-and
+                      (u64-eq stdlib-list-head-option-nil-sample (u64 77))
+                      (u64-eq stdlib-list-tail-option-nil-sample (u64 55)))))))))))))
 
 (claim stdlib-combinator-test Bool)
 

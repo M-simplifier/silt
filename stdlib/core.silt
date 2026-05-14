@@ -151,3 +151,19 @@
   (fn
     ((A 0 Type) (fallback (List A)) (value (List A)))
     (match value ((Nil) fallback) ((Cons head tail) tail))))
+
+(claim list-head-option (Pi ((A 0 Type) (value (List A))) (Option A)))
+
+(def
+  list-head-option
+  (fn
+    ((A 0 Type) (value (List A)))
+    (match value ((Nil) (None A)) ((Cons head tail) (Some A head)))))
+
+(claim list-tail-option (Pi ((A 0 Type) (value (List A))) (Option (List A))))
+
+(def
+  list-tail-option
+  (fn
+    ((A 0 Type) (value (List A)))
+    (match value ((Nil) (None (List A))) ((Cons head tail) (Some (List A) tail)))))
