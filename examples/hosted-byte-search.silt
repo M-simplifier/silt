@@ -1,0 +1,293 @@
+; Hosted one-byte search pressure example.
+
+; Usage: hosted-byte-search INPUT BYTE
+
+; The program reads INPUT, requires BYTE to be a one-byte argument, searches the
+
+; input for that byte, writes found/missing to stdout, and returns distinct
+
+; statuses for found, missing, usage, invalid byte, and read failure.
+
+(static-bytes
+  hosted-byte-search-usage-bytes
+  ((u8 117)
+   (u8 115)
+   (u8 97)
+   (u8 103)
+   (u8 101)
+   (u8 58)
+   (u8 32)
+   (u8 104)
+   (u8 111)
+   (u8 115)
+   (u8 116)
+   (u8 101)
+   (u8 100)
+   (u8 45)
+   (u8 98)
+   (u8 121)
+   (u8 116)
+   (u8 101)
+   (u8 45)
+   (u8 115)
+   (u8 101)
+   (u8 97)
+   (u8 114)
+   (u8 99)
+   (u8 104)
+   (u8 32)
+   (u8 73)
+   (u8 78)
+   (u8 80)
+   (u8 85)
+   (u8 84)
+   (u8 32)
+   (u8 66)
+   (u8 89)
+   (u8 84)
+   (u8 69)
+   (u8 10)))
+
+(static-bytes
+  hosted-byte-search-found-bytes
+  ((u8 102) (u8 111) (u8 117) (u8 110) (u8 100) (u8 10)))
+
+(static-bytes
+  hosted-byte-search-missing-bytes
+  ((u8 109) (u8 105) (u8 115) (u8 115) (u8 105) (u8 110) (u8 103) (u8 10)))
+
+(static-bytes
+  hosted-byte-search-invalid-byte-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 105)
+   (u8 110)
+   (u8 118)
+   (u8 97)
+   (u8 108)
+   (u8 105)
+   (u8 100)
+   (u8 32)
+   (u8 98)
+   (u8 121)
+   (u8 116)
+   (u8 101)
+   (u8 10)))
+
+(static-bytes
+  hosted-byte-search-read-failed-bytes
+  ((u8 101)
+   (u8 114)
+   (u8 114)
+   (u8 111)
+   (u8 114)
+   (u8 58)
+   (u8 32)
+   (u8 114)
+   (u8 101)
+   (u8 97)
+   (u8 100)
+   (u8 32)
+   (u8 102)
+   (u8 97)
+   (u8 105)
+   (u8 108)
+   (u8 101)
+   (u8 100)
+   (u8 10)))
+
+(claim hosted-byte-search-usage-text TextView)
+
+(def
+  hosted-byte-search-usage-text
+  (text-view-from hosted-byte-search-usage-bytes hosted-byte-search-usage-bytes-len))
+
+(claim hosted-byte-search-found-text TextView)
+
+(def
+  hosted-byte-search-found-text
+  (text-view-from hosted-byte-search-found-bytes hosted-byte-search-found-bytes-len))
+
+(claim hosted-byte-search-missing-text TextView)
+
+(def
+  hosted-byte-search-missing-text
+  (text-view-from hosted-byte-search-missing-bytes hosted-byte-search-missing-bytes-len))
+
+(claim hosted-byte-search-invalid-byte-text TextView)
+
+(def
+  hosted-byte-search-invalid-byte-text
+  (text-view-from
+    hosted-byte-search-invalid-byte-bytes
+    hosted-byte-search-invalid-byte-bytes-len))
+
+(claim hosted-byte-search-read-failed-text TextView)
+
+(def
+  hosted-byte-search-read-failed-text
+  (text-view-from
+    hosted-byte-search-read-failed-bytes
+    hosted-byte-search-read-failed-bytes-len))
+
+(claim hosted-byte-search-found U64)
+
+(def hosted-byte-search-found (u64 0))
+
+(claim hosted-byte-search-missing U64)
+
+(def hosted-byte-search-missing (u64 1))
+
+(claim hosted-byte-search-missing-args U64)
+
+(def hosted-byte-search-missing-args (u64 2))
+
+(claim hosted-byte-search-invalid-byte U64)
+
+(def hosted-byte-search-invalid-byte (u64 4))
+
+(claim hosted-byte-search-read-failed U64)
+
+(def hosted-byte-search-read-failed (u64 6))
+
+(claim
+  hosted-byte-search-diagnostic
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def hosted-byte-search-diagnostic host-status-with-error-text)
+
+(claim
+  hosted-byte-search-status-with-text
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-byte-search-status-with-text
+  (fn
+    ((message TextView) (status U64))
+    (host-status-after (host-write-text message) status)))
+
+(claim
+  hosted-byte-search-finish
+  (Pi ((body TextView) (needle U8)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-byte-search-finish
+  (fn
+    ((body TextView) (needle U8))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      U64
+      (text-contains-byte HostIO body needle)
+      (fn
+        ((found 1 Bool))
+        (match
+          found
+          ((False)
+           (hosted-byte-search-status-with-text
+             hosted-byte-search-missing-text
+             hosted-byte-search-missing))
+          ((True)
+           (hosted-byte-search-status-with-text
+             hosted-byte-search-found-text
+             hosted-byte-search-found)))))))
+
+(claim
+  hosted-byte-search-read-input
+  (Pi ((input-path TextView) (needle U8)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-byte-search-read-input
+  (fn
+    ((input-path TextView) (needle U8))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      HostReadFileResult
+      U64
+      (host-read-file-result input-path)
+      (fn
+        ((read-result 1 HostReadFileResult))
+        (let-layout
+          HostReadFileResult
+          ((ok read-ok) (text body))
+          read-result
+          (match
+            read-ok
+            ((False)
+             (hosted-byte-search-diagnostic
+               hosted-byte-search-read-failed-text
+               hosted-byte-search-read-failed))
+            ((True) (hosted-byte-search-finish body needle))))))))
+
+(claim
+  hosted-byte-search-with-needle
+  (Pi ((input-path TextView) (needle-text TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-byte-search-with-needle
+  (fn
+    ((input-path TextView) (needle-text TextView))
+    (match
+      (u64-eq (text-len needle-text) (u64 1))
+      ((False)
+       (hosted-byte-search-diagnostic
+         hosted-byte-search-invalid-byte-text
+         hosted-byte-search-invalid-byte))
+      ((True)
+       (bind
+         HostIO
+         HostIO
+         HostIO
+         U8
+         U64
+         (load HostIO U8 (text-byte-at needle-text (u64 0)))
+         (fn ((needle 1 U8)) (hosted-byte-search-read-input input-path needle)))))))
+
+(claim hosted-byte-search-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-byte-search-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (match
+        (u64-eq count (u64 3))
+        ((False)
+         (hosted-byte-search-diagnostic
+           hosted-byte-search-usage-text
+           hosted-byte-search-missing-args))
+        ((True)
+         (bind
+           HostIO
+           HostIO
+           HostIO
+           TextView
+           U64
+           (host-arg-text (u64 1))
+           (fn
+             ((input-path 1 TextView))
+             (bind
+               HostIO
+               HostIO
+               HostIO
+               TextView
+               U64
+               (host-arg-text (u64 2))
+               (fn
+                 ((needle-text 1 TextView))
+                 (hosted-byte-search-with-needle input-path needle-text))))))))))

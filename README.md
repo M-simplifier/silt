@@ -88,6 +88,10 @@ production kernel.
 - A hosted LF-count pressure-test bin, `hosted-lf-count`, that reads an input
   file, counts literal LF bytes through explicit text views, and writes the
   decimal count to an output file plus stdout with narrow diagnostics/statuses.
+- A hosted one-byte search pressure-test bin, `hosted-byte-search`, that reads
+  an input file, validates a one-byte argument, searches file text through the
+  explicit byte-containment helper, and reports found/missing through
+  stdout/status.
 - A small hosted helper layer for reused diagnostic/status sequencing and
   caller-buffer decimal writes to stdout or explicit file paths.
 
@@ -126,6 +130,7 @@ scripts/verify-limine-bridge.sh
 scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
 scripts/verify-hosted-lf-count.sh
+scripts/verify-hosted-byte-search.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 ```

@@ -78,6 +78,7 @@ main = runChecks
       , (PackageBin, "hosted-size-report")
       , (PackageBin, "hosted-config-report")
       , (PackageBin, "hosted-lf-count")
+      , (PackageBin, "hosted-byte-search")
       , (PackageTest, "ascii-test")
       , (PackageTest, "ascii-slice-test")
       , (PackageTest, "ascii-trim-test")
@@ -278,6 +279,15 @@ main = runChecks
   , expectCodegenFiles "hosted LF count file write codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_file_write_bytes"
   , expectCodegenFiles "hosted LF count stdout codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_put_byte(byte_"
   , expectCodegenFiles "hosted LF count stderr codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_put_error_byte(byte_"
+  , expectCheckFiles "hosted byte search pressure app bundle" hostedByteSearchSources
+  , expectCodegenFiles "hosted byte search arg count codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted byte search file read codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted byte search file-read status codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_file_read_ok"
+  , expectCodegenFiles "hosted byte search read result layout codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_layout_HostReadFileResult"
+  , expectCodegenFiles "hosted byte search loop codegen" hostedByteSearchSources "hosted-byte-search-main" "for (uint64_t index_"
+  , expectCodegenFiles "hosted byte search needle compare codegen" hostedByteSearchSources "hosted-byte-search-main" "== needle_"
+  , expectCodegenFiles "hosted byte search stdout codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted byte search stderr codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_put_error_byte(byte_"
   , expectCheck "generic data" optionSource
   , expectCheck "recursive generic data" recursiveDataSource
   , expectFailure "missing claim" "(def nope Type)"
@@ -3173,6 +3183,16 @@ hostedLfCountSources =
   , "stdlib/hosted.silt"
   , "stdlib/hosted-decimal.silt"
   , "examples/hosted-lf-count.silt"
+  ]
+
+hostedByteSearchSources :: [FilePath]
+hostedByteSearchSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/hosted-byte-search.silt"
   ]
 
 textViewSources :: [FilePath]
