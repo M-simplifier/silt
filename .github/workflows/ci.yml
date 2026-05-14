@@ -22,6 +22,7 @@ on:
       - "scripts/verify-hosted-config-report.sh"
       - "scripts/verify-hosted-size-report.sh"
       - "scripts/verify-hosted-lf-count.sh"
+      - "scripts/lib/**"
       - "scripts/verify-text-eq.sh"
       - "scripts/verify-text-prefix.sh"
       - "scripts/verify-text-suffix.sh"
