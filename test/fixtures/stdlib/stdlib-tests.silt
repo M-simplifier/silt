@@ -187,6 +187,30 @@
 
 (def stdlib-nat-word-sample (nat-to-word (S (S (S Z)))))
 
+(claim stdlib-nat-add-sample U64)
+
+(def stdlib-nat-add-sample (nat-to-word (nat-add (S (S Z)) (S (S (S Z))))))
+
+(claim stdlib-nat-add-zero-left-sample U64)
+
+(def stdlib-nat-add-zero-left-sample (nat-to-word (nat-add Z (S (S Z)))))
+
+(claim stdlib-nat-add-zero-right-sample U64)
+
+(def stdlib-nat-add-zero-right-sample (nat-to-word (nat-add (S (S Z)) Z)))
+
+(claim stdlib-nat-mul-sample U64)
+
+(def stdlib-nat-mul-sample (nat-to-word (nat-mul (S (S Z)) (S (S (S Z))))))
+
+(claim stdlib-nat-mul-zero-sample U64)
+
+(def stdlib-nat-mul-zero-sample (nat-to-word (nat-mul (S (S (S Z))) Z)))
+
+(claim stdlib-nat-mul-zero-left-sample U64)
+
+(def stdlib-nat-mul-zero-left-sample (nat-to-word (nat-mul Z (S (S (S Z))))))
+
 (claim stdlib-combinator-happy-test Bool)
 
 (def
@@ -229,7 +253,21 @@
 
 (def
   stdlib-combinator-test
-  (bool-and stdlib-combinator-happy-test stdlib-combinator-fallback-test))
+  (bool-and
+    stdlib-combinator-happy-test
+    (bool-and
+      stdlib-combinator-fallback-test
+      (bool-and
+        (u64-eq stdlib-nat-add-sample (u64 5))
+        (bool-and
+          (u64-eq stdlib-nat-add-zero-left-sample (u64 2))
+          (bool-and
+            (u64-eq stdlib-nat-add-zero-right-sample (u64 2))
+            (bool-and
+              (u64-eq stdlib-nat-mul-sample (u64 6))
+              (bool-and
+                (u64-eq stdlib-nat-mul-zero-sample (u64 0))
+                (u64-eq stdlib-nat-mul-zero-left-sample (u64 0))))))))))
 
 (claim stdlib-test Bool)
 

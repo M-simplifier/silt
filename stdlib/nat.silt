@@ -1,13 +1,25 @@
-; Nat / U64 bridge.
-; These conversions are explicit because Nat is the induction surface and U64 is
-; the machine-word surface.
+; Nat is the induction surface; U64 is the machine-word surface.
+
+(claim nat-add (Pi ((left Nat) (right Nat)) Nat))
+
+(def
+  nat-add
+  (fn
+    ((left Nat) (right Nat))
+    (nat-elim Nat right (fn ((index Nat) (rec Nat)) (S rec)) left)))
+
+(claim nat-mul (Pi ((left Nat) (right Nat)) Nat))
+
+(def
+  nat-mul
+  (fn
+    ((left Nat) (right Nat))
+    (nat-elim Nat Z (fn ((index Nat) (rec Nat)) (nat-add right rec)) left)))
 
 (claim nat-to-word (Pi ((value Nat)) U64))
-(def nat-to-word
-  (fn ((value Nat))
-    (nat-to-u64 value)))
+
+(def nat-to-word (fn ((value Nat)) (nat-to-u64 value)))
 
 (claim word-to-nat (Pi ((value U64)) Nat))
-(def word-to-nat
-  (fn ((value U64))
-    (u64-to-nat value)))
+
+(def word-to-nat (fn ((value U64)) (u64-to-nat value)))
