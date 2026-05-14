@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$script_dir/lib/verify-hosted-app.sh"
 
-if [ "${SILT_SKIP_CABAL_TEST:-0}" != "1" ]; then
-  cabal test all
-fi
-cabal build exe:silt
-silt_bin="$(cabal list-bin exe:silt)"
+hosted_case_app=hosted-write-file
+hosted_verify_setup
 
 hosted_file_sources=(
   stdlib/core.silt
@@ -22,39 +19,23 @@ hosted_file_sources=(
 "$silt_bin" check "${hosted_file_sources[@]}" >/dev/null
 
 hosted_file_c="$("$silt_bin" emit-c-bundle "${hosted_file_sources[@]}" -- hosted-write-file-main)"
-if ! grep -q 'silt_host_file_write_bytes' <<<"$hosted_file_c"; then
-  echo "hosted-write-file did not call the hosted file-write boundary" >&2
-  exit 1
-fi
+require_c_fragment "$hosted_file_c" 'silt_host_file_write_bytes' \
+  "hosted-write-file did not call the hosted file-write boundary"
 
 "$silt_bin" build hosted-write-file >/dev/null
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 out_file="$tmp_dir/silt-hosted-file.txt"
-expected_file="$tmp_dir/expected.txt"
-printf 'SILT_FILE\n' > "$expected_file"
 
-ok_output="$("$silt_bin" run hosted-write-file -- "$out_file")"
-if [ "$ok_output" != "" ]; then
-  echo "unexpected hosted-write-file success output: $ok_output" >&2
-  exit 1
-fi
-if ! cmp -s "$expected_file" "$out_file"; then
-  echo "hosted-write-file wrote unexpected file content" >&2
-  exit 1
-fi
+run_case ok "$silt_bin" run hosted-write-file -- "$out_file"
+expect_status success 0
+expect_stdout_exact success ""
+expect_stderr_exact success ""
+expect_file_exact success "$out_file" $'SILT_FILE\n'
 
-set +e
-missing_output="$("$silt_bin" run hosted-write-file)"
-missing_status=$?
-set -e
-if [ "$missing_status" -ne 3 ]; then
-  echo "expected hosted-write-file without argv[1] to exit 3, got $missing_status" >&2
-  exit 1
-fi
-if [ "$missing_output" != "" ]; then
-  echo "unexpected hosted-write-file failure output: $missing_output" >&2
-  exit 1
-fi
+run_case missing "$silt_bin" run hosted-write-file
+expect_status "without argv[1]" 3
+expect_stdout_exact "without argv[1]" ""
+expect_stderr_exact "without argv[1]" ""
 
 git diff --check
