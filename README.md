@@ -69,14 +69,16 @@ production kernel.
   first-order hosted file-read into an explicit `TextView` with a narrow
   read-status observation, a first-order `HostReadFileResult` body/status
   wrapper, and explicit stderr byte/text diagnostics.
+- Example-level primitive-recursive factorial and Fibonacci programs over
+  `Nat`, written with `nat-elim` rather than top-level self-recursion.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, and
   `hosted-size-report` / `hosted-config-report` / `hosted-lf-count`, that
   build and run through the package spine, plus `text-eq-test`,
   `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `text-line-test`,
   `text-count-test`, `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
-  `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
-  targets.
+  `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`, and
+  `nat-recursion-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.

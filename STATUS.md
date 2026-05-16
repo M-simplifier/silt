@@ -59,6 +59,8 @@ Silt currently demonstrates:
   boundary through `host-read-file` with a narrow read-status observation; and
   a first-order `HostReadFileResult` body/status wrapper plus explicit stderr
   byte/text writers
+- primitive-recursive factorial and Fibonacci examples over `Nat`, written with
+  `nat-elim` and tested through closed normalization plus a package test target
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
   `hosted-write-file`, `hosted-cat`, `hosted-size-report`, and
   `hosted-config-report` / `hosted-lf-count` / `hosted-byte-search` package
@@ -68,8 +70,8 @@ Silt currently demonstrates:
   `text-eq-test`, `text-prefix-test`,
   `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
   `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
-  `ascii-decimal-u64-test`, and `ascii-decimal-u64-format-test` as package test
-  targets
+  `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`, and
+  `nat-recursion-test` as package test targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the

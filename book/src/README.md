@@ -12,6 +12,7 @@ S式の表面構文、依存型コア、数量付きの値使用、明示的な�
 - `claim` / `def` / `Pi` / `fn` / `match` の関係を説明できる
 - 数量 `0`、`1`、`omega` が何を制限するかを理解できる
 - `Eff pre post A` による状態付き副作用を読める
+- `nat-elim` による全域的な原始再帰の書き方を、factorial / Fibonacci 例で読める
 - `layout`、`static-cell`、`static-value`、`static-bytes` がどのように低レイヤー表現へ落ちるかを理解できる
 - Limine/x86_64/freestanding C/QEMUで扱うSiltの実装境界を説明できる
 - `examples/limine.silt` のallocator handoffまでの流れを追える

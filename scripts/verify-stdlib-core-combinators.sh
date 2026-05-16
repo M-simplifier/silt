@@ -17,6 +17,7 @@ stdlib_sources=(
   stdlib/text.silt
   stdlib/hosted.silt
   examples/hosted-hello.silt
+  examples/nat-recursion.silt
   test/fixtures/stdlib/stdlib-tests.silt
 )
 
@@ -72,6 +73,9 @@ expect_norm stdlib-nat-lt-true-sample "True"
 expect_norm stdlib-nat-lt-equal-sample "False"
 expect_norm stdlib-nat-lt-false-sample "False"
 expect_norm stdlib-nat-order-test "True"
+expect_norm nat-recursion-factorial-five "(u64 120)"
+expect_norm nat-recursion-fibonacci-ten "(u64 55)"
+expect_norm nat-recursion-test "True"
 expect_norm stdlib-combinator-happy-test "True"
 expect_norm stdlib-combinator-fallback-test "True"
 expect_norm stdlib-combinator-test "True"
@@ -80,6 +84,13 @@ test_output="$("$silt_bin" test stdlib-test)"
 if ! grep -Fq 'PASS [stdlib-test]' <<<"$test_output"; then
   echo "silt test did not run stdlib-test successfully" >&2
   echo "$test_output" >&2
+  exit 1
+fi
+
+nat_test_output="$("$silt_bin" test nat-recursion-test)"
+if ! grep -Fq 'PASS [nat-recursion-test]' <<<"$nat_test_output"; then
+  echo "silt test did not run nat-recursion-test successfully" >&2
+  echo "$nat_test_output" >&2
   exit 1
 fi
 
