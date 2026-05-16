@@ -1,0 +1,106 @@
+; Hosted stdin LF-count filter.
+
+; Usage: hosted-stdin-lf-count < INPUT
+
+; The program reads stdin as one host-owned TextView, counts literal LF bytes,
+
+; writes the decimal count to stdout, and reports narrow failures on stderr.
+
+(static-cell hosted-stdin-lf-count-stdout-buffer AsciiDecimalU64Buffer)
+
+(static-bytes
+  hosted-stdin-lf-count-usage-bytes
+  "usage: hosted-stdin-lf-count < INPUT\n")
+
+(static-bytes hosted-stdin-lf-count-read-failed-bytes "error: stdin read failed\n")
+
+(claim hosted-stdin-lf-count-usage-text TextView)
+
+(def
+  hosted-stdin-lf-count-usage-text
+  (text-view-from
+    hosted-stdin-lf-count-usage-bytes
+    hosted-stdin-lf-count-usage-bytes-len))
+
+(claim hosted-stdin-lf-count-read-failed-text TextView)
+
+(def
+  hosted-stdin-lf-count-read-failed-text
+  (text-view-from
+    hosted-stdin-lf-count-read-failed-bytes
+    hosted-stdin-lf-count-read-failed-bytes-len))
+
+(claim hosted-stdin-lf-count-ok U64)
+
+(def hosted-stdin-lf-count-ok (u64 0))
+
+(claim hosted-stdin-lf-count-usage U64)
+
+(def hosted-stdin-lf-count-usage (u64 2))
+
+(claim hosted-stdin-lf-count-read-failed U64)
+
+(def hosted-stdin-lf-count-read-failed (u64 6))
+
+(claim
+  hosted-stdin-lf-count-diagnostic
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def hosted-stdin-lf-count-diagnostic host-status-with-error-text)
+
+(claim hosted-stdin-lf-count-write (Pi ((body TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-stdin-lf-count-write
+  (fn
+    ((body TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      U64
+      U64
+      (text-count-lf HostIO body)
+      (fn
+        ((lf-count 1 U64))
+        (host-status-after
+          (host-write-u64-decimal hosted-stdin-lf-count-stdout-buffer lf-count)
+          hosted-stdin-lf-count-ok)))))
+
+(claim hosted-stdin-lf-count-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-stdin-lf-count-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (if
+        (u64-eq count (u64 1))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          HostReadStdinResult
+          U64
+          host-read-stdin-result
+          (fn
+            ((read-result 1 HostReadStdinResult))
+            (let-layout
+              HostReadStdinResult
+              ((ok read-ok) (text body))
+              read-result
+              (if
+                read-ok
+                (hosted-stdin-lf-count-write body)
+                (hosted-stdin-lf-count-diagnostic
+                  hosted-stdin-lf-count-read-failed-text
+                  hosted-stdin-lf-count-read-failed)))))
+        (hosted-stdin-lf-count-diagnostic
+          hosted-stdin-lf-count-usage-text
+          hosted-stdin-lf-count-usage)))))

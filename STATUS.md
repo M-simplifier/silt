@@ -60,17 +60,20 @@ Silt currently demonstrates:
   with `host-env-has` and `host-env-text`; and a first-order hosted file-write
   boundary through `host-write-file`; and a first-order hosted file-read
   boundary through `host-read-file` with a narrow read-status observation; and
-  a first-order `HostReadFileResult` body/status wrapper plus explicit stderr
-  byte/text writers
+  a first-order `HostReadFileResult` body/status wrapper; and a first-order
+  hosted stdin-read boundary through `host-read-stdin` with a narrow
+  `HostReadStdinResult` body/status wrapper plus explicit stderr byte/text
+  writers
 - primitive-recursive factorial and Fibonacci examples over `Nat`, written with
   `nat-elim`, plus closed `List` length, map, and fold examples written through
   `list-elim`, all tested through closed normalization plus package test targets
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
   `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-size-report`, and
-  `hosted-config-report` / `hosted-lf-count` / `hosted-byte-search` package
-  examples that compile, run, print, read, write, report, count literal LF
-  bytes, or search for one byte through the hosted package harness, and exercise
-  process status where relevant, plus
+  `hosted-config-report` / `hosted-lf-count` / `hosted-stdin-lf-count` /
+  `hosted-byte-search` package examples that compile, run, print, read, write,
+  report, count literal LF bytes from files or stdin, or search for one byte
+  through the hosted package harness, and exercise process status where
+  relevant, plus
   `text-eq-test`, `text-prefix-test`,
   `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
   `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
@@ -108,6 +111,11 @@ Silt currently demonstrates:
   combines process args, file read, literal-LF byte counting over an explicit
   `TextView`, ASCII decimal formatting, file write, stdout, stderr diagnostics,
   and process status in one checked runnable example
+- a hosted stdin LF-count filter package target, `hosted-stdin-lf-count`, that
+  combines process arg-count validation, whole-stdin read into an explicit
+  host-owned `TextView`, literal-LF byte counting, ASCII decimal formatting,
+  stdout, stderr diagnostics, and process status in one checked runnable
+  example
 - a hosted one-byte search pressure-test package target, `hosted-byte-search`,
   that combines process args, one-byte argument validation, file read,
   byte-containment search over an explicit `TextView`, stdout found/missing
@@ -160,6 +168,7 @@ scripts/verify-limine-bridge.sh
 scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
 scripts/verify-hosted-lf-count.sh
+scripts/verify-hosted-stdin-lf-count.sh
 scripts/verify-hosted-byte-search.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
@@ -184,11 +193,12 @@ Silt does not currently claim:
   integration, or editor package-manager plugins
 - append modes, directory operations, path libraries, rich file-read error
   categories beyond the current success/failure status, allocator-backed Silt
-  file buffers, process spawning, signals, stdout/stderr abstractions beyond
-  the current explicit byte/text writers, general hosted IO, environment
-  enumeration or mutation, source-comment or type-signature API docs,
-  cross-package docs, or package argument policy beyond `silt new NAME`,
-  `silt run [TARGET] -- ARG...`, `silt test TARGET`, and `silt doc`
+  file buffers, streaming stdin, repeated stdin reads with independent
+  lifetimes, process spawning, signals, stdout/stderr abstractions beyond the
+  current explicit byte/text writers, general hosted IO, environment enumeration
+  or mutation, source-comment or type-signature API docs, cross-package docs, or
+  package argument policy beyond `silt new NAME`, `silt run [TARGET] -- ARG...`,
+  `silt test TARGET`, and `silt doc`
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline
