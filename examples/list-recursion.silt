@@ -10,6 +10,10 @@
   list-recursion-values
   (Cons U64 (u64 1) (Cons U64 (u64 2) (Cons U64 (u64 3) (Nil U64)))))
 
+(claim list-recursion-more-values (List U64))
+
+(def list-recursion-more-values (Cons U64 (u64 4) (Cons U64 (u64 5) (Nil U64))))
+
 (claim list-recursion-length-three U64)
 
 (def list-recursion-length-three (nat-to-word (list-length U64 list-recursion-values)))
@@ -38,6 +42,28 @@
     (u64 0)
     (list-map U64 U64 (fn ((value U64)) (u64-add value (u64 10))) list-recursion-values)))
 
+(claim list-recursion-append-length U64)
+
+(def
+  list-recursion-append-length
+  (nat-to-word
+    (list-length U64 (list-append U64 list-recursion-values list-recursion-more-values))))
+
+(claim list-recursion-filter-length U64)
+
+(def
+  list-recursion-filter-length
+  (nat-to-word
+    (list-length
+      U64
+      (list-filter U64 (fn ((value U64)) (u64-lt value (u64 3))) list-recursion-values))))
+
+(claim list-recursion-reverse-head U64)
+
+(def
+  list-recursion-reverse-head
+  (list-head-or U64 (u64 0) (list-reverse U64 list-recursion-values)))
+
 (claim list-recursion-test Bool)
 
 (def
@@ -48,4 +74,10 @@
       (u64-eq list-recursion-length-empty (u64 0))
       (bool-and
         (u64-eq list-recursion-fold-sum (u64 6))
-        (u64-eq list-recursion-map-head (u64 11))))))
+        (bool-and
+          (u64-eq list-recursion-map-head (u64 11))
+          (bool-and
+            (u64-eq list-recursion-append-length (u64 5))
+            (bool-and
+              (u64-eq list-recursion-filter-length (u64 2))
+              (u64-eq list-recursion-reverse-head (u64 3)))))))))
