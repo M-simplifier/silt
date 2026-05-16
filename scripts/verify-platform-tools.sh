@@ -15,6 +15,13 @@ cabal exec -- silt fmt test/fixtures/format/messy.silt > "$tmpdir/stdout.silt"
 diff -u test/fixtures/format/clean.silt "$tmpdir/stdout.silt"
 cabal exec -- silt fmt --check test/fixtures/format/clean.silt
 
+printf '(static-bytes greeting"Hi\\x0A")\n' > "$tmpdir/string-messy.silt"
+printf '(static-bytes greeting "Hi\\n")\n' > "$tmpdir/string-clean.silt"
+cabal exec -- silt fmt "$tmpdir/string-messy.silt" > "$tmpdir/string-out.silt"
+diff -u "$tmpdir/string-clean.silt" "$tmpdir/string-out.silt"
+cabal exec -- silt fmt --check "$tmpdir/string-clean.silt"
+cabal exec -- silt check "$tmpdir/string-clean.silt" >/dev/null
+
 if cabal exec -- silt fmt --check test/fixtures/format/messy.silt >/dev/null 2>&1; then
   echo "expected messy formatter fixture to fail --check" >&2
   exit 1

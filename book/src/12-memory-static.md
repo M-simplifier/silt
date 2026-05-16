@@ -47,6 +47,12 @@ Siltには、capability-indexedな `load` と `store` があります。
   ((u8 83) (u8 73) (u8 76) (u8 84)))
 ```
 
+同じ静的byte列は、狭いbyte string literalでも書けます。
+
+```lisp
+(static-bytes limine-ok-bytes "SILT")
+```
+
 これは `Ptr U8` と長さ `U64` を合成し、C backendでは `.rodata.silt` の `static const uint8_t` に落ちます。
 
 コンパイル時に初期値を持つ静的layoutには `static-value` を使います。

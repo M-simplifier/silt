@@ -15,7 +15,8 @@ Silt currently demonstrates:
 - conservative quantity-sensitive value-use checks for `0`, `1`, and `omega`
 - a small effect-state seed with `Eff pre post A`
 - low-level runtime representations through `U8`, `U64`, `Addr`, `Ptr A`,
-  `layout`, `static-bytes`, `static-cell`, and `static-value`
+  `layout`, `static-bytes` with explicit `u8` lists or narrow byte string
+  literals, `static-cell`, and `static-value`
 - freestanding C emission for supported first-order definitions
 - a canonical formatter for the current S-expression source subset, with stdout
   formatting, non-mutating checks, and in-place writes
@@ -195,8 +196,10 @@ Silt does not currently claim:
   induction, runtime code generation for generic `List` recursion, runtime
   representation for generic ADTs, or general closure conversion
 - Unicode categories, locale-sensitive behavior, case conversion, UTF-8
-  validation, CRLF normalization, split-all line APIs, generic strings, arrays,
-  dynamic slices, allocator-backed byte/text buffers, multi-byte search tools,
+  validation, general string literals or a string type beyond the current
+  `static-bytes` byte literal convenience, CRLF normalization, split-all line
+  APIs, generic strings, arrays, dynamic slices, allocator-backed byte/text
+  buffers, multi-byte search tools,
   substring/search/general scanning APIs beyond the current single-byte
   find/contains/split/count helpers, LF-oriented first-line split helpers,
   literal LF-byte counting, narrow all-ASCII class checks, ASCII decimal `U64`

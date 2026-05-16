@@ -12,7 +12,7 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - `Eff pre post A` で副作用の状態遷移を書く
 - `U8` / `U64` / `Addr` / `Ptr A` を使う
 - `layout` でサイズ、アラインメント、フィールドオフセットを持つruntime-backed型を書く
-- `static-bytes` / `static-cell` / `static-value` でrodata、bss、section-backed objectを書く
+- `static-bytes` / `static-cell` / `static-value` でrodata、bss、section-backed objectを書く。`static-bytes` では明示的な `(u8 n)` 列に加えて、狭いbyte string literalも使える
 - 現在のS式source subsetを `fmt` / `fmt --check` / `fmt --write` でcanonicalに扱う
 - `lint` と `diagnostics --json` でcanonical formatting、source bundle parsing、checker diagnosticsをテキストまたは `silt.diagnostics.v0` JSONとして確認する
 - `editors/neovim/` の軽量filetype/syntax fileで現在のsurfaceを編集する
@@ -43,7 +43,7 @@ Siltの保証は、一つの大きな安全性主張ではなく、いくつか�
 - source comment extraction、type-signature docs、cross-package docs
 - append mode、directory operation、path library、現在のsuccess/failure statusを超える詳細なfile-read error分類、allocator-backed Silt file buffer、process spawning、signal、現在の明示的なbyte/text writerを超えるstdout/stderr abstraction、general hosted IO、environment enumeration/mutation、multi-entry config format、generic CLI/config parser、`silt new NAME` / `silt run [TARGET] -- ARG...` / `silt test TARGET` / `silt doc` を超えるpackage argument policy
 - Unicode category、locale-sensitive behavior、case conversion
-- UTF-8 validation、CRLF normalization、split-all line API、literal LF byte countを超えるline semantics、汎用文字列、配列、dynamic slice、allocator-backed byte/text buffer、multi-byte search tool、現在のsingle-byte find/contains/split/count helper、LF-oriented first-line split helper、狭いall-ASCII class check、狭いASCII whitespace trim、ASCII decimal `U64` parser、ASCII decimal `U64` formatterを超えるsubstring/search/general scanning API、collation、text-normalization API
+- UTF-8 validation、`static-bytes` のbyte literal convenienceを超えるgeneral string literal/string type、CRLF normalization、split-all line API、literal LF byte countを超えるline semantics、汎用文字列、配列、dynamic slice、allocator-backed byte/text buffer、multi-byte search tool、現在のsingle-byte find/contains/split/count helper、LF-oriented first-line split helper、狭いall-ASCII class check、狭いASCII whitespace trim、ASCII decimal `U64` parser、ASCII decimal `U64` formatterを超えるsubstring/search/general scanning API、collation、text-normalization API
 - 符号、基数prefix、separator、狭いASCII view helperを超えるwhitespace trimming、詳細なparse error分類、符号付きformat、radix format、padding、alignment、locale formatting、generic decimal output abstraction、parser/formatter combinator library
 - indexed inductive families
 - 完全なtotality checking

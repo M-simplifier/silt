@@ -52,6 +52,7 @@ grep -q '"severity": "error"' <<<"$bad_check_diagnostics_json"
 
 grep -q "setfiletype silt" editors/neovim/ftdetect/silt.vim
 grep -q "syntax keyword siltDeclaration" editors/neovim/syntax/silt.vim
+grep -q "syntax region siltString" editors/neovim/syntax/silt.vim
 grep -q "u64-to-nat" editors/neovim/syntax/silt.vim
 grep -q "list-elim" editors/neovim/syntax/silt.vim
 

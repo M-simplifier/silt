@@ -54,6 +54,10 @@ trap 'rm -rf "$tmp_dir"' EXIT
     echo "expected silt new to reject package names containing S-expression delimiters" >&2
     exit 1
   fi
+  if "$silt_bin" new 'bad"name'; then
+    echo "expected silt new to reject package names containing quote delimiters" >&2
+    exit 1
+  fi
   if "$silt_bin" new; then
     echo "expected silt new without a name to fail" >&2
     exit 1
@@ -102,17 +106,17 @@ trap 'rm -rf "$tmp_dir"' EXIT
 
 mkdir "$tmp_dir/escape-doc"
 cat > "$tmp_dir/escape-doc/Silt.pkg" <<'PKG'
-(package pkg&<>"'
-  (bin target&<>"' (sources src/source&<>"'.silt) (entry entry&<>"')))
+(package pkg&<>'
+  (bin target&<>' (sources src/source&<>'.silt) (entry entry&<>')))
 PKG
 (
   cd "$tmp_dir/escape-doc"
   "$silt_bin" doc
   test -f out/silt/doc/index.html
-  grep -Fq "<h1>pkg&amp;&lt;&gt;&quot;&#39;</h1>" out/silt/doc/index.html
-  grep -Fq "<td><code>target&amp;&lt;&gt;&quot;&#39;</code></td>" out/silt/doc/index.html
-  grep -Fq "<td><code>entry&amp;&lt;&gt;&quot;&#39;</code></td>" out/silt/doc/index.html
-  grep -Fq "<code>src/source&amp;&lt;&gt;&quot;&#39;.silt</code>" out/silt/doc/index.html
+  grep -Fq "<h1>pkg&amp;&lt;&gt;&#39;</h1>" out/silt/doc/index.html
+  grep -Fq "<td><code>target&amp;&lt;&gt;&#39;</code></td>" out/silt/doc/index.html
+  grep -Fq "<td><code>entry&amp;&lt;&gt;&#39;</code></td>" out/silt/doc/index.html
+  grep -Fq "<code>src/source&amp;&lt;&gt;&#39;.silt</code>" out/silt/doc/index.html
 )
 
 "$silt_bin" doc

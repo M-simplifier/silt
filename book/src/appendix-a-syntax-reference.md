@@ -10,6 +10,7 @@
 (data Name ((A 0 Type)) (Ctor) (Ctor2 A))
 (layout Name size align ((field Type offset) ...))
 (static-bytes name ((u8 n) ...))
+(static-bytes name "bytes\n")
 (static-cell name Type)
 (static-value name Type .section value)
 (extern name type c_symbol)

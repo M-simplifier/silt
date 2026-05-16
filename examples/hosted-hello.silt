@@ -1,11 +1,6 @@
 ; Hosted application seed using stdlib byte/text/IO surfaces.
 
-(static-bytes hosted-hello-bytes
-  ((u8 83)
-   (u8 73)
-   (u8 76)
-   (u8 84)
-   (u8 10)))
+(static-bytes hosted-hello-bytes "SILT\n")
 
 (claim hosted-hello-slice ByteSlice)
 (def hosted-hello-slice
