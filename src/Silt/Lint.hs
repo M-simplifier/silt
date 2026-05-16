@@ -1,5 +1,6 @@
 module Silt.Lint
   ( LintDiagnostic (..)
+  , lintSourceText
   , lintProgramPaths
   , renderLintDiagnosticsJson
   , renderLintDiagnostic
@@ -9,6 +10,7 @@ import Control.Exception (IOException, try)
 import Data.List (intercalate)
 import Silt.Elab (checkProgram)
 import Silt.Format (formatSExprSource)
+import Silt.Parse (parseProgram)
 import Silt.Source (readProgramBundle)
 
 data LintDiagnostic = LintDiagnostic
@@ -40,6 +42,18 @@ lintProgramPaths paths =
           else pure []
       pure (formatDiagnostics ++ checkDiagnostics)
 
+lintSourceText :: Maybe FilePath -> String -> [LintDiagnostic]
+lintSourceText path input =
+  let formatResult = lintFormatSource path input
+      checkDiagnostics =
+        if formatLintCanCheckBundle formatResult
+          then
+            case parseProgram input >>= checkProgram of
+              Left err -> [LintDiagnostic path err]
+              Right _ -> []
+          else []
+   in formatLintDiagnostics formatResult ++ checkDiagnostics
+
 lintFormat :: FilePath -> IO FormatLintResult
 lintFormat path = do
   inputResult <- try (readFile path) :: IO (Either IOException String)
@@ -47,13 +61,17 @@ lintFormat path = do
     Left err ->
       pure (FormatLintResult [LintDiagnostic (Just path) (show err)] False)
     Right input ->
-      case formatSExprSource input of
-        Left err ->
-          pure (FormatLintResult [LintDiagnostic (Just path) err] False)
-        Right formatted
-          | formatted == input -> pure (FormatLintResult [] True)
-          | otherwise ->
-              pure (FormatLintResult [LintDiagnostic (Just path) "not canonical; run silt fmt"] True)
+      pure (lintFormatSource (Just path) input)
+
+lintFormatSource :: Maybe FilePath -> String -> FormatLintResult
+lintFormatSource path input =
+  case formatSExprSource input of
+    Left err ->
+      FormatLintResult [LintDiagnostic path err] False
+    Right formatted
+      | formatted == input -> FormatLintResult [] True
+      | otherwise ->
+          FormatLintResult [LintDiagnostic path "not canonical; run silt fmt"] True
 
 renderLintDiagnostic :: LintDiagnostic -> String
 renderLintDiagnostic diagnostic =

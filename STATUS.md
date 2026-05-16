@@ -22,6 +22,10 @@ Silt currently demonstrates:
   formatting, non-mutating checks, and in-place writes
 - a lint spine that combines canonical formatting checks with source-bundle
   parsing and checker diagnostics
+- a diagnostics-only stdio LSP seed, `silt lsp`, that handles initialize,
+  `textDocument/didOpen`, `textDocument/didChange`, `textDocument/didClose`,
+  shutdown, and exit, and publishes formatter/parser/checker diagnostics for
+  open document text
 - lightweight Neovim filetype and syntax files for the current public surface
 - a single-local-package `Silt.pkg` spine with `new`, `build`, `run`, `test`,
   and `doc` for no-argument hosted entry functions, plus argument forwarding,
@@ -99,6 +103,10 @@ Silt currently demonstrates:
   that reuses current lint facts from canonical formatting, source-bundle
   parsing, and checker diagnostics, emitting `silt.diagnostics.v0` JSON as an
   editor/LSP/AI-tooling seed
+- a diagnostics-only stdio LSP seed, `silt lsp`, that uses the current
+  formatter/parser/checker diagnostic machinery on one open document text
+  buffer and publishes `textDocument/publishDiagnostics` notifications for
+  opened, changed, or closed document text
 - a hosted CLI pressure-test package target, `hosted-size-report`, that combines
   process args, a first-order file read result layout, ASCII decimal
   parse/format, file write, stdout, stderr diagnostics, and process status in
@@ -201,8 +209,10 @@ Silt does not currently claim:
 - a module/import system beyond the current source include convenience
 - a package ecosystem, dependencies, workspaces, lockfiles, package publishing,
   package resolution, or selectable package templates
-- mature LSP/editor tooling, semantic highlighting, or formatter-on-save
-  integration, or editor package-manager plugins
+- mature LSP/editor tooling beyond the current diagnostics-only stdio seed,
+  semantic highlighting, hover, completion, workspace-wide analysis,
+  LSP-side source-bundle/include expansion, formatter-on-save integration, or
+  editor package-manager plugins
 - append modes, directory operations, path libraries, rich file-read error
   categories beyond the current success/failure status, allocator-backed Silt
   file buffers, streaming stdin, repeated stdin reads with independent

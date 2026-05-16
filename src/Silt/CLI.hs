@@ -12,6 +12,7 @@ import Silt.Codegen.C
   )
 import Silt.Elab (CheckedDecl (..), checkProgram, normalizeDefinition, renderCheckedDecl)
 import Silt.Format (formatSExprSource)
+import Silt.LSP (runLanguageServer)
 import Silt.Lint (lintProgramPaths, renderLintDiagnostic, renderLintDiagnosticsJson)
 import Silt.PackageDoc (docPackage)
 import Silt.Parse (parseSExprs)
@@ -51,6 +52,8 @@ main = do
       docPackage
     ["help"] ->
       putStr usage
+    ["lsp"] ->
+      runLanguageServer
     ["parse", path] -> do
       Program decls <- loadProgramBundle [path]
       mapM_ (putStrLn . prettyDecl) decls
@@ -163,6 +166,7 @@ usage =
     , "  silt fmt --check FILE..."
     , "  silt lint FILE..."
     , "  silt diagnostics --json FILE..."
+    , "  silt lsp"
     , "  silt parse FILE"
     , "  top-level (include relative-file.silt) is expanded for all commands except sexpr and fmt"
     , "  silt check FILE..."

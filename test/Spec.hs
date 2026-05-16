@@ -1,6 +1,7 @@
 module Main (main) where
 
 import Data.List (isInfixOf)
+import Data.Maybe (isNothing)
 import Silt.Codegen.C
   ( emitDefinitionC
   , emitDefinitionFreestandingC
@@ -9,6 +10,7 @@ import Silt.Codegen.C
   )
 import Silt.Elab (checkProgram, normalizeDefinition)
 import Silt.Format (formatSExprSource)
+import Silt.LSP (LspState, handleLspMessage, initialLspState, renderJsonString)
 import Silt.Lint (LintDiagnostic (..), lintProgramPaths, renderLintDiagnostic, renderLintDiagnosticsJson)
 import Silt.Package
   ( Package (..)
@@ -19,7 +21,7 @@ import Silt.Package
 import Silt.Parse (parseProgram, parseSExprs)
 import Silt.Source (readProgramBundle)
 import Silt.Syntax (Program (..))
-import System.Exit (exitFailure)
+import System.Exit (ExitCode (..), exitFailure)
 
 expectAll :: [IO Bool] -> IO Bool
 expectAll checks = fmap and (sequence checks)
@@ -69,6 +71,14 @@ main = runChecks
       [LintDiagnostic (Just "quoted \"path\".silt") "line\nquote \"slash\\tab\t"]
       "\\\"path\\\".silt"
       "line\\nquote \\\"slash\\\\tab\\t"
+  , expectLspInitialize "LSP initialize response seed"
+  , expectLspDidOpenDiagnostics "LSP didOpen publishes diagnostics"
+  , expectLspDidChangeDiagnostics "LSP didChange refreshes diagnostics"
+  , expectLspDidCloseDiagnostics "LSP didClose clears diagnostics"
+  , expectLspIgnoresPreInitializeDocument "LSP ignores pre-initialize document changes"
+  , expectLspInitializedDoesNotOpenGate "LSP initialized notification does not open gate alone"
+  , expectLspShutdownLifecycle "LSP ignores document changes after shutdown"
+  , expectLspExitStatus "LSP exit status follows shutdown state"
   , expectPackageFile
       "package manifest parses"
       "test/fixtures/packages/hello/Silt.pkg"
@@ -970,6 +980,170 @@ expectDiagnosticsJsonRender label diagnostics pathFragment messageFragment = do
     else do
       putStrLn ("FAIL [" ++ label ++ "] expected escaped fragments, got:\n" ++ output)
       pure False
+
+expectLspInitialize :: String -> IO Bool
+expectLspInitialize label = do
+  let (_state, responses, stopCode) =
+        handleLspMessage initialLspState lspInitializeMessage
+      output = unlines responses
+  if isNothing stopCode
+    && "\"id\":1" `isInfixOf` output
+    && "\"textDocumentSync\":{\"openClose\":true,\"change\":1}" `isInfixOf` output
+    && "\"name\":\"silt-lsp\"" `isInfixOf` output
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] unexpected initialize output:\n" ++ output)
+      pure False
+
+expectLspDidOpenDiagnostics :: String -> IO Bool
+expectLspDidOpenDiagnostics label = do
+  let message =
+        lspDidOpenMessage
+          "file:///tmp/silt-lsp-messy.silt"
+          "(claim id(Pi((A 0 Type)(x A))A))\n(def id(fn((A 0 Type)(x A))x))\n"
+      (_state, responses, stopCode) = handleLspMessage lspReadyState message
+      output = unlines responses
+  if isNothing stopCode
+    && "\"method\":\"textDocument/publishDiagnostics\"" `isInfixOf` output
+    && "\"uri\":\"file:///tmp/silt-lsp-messy.silt\"" `isInfixOf` output
+    && "\"message\":\"not canonical; run silt fmt\"" `isInfixOf` output
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] unexpected didOpen output:\n" ++ output)
+      pure False
+
+expectLspDidChangeDiagnostics :: String -> IO Bool
+expectLspDidChangeDiagnostics label = do
+  let (openedState, _openResponses, _openStop) =
+        handleLspMessage lspReadyState (lspDidOpenMessage "file:///tmp/silt-lsp-change.silt" "(claim ok U64)\n\n(def ok (u64 1))\n")
+      changeMessage =
+        "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/didChange\",\"params\":{\"textDocument\":{\"uri\":\"file:///tmp/silt-lsp-change.silt\",\"version\":2},\"contentChanges\":[{\"text\":"
+          ++ renderJsonString "(claim bad U64)\n\n(def bad True)\n"
+          ++ "}]}}"
+      (_state, responses, stopCode) = handleLspMessage openedState changeMessage
+      output = unlines responses
+  if isNothing stopCode
+    && "\"uri\":\"file:///tmp/silt-lsp-change.silt\"" `isInfixOf` output
+    && "type mismatch" `isInfixOf` output
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] unexpected didChange output:\n" ++ output)
+      pure False
+
+expectLspDidCloseDiagnostics :: String -> IO Bool
+expectLspDidCloseDiagnostics label = do
+  let (openedState, _openResponses, _openStop) =
+        handleLspMessage lspReadyState (lspDidOpenMessage "file:///tmp/silt-lsp-close.silt" "(claim ok U64)\n\n(def ok (u64 1))\n")
+      closeMessage =
+        "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/didClose\",\"params\":{\"textDocument\":{\"uri\":\"file:///tmp/silt-lsp-close.silt\"}}}"
+      (_state, responses, stopCode) = handleLspMessage openedState closeMessage
+      output = unlines responses
+  if isNothing stopCode
+    && "\"uri\":\"file:///tmp/silt-lsp-close.silt\"" `isInfixOf` output
+    && "\"diagnostics\":[]" `isInfixOf` output
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] unexpected didClose output:\n" ++ output)
+      pure False
+
+expectLspIgnoresPreInitializeDocument :: String -> IO Bool
+expectLspIgnoresPreInitializeDocument label = do
+  let (_state, responses, stopCode) =
+        handleLspMessage initialLspState (lspDidOpenMessage "file:///tmp/silt-lsp-pre-init.silt" "(claim ok U64)\n\n(def ok (u64 1))\n")
+  if null responses && isNothing stopCode
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] expected no pre-initialize diagnostics")
+      pure False
+
+expectLspInitializedDoesNotOpenGate :: String -> IO Bool
+expectLspInitializedDoesNotOpenGate label = do
+  let (notReadyState, initializedResponses, initializedStop) =
+        handleLspMessage initialLspState lspInitializedMessage
+      (_state, responses, stopCode) =
+        handleLspMessage notReadyState (lspDidOpenMessage "file:///tmp/silt-lsp-initialized-only.silt" "(claim ok U64)\n\n(def ok (u64 1))\n")
+  if null initializedResponses
+    && isNothing initializedStop
+    && null responses
+    && isNothing stopCode
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] expected initialized notification alone to keep document gate closed")
+      pure False
+
+expectLspShutdownLifecycle :: String -> IO Bool
+expectLspShutdownLifecycle label = do
+  let (shutdownState, shutdownResponses, shutdownStop) = handleLspMessage lspReadyState lspShutdownMessage
+      (_state, responses, stopCode) =
+        handleLspMessage shutdownState (lspDidOpenMessage "file:///tmp/silt-lsp-after-shutdown.silt" "(claim bad U64)\n\n(def bad True)\n")
+      shutdownOutput = unlines shutdownResponses
+  if isNothing shutdownStop
+    && "\"id\":2" `isInfixOf` shutdownOutput
+    && null responses
+    && isNothing stopCode
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] unexpected shutdown lifecycle output:\n" ++ shutdownOutput ++ unlines responses)
+      pure False
+
+expectLspExitStatus :: String -> IO Bool
+expectLspExitStatus label = do
+  let (_earlyState, _earlyResponses, earlyStop) = handleLspMessage initialLspState lspExitMessage
+      (shutdownState, _shutdownResponses, _shutdownStop) = handleLspMessage lspReadyState lspShutdownMessage
+      (_lateState, _lateResponses, lateStop) = handleLspMessage shutdownState lspExitMessage
+  if earlyStop == Just (ExitFailure 1) && lateStop == Just ExitSuccess
+    then do
+      putStrLn ("PASS [" ++ label ++ "]")
+      pure True
+    else do
+      putStrLn ("FAIL [" ++ label ++ "] unexpected exit status")
+      pure False
+
+lspReadyState :: LspState
+lspReadyState =
+  let (initializedState, _initializeResponses, _initializeStop) =
+        handleLspMessage initialLspState lspInitializeMessage
+      (readyState, _initializedResponses, _initializedStop) =
+        handleLspMessage initializedState lspInitializedMessage
+   in readyState
+
+lspInitializeMessage :: String
+lspInitializeMessage =
+  "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}"
+
+lspInitializedMessage :: String
+lspInitializedMessage =
+  "{\"jsonrpc\":\"2.0\",\"method\":\"initialized\",\"params\":{}}"
+
+lspShutdownMessage :: String
+lspShutdownMessage =
+  "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"shutdown\",\"params\":null}"
+
+lspExitMessage :: String
+lspExitMessage =
+  "{\"jsonrpc\":\"2.0\",\"method\":\"exit\",\"params\":null}"
+
+lspDidOpenMessage :: String -> String -> String
+lspDidOpenMessage uri text =
+  "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/didOpen\",\"params\":{\"textDocument\":{\"uri\":"
+    ++ renderJsonString uri
+    ++ ",\"languageId\":\"silt\",\"version\":1,\"text\":"
+    ++ renderJsonString text
+    ++ "}}}"
 
 expectFailure :: String -> String -> IO Bool
 expectFailure label source =

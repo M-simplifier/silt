@@ -18,10 +18,12 @@ common common-options
   ghc-options:      -Wall
   build-depends:
       base >=4.18 && <5
+    , bytestring
     , containers
     , directory
     , filepath
     , process
+    , text
 
 executable silt
   import:           common-options
@@ -33,6 +35,7 @@ executable silt
       Silt.Codegen.C
       Silt.Elab
       Silt.Format
+      Silt.LSP
       Silt.Lint
       Silt.Package
       Silt.PackageDoc
@@ -50,6 +53,7 @@ test-suite silt-test
       Silt.Codegen.C
       Silt.Elab
       Silt.Format
+      Silt.LSP
       Silt.Lint
       Silt.Package
       Silt.PackageDoc
