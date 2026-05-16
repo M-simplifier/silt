@@ -102,6 +102,10 @@ grep -q "list-count" editors/neovim/syntax/silt.vim
 grep -q "list-append" editors/neovim/syntax/silt.vim
 grep -q "list-filter" editors/neovim/syntax/silt.vim
 grep -q "list-reverse" editors/neovim/syntax/silt.vim
+grep -q "byte-slice-find-slice" editors/neovim/syntax/silt.vim
+grep -q "byte-slice-contains-slice" editors/neovim/syntax/silt.vim
+grep -q "text-find-text" editors/neovim/syntax/silt.vim
+grep -q "text-contains-text" editors/neovim/syntax/silt.vim
 
 if command -v nvim >/dev/null 2>&1; then
   nvim --headless -u NONE \

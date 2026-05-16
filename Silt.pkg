@@ -165,6 +165,16 @@
       stdlib/hosted.silt
       examples/hosted-byte-search.silt)
     (entry hosted-byte-search-main))
+  (bin
+    hosted-text-search
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-text-search.silt)
+    (entry hosted-text-search-main))
   (test
     ascii-test
     (sources stdlib/core.silt stdlib/ascii.silt examples/ascii-predicates.silt)
@@ -277,6 +287,16 @@
       stdlib/hosted.silt
       examples/text-scan.silt)
     (entry text-scan-test))
+  (test
+    text-search-test
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/text-search.silt)
+    (entry text-search-test))
   (test
     text-line-test
     (sources
