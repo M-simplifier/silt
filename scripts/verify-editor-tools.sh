@@ -95,6 +95,9 @@ grep -q "syntax keyword siltDeclaration" editors/neovim/syntax/silt.vim
 grep -q "syntax region siltString" editors/neovim/syntax/silt.vim
 grep -q "u64-to-nat" editors/neovim/syntax/silt.vim
 grep -q "list-elim" editors/neovim/syntax/silt.vim
+grep -q "list-append" editors/neovim/syntax/silt.vim
+grep -q "list-filter" editors/neovim/syntax/silt.vim
+grep -q "list-reverse" editors/neovim/syntax/silt.vim
 
 if command -v nvim >/dev/null 2>&1; then
   nvim --headless -u NONE \

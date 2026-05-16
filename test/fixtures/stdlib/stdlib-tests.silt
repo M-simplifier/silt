@@ -263,6 +263,45 @@
     (fn ((head U64) (rec U64)) (u64-add head rec))
     (Cons U64 (u64 4) (Cons U64 (u64 5) (Nil U64)))))
 
+(claim stdlib-list-append-length-sample U64)
+
+(def
+  stdlib-list-append-length-sample
+  (nat-to-word
+    (list-length
+      U64
+      (list-append
+        U64
+        (Cons U64 (u64 1) (Cons U64 (u64 2) (Nil U64)))
+        (Cons U64 (u64 3) (Nil U64))))))
+
+(claim stdlib-list-append-empty-left-sample U64)
+
+(def
+  stdlib-list-append-empty-left-sample
+  (list-head-or U64 (u64 0) (list-append U64 (Nil U64) (Cons U64 (u64 44) (Nil U64)))))
+
+(claim stdlib-list-filter-length-sample U64)
+
+(def
+  stdlib-list-filter-length-sample
+  (nat-to-word
+    (list-length
+      U64
+      (list-filter
+        U64
+        (fn ((value U64)) (u64-lt value (u64 3)))
+        (Cons U64 (u64 1) (Cons U64 (u64 3) (Cons U64 (u64 2) (Nil U64))))))))
+
+(claim stdlib-list-reverse-head-sample U64)
+
+(def
+  stdlib-list-reverse-head-sample
+  (list-head-or
+    U64
+    (u64 0)
+    (list-reverse U64 (Cons U64 (u64 4) (Cons U64 (u64 5) (Nil U64))))))
+
 (claim stdlib-list-recursion-test Bool)
 
 (def
@@ -275,7 +314,15 @@
         (u64-eq stdlib-list-length-nil-sample (u64 0))
         (bool-and
           (u64-eq stdlib-list-map-sample (u64 10))
-          (u64-eq stdlib-list-fold-right-sample (u64 9)))))))
+          (bool-and
+            (u64-eq stdlib-list-fold-right-sample (u64 9))
+            (bool-and
+              (u64-eq stdlib-list-append-length-sample (u64 3))
+              (bool-and
+                (u64-eq stdlib-list-append-empty-left-sample (u64 44))
+                (bool-and
+                  (u64-eq stdlib-list-filter-length-sample (u64 2))
+                  (u64-eq stdlib-list-reverse-head-sample (u64 5)))))))))))
 
 (claim stdlib-text-len-sample U64)
 

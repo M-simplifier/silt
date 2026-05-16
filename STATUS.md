@@ -35,7 +35,8 @@ Silt currently demonstrates:
   `Option` and `Result` helpers, including map/and-then-style combinators,
   plus a built-in checker/normalizer-backed `List` with option-shaped head/tail
   accessors and closed structural recursion through `list-elim`,
-  `list-length`, `list-map`, and `list-fold-right`; pure `Nat` addition,
+  `list-length`, `list-map`, `list-filter`, `list-append`, `list-reverse`, and
+  `list-fold-right`; pure `Nat` addition,
   multiplication, predecessor, saturating subtraction, equality, and order
   helpers backed by `nat-elim`; explicit `ByteSlice` and `TextView` views over `U8` /
   `Ptr U8`; bounded pure view helpers for empty checks, `take`, and `drop`;
@@ -69,8 +70,9 @@ Silt currently demonstrates:
   `HostReadStdinResult` body/status wrapper plus explicit stderr byte/text
   writers
 - primitive-recursive factorial and Fibonacci examples over `Nat`, written with
-  `nat-elim`, plus closed `List` length, map, and fold examples written through
-  `list-elim`, all tested through closed normalization plus package test targets
+  `nat-elim`, plus closed `List` length, map, filter, append, reverse, and fold
+  examples written through `list-elim`, all tested through closed normalization
+  plus package test targets
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
   `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-ascii-trim`,
   `hosted-size-report`, and
@@ -235,7 +237,8 @@ Silt does not currently claim:
 - inferred ownership or a full aliasing discipline
 - structural recursion for arbitrary user-defined data, dependent list
   induction, runtime code generation for generic `List` recursion, runtime
-  representation for generic ADTs, or general closure conversion
+  representation for generic ADTs, open-term `List` algebraic laws, a broad
+  sequence library, or general closure conversion
 - Unicode categories, locale-sensitive behavior, case conversion, UTF-8
   validation, general string literals or a string type beyond the current
   `static-bytes` byte literal convenience, CRLF normalization, split-all line

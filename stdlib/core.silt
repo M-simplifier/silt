@@ -178,6 +178,19 @@
     ((A 0 Type) (B 0 Type) (nil B) (cons (Pi ((head A) (rec B)) B)) (value (List A)))
     (list-elim A B nil (fn ((head A) (tail (List A)) (rec B)) (cons head rec)) value)))
 
+(claim list-append (Pi ((A 0 Type) (left (List A)) (right (List A))) (List A)))
+
+(def
+  list-append
+  (fn
+    ((A 0 Type) (left (List A)) (right (List A)))
+    (list-elim
+      A
+      (List A)
+      right
+      (fn ((head A) (tail (List A)) (rec (List A))) (Cons A head rec))
+      left)))
+
 (claim list-length (Pi ((A 0 Type) (value (List A))) Nat))
 
 (def
@@ -199,4 +212,34 @@
       (List B)
       (Nil B)
       (fn ((head A) (tail (List A)) (rec (List B))) (Cons B (f head) rec))
+      value)))
+
+(claim
+  list-filter
+  (Pi ((A 0 Type) (keep (Pi ((value A)) Bool)) (value (List A))) (List A)))
+
+(def
+  list-filter
+  (fn
+    ((A 0 Type) (keep (Pi ((value A)) Bool)) (value (List A)))
+    (list-elim
+      A
+      (List A)
+      (Nil A)
+      (fn
+        ((head A) (tail (List A)) (rec (List A)))
+        (match (keep head) ((False) rec) ((True) (Cons A head rec))))
+      value)))
+
+(claim list-reverse (Pi ((A 0 Type) (value (List A))) (List A)))
+
+(def
+  list-reverse
+  (fn
+    ((A 0 Type) (value (List A)))
+    (list-fold-right
+      A
+      (List A)
+      (Nil A)
+      (fn ((head A) (rec (List A))) (list-append A rec (Cons A head (Nil A))))
       value)))

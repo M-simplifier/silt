@@ -35,7 +35,7 @@ lint through formatter/parser/checker facts, machine-readable diagnostics JSON,
 and a diagnostics-only stdio LSP seed, a single-local-package hosted
 new/build/run/test/doc CLI spine, hosted stdlib seed
 with pure `Nat` arithmetic/order helpers, built-in `List` structural recursion
-helpers, byte/text, ASCII predicate, single-byte count, ASCII
+helpers including append/filter/reverse, byte/text, ASCII predicate, single-byte count, ASCII
 decimal parse/format, text output, process-argument reads, environment lookup,
 first-order file writes and reads with read-status observation, hosted
 size/config/LF-count/stdin-LF-count/byte-drop/source-hygiene/one-byte-search
