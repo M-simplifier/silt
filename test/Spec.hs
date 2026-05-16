@@ -313,7 +313,11 @@ main = runChecks
   , expectCodegenFiles "hosted byte search stderr codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_put_error_byte(byte_"
   , expectCheck "generic data" optionSource
   , expectCheck "recursive generic data" recursiveDataSource
+  , expectCheck "acyclic shared definition graph" acyclicSharedDefinitionsSource
   , expectFailure "missing claim" "(def nope Type)"
+  , expectFailureWithFragment "direct recursive definition" directRecursiveDefinitionSource "recursive definition cycle: loop -> loop"
+  , expectFailureWithFragment "mutual recursive definitions" mutualRecursiveDefinitionSource "recursive definition cycle: left -> right -> left"
+  , expectFailureWithFragment "three-node recursive definitions" threeNodeRecursiveDefinitionSource "recursive definition cycle: alpha -> beta -> gamma -> alpha"
   , expectFailure "ill-typed body" illTypedSource
   , expectFailure "bad match scrutinee" badMatchSource
   , expectFailureWithFragment "bool match rejects extra Nat arm" badBoolExtraArmSource "constructor Z does not belong to data Bool"
@@ -2968,6 +2972,46 @@ recursiveDataSource =
     , "      ((Cons head tail) head))))"
     , "(claim picked-head Nat)"
     , "(def picked-head (head-or Nat (S Z) (Cons Nat Z (Nil Nat))))"
+    ]
+
+acyclicSharedDefinitionsSource :: String
+acyclicSharedDefinitionsSource =
+  unlines
+    [ "(claim leaf Nat)"
+    , "(claim left Nat)"
+    , "(claim right Nat)"
+    , "(claim root Nat)"
+    , "(def leaf Z)"
+    , "(def left leaf)"
+    , "(def right leaf)"
+    , "(def root left)"
+    ]
+
+directRecursiveDefinitionSource :: String
+directRecursiveDefinitionSource =
+  unlines
+    [ "(claim loop (Pi ((n Nat)) Nat))"
+    , "(def loop (fn ((n Nat)) (loop n)))"
+    ]
+
+mutualRecursiveDefinitionSource :: String
+mutualRecursiveDefinitionSource =
+  unlines
+    [ "(claim left Nat)"
+    , "(claim right Nat)"
+    , "(def left right)"
+    , "(def right left)"
+    ]
+
+threeNodeRecursiveDefinitionSource :: String
+threeNodeRecursiveDefinitionSource =
+  unlines
+    [ "(claim alpha Nat)"
+    , "(claim beta Nat)"
+    , "(claim gamma Nat)"
+    , "(def alpha beta)"
+    , "(def beta gamma)"
+    , "(def gamma alpha)"
     ]
 
 normalizationSource :: String

@@ -8,9 +8,9 @@ module Silt.Elab
   , renderCheckedDecl
   ) where
 
-import Control.Monad (unless, when)
+import Control.Monad (foldM, unless, when)
 import Data.Bits ((.&.), (.|.), shiftL, shiftR, xor)
-import Data.List (nub, tails)
+import Data.List (intercalate, nub, tails)
 import Data.Word (Word64)
 import qualified Data.Map.Strict as Map
 import Silt.Syntax
@@ -124,8 +124,10 @@ checkProgram program =
   snd <$> checkProgramState program
 
 checkProgramState :: Program -> Either String (Globals, [CheckedDecl])
-checkProgramState (Program decls) =
-  foldl step (Right (builtinsGlobals, [])) decls
+checkProgramState (Program decls) = do
+  (globals, checked) <- foldl step (Right (builtinsGlobals, [])) decls
+  rejectRecursiveDefinitions globals
+  pure (globals, checked)
   where
     step :: Either String (Globals, [CheckedDecl]) -> Decl -> Either String (Globals, [CheckedDecl])
     step result decl = do
@@ -1803,6 +1805,67 @@ unfoldApps =
   where
     go args (TApp fn arg) = go (arg : args) fn
     go args headTerm = (headTerm, args)
+
+rejectRecursiveDefinitions :: Globals -> Either String ()
+rejectRecursiveDefinitions globals =
+  foldM visitRoot Map.empty definitionNames >> pure ()
+  where
+    definitions = Map.mapMaybe globalDefinition (globalsEntries globals)
+    adjacency = Map.map (definitionReferences definitions) definitions
+    definitionNames = Map.keys definitions
+
+    visitRoot states name =
+      case Map.lookup name states of
+        Just True -> Right states
+        Just False -> reportCycle [] name
+        Nothing -> visit [] states name
+
+    visit path states name =
+      case Map.lookup name states of
+        Just True -> Right states
+        Just False -> reportCycle path name
+        Nothing ->
+          case Map.lookup name adjacency of
+            Nothing -> Right states
+            Just refs -> do
+              states' <- foldM (visit (path ++ [name])) (Map.insert name False states) refs
+              Right (Map.insert name True states')
+
+    reportCycle path name =
+      let cycleNames = dropWhile (/= name) path ++ [name]
+       in Left ("recursive definition cycle: " ++ intercalate " -> " cycleNames)
+
+definitionReferences :: Map.Map Name Term -> Term -> [Name]
+definitionReferences definitions term =
+  nub (go term)
+  where
+    go value =
+      case value of
+        TVar _ -> []
+        TGlobal name
+          | Map.member name definitions -> [name]
+          | otherwise -> []
+        TUniverse _ -> []
+        TU8 _ -> []
+        TU64 _ -> []
+        TAddr _ -> []
+        TStaticBytesPtr _ -> []
+        TStaticCellPtr _ -> []
+        TStaticValuePtr _ -> []
+        TLayout _ fields ->
+          concat [go fieldValue | LayoutFieldInit _ fieldValue <- fields]
+        TLayoutField _ _ base ->
+          go base
+        TLayoutUpdate _ _ base fieldValue ->
+          go base ++ go fieldValue
+        TPi _ _ domain codomain ->
+          go domain ++ go codomain
+        TLam _ _ body ->
+          go body
+        TMatch scrutinee cases ->
+          go scrutinee ++ concat [go body | CaseTerm _ _ body <- cases]
+        TApp fn arg ->
+          go fn ++ go arg
 
 countVarUses :: Int -> Term -> Int
 countVarUses target term =
