@@ -138,6 +138,9 @@ grep -Fq '<code>examples/hosted-stdin-lf-count.silt</code>' out/silt/doc/index.h
 grep -Fq '<td><code>hosted-byte-drop</code></td>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-byte-drop-main</code></td>' out/silt/doc/index.html
 grep -Fq '<code>examples/hosted-byte-drop.silt</code>' out/silt/doc/index.html
+grep -Fq '<td><code>hosted-source-hygiene</code></td>' out/silt/doc/index.html
+grep -Fq '<td><code>hosted-source-hygiene-main</code></td>' out/silt/doc/index.html
+grep -Fq '<code>examples/hosted-source-hygiene.silt</code>' out/silt/doc/index.html
 grep -Fq '<td><code>list-recursion-test</code></td>' out/silt/doc/index.html
 grep -Fq '<code>examples/list-recursion.silt</code>' out/silt/doc/index.html
 

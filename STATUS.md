@@ -70,10 +70,11 @@ Silt currently demonstrates:
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
   `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-size-report`, and
   `hosted-config-report` / `hosted-lf-count` / `hosted-stdin-lf-count` /
-  `hosted-byte-drop` / `hosted-byte-search` package examples that compile, run,
-  print, read, write, report, count literal LF bytes from files or stdin, drop
-  matching bytes from stdin, or search for one byte through the hosted package
-  harness, and exercise process status where relevant, plus
+  `hosted-byte-drop` / `hosted-source-hygiene` / `hosted-byte-search` package
+  examples that compile, run, print, read, write, report, count literal LF
+  bytes from files or stdin, drop matching bytes from stdin, check source-byte
+  hygiene, or search for one byte through the hosted package harness, and
+  exercise process status where relevant, plus
   `text-eq-test`, `text-prefix-test`,
   `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
   `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
@@ -121,6 +122,10 @@ Silt currently demonstrates:
   into an explicit host-owned `TextView`, byte-wise equality, effectful
   stdout byte writes for retained bytes, stderr diagnostics, and process status
   in one checked runnable example
+- a hosted source-byte hygiene package target, `hosted-source-hygiene`, that
+  combines process args, file read, explicit `TextView` byte-containment checks
+  for NUL and CR, stdout/status reporting for `clean` / `nul` / `cr`, stderr
+  diagnostics, and process status in one checked runnable example
 - a hosted one-byte search pressure-test package target, `hosted-byte-search`,
   that combines process args, one-byte argument validation, file read,
   byte-containment search over an explicit `TextView`, stdout found/missing
@@ -175,6 +180,7 @@ scripts/verify-hosted-config-report.sh
 scripts/verify-hosted-lf-count.sh
 scripts/verify-hosted-stdin-lf-count.sh
 scripts/verify-hosted-byte-drop.sh
+scripts/verify-hosted-source-hygiene.sh
 scripts/verify-hosted-byte-search.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
@@ -202,10 +208,10 @@ Silt does not currently claim:
   file buffers, streaming stdin, repeated stdin reads with independent
   lifetimes, `tr`-style byte translation, process spawning, signals,
   stdout/stderr abstractions beyond the current explicit byte/text writers,
-  general hosted IO, environment enumeration or mutation, source-comment or
-  type-signature API docs, cross-package docs, or package argument policy beyond
-  `silt new NAME`, `silt run [TARGET] -- ARG...`, `silt test TARGET`, and
-  `silt doc`
+  general hosted IO, environment enumeration or mutation, multi-file source
+  traversal, CRLF normalization, source-comment or type-signature API docs,
+  cross-package docs, or package argument policy beyond `silt new NAME`,
+  `silt run [TARGET] -- ARG...`, `silt test TARGET`, and `silt doc`
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline

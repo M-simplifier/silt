@@ -93,6 +93,7 @@ main = runChecks
       , (PackageBin, "hosted-lf-count")
       , (PackageBin, "hosted-stdin-lf-count")
       , (PackageBin, "hosted-byte-drop")
+      , (PackageBin, "hosted-source-hygiene")
       , (PackageBin, "hosted-byte-search")
       , (PackageTest, "ascii-test")
       , (PackageTest, "ascii-slice-test")
@@ -351,6 +352,16 @@ main = runChecks
   , expectCodegenFiles "hosted byte drop needle compare codegen" hostedByteDropSources "hosted-byte-drop-main" "== needle_"
   , expectCodegenFiles "hosted byte drop stdout codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_put_byte(byte_"
   , expectCodegenFiles "hosted byte drop stderr codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_put_error_byte(byte_"
+  , expectCheckFiles "hosted source hygiene bundle" hostedSourceHygieneSources
+  , expectCodegenFiles "hosted source hygiene arg count codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted source hygiene file read codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted source hygiene file-read status codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "silt_host_file_read_ok"
+  , expectCodegenFiles "hosted source hygiene read result layout codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "silt_layout_HostReadFileResult"
+  , expectCodegenFiles "hosted source hygiene loop codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "for (uint64_t index_"
+  , expectCodegenFiles "hosted source hygiene NUL compare codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "== ((uint8_t)0u)"
+  , expectCodegenFiles "hosted source hygiene CR compare codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "== ((uint8_t)13u)"
+  , expectCodegenFiles "hosted source hygiene stdout codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted source hygiene stderr codegen" hostedSourceHygieneSources "hosted-source-hygiene-main" "silt_host_put_error_byte(byte_"
   , expectCheckFiles "hosted byte search pressure app bundle" hostedByteSearchSources
   , expectCodegenFiles "hosted byte search arg count codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_arg_count"
   , expectCodegenFiles "hosted byte search file read codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_file_read_base"
@@ -3427,6 +3438,16 @@ hostedByteDropSources =
   , "stdlib/text.silt"
   , "stdlib/hosted.silt"
   , "examples/hosted-byte-drop.silt"
+  ]
+
+hostedSourceHygieneSources :: [FilePath]
+hostedSourceHygieneSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/hosted-source-hygiene.silt"
   ]
 
 hostedByteSearchSources :: [FilePath]

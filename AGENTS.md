@@ -37,8 +37,8 @@ with pure `Nat` arithmetic/order helpers, built-in `List` structural recursion
 helpers, byte/text, ASCII predicate, single-byte count, ASCII
 decimal parse/format, text output, process-argument reads, environment lookup,
 first-order file writes and reads with read-status observation, hosted
-size/config/LF-count/stdin-LF-count/byte-drop/one-byte-search pressure
-examples, and lightweight Neovim filetype/syntax files.
+size/config/LF-count/stdin-LF-count/byte-drop/source-hygiene/one-byte-search
+pressure examples, and lightweight Neovim filetype/syntax files.
 
 Silt is not a production compiler, package ecosystem, mature editor/LSP
 platform, self-hosted compiler, finished operating system, general allocator,
@@ -122,6 +122,7 @@ scripts/verify-hosted-config-report.sh
 scripts/verify-hosted-lf-count.sh
 scripts/verify-hosted-stdin-lf-count.sh
 scripts/verify-hosted-byte-drop.sh
+scripts/verify-hosted-source-hygiene.sh
 scripts/verify-hosted-byte-search.sh
 ```
 

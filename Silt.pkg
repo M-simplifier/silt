@@ -134,6 +134,16 @@
       examples/hosted-byte-drop.silt)
     (entry hosted-byte-drop-main))
   (bin
+    hosted-source-hygiene
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-source-hygiene.silt)
+    (entry hosted-source-hygiene-main))
+  (bin
     hosted-byte-search
     (sources
       stdlib/core.silt
