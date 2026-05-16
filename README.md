@@ -43,6 +43,9 @@ production kernel.
 - A machine-readable diagnostics seed, `silt diagnostics --json FILE...`, that
   reuses formatter/parser/checker lint facts and emits schema-tagged JSON for
   editor, LSP, and AI-tooling experiments.
+- A diagnostics-only stdio LSP seed, `silt lsp`, that handles initialize,
+  open/change/close document notifications, shutdown, and exit, then publishes
+  formatter/parser/checker diagnostics for open document text.
 - Lightweight Neovim filetype and syntax files for the current surface.
 - A single-local-package `Silt.pkg` spine with `new`, `build`, `run`, `test`,
   and `doc` for no-argument hosted entry functions, plus argument forwarding,

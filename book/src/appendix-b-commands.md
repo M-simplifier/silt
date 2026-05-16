@@ -61,10 +61,11 @@ cabal run silt -- fmt --write test/fixtures/format/clean.silt
 ```bash
 cabal run silt -- lint test/fixtures/lint/clean.silt
 cabal run silt -- diagnostics --json test/fixtures/lint/clean.silt
+cabal run silt -- lsp
 scripts/verify-editor-tools.sh
 ```
 
-`lint` は、canonical formatting、source bundle parsing、checker diagnosticsをまとめて確認します。`diagnostics --json` は同じ事実を `silt.diagnostics.v0` JSONとして出力します。`editors/neovim/` には、現在のpublic surface向けの軽量なfiletype/syntax fileがあります。これはLSP、semantic highlighting、formatter adapter、package-manager pluginではありません。
+`lint` は、canonical formatting、source bundle parsing、checker diagnosticsをまとめて確認します。`diagnostics --json` は同じ事実を `silt.diagnostics.v0` JSONとして出力します。`silt lsp` はdiagnostics-onlyなstdio LSP seedで、initialize、document open/change/close、shutdown、exitを扱い、open document textに対するformatter/parser/checker diagnosticsを `textDocument/publishDiagnostics` として返します。`editors/neovim/` には、現在のpublic surface向けの軽量なfiletype/syntax fileがあります。これは成熟したLSP、semantic highlighting、hover、completion、formatter adapter、package-manager pluginではありません。
 
 ## 型検査
 
