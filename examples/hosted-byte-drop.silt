@@ -1,0 +1,183 @@
+; Hosted stdin single-byte deletion filter.
+
+; Usage: hosted-byte-drop BYTE < INPUT
+
+; The program reads stdin as one host-owned TextView, drops bytes equal to the
+
+; one-byte BYTE argument, writes the remaining bytes to stdout, and reports
+
+; narrow failures on stderr.
+
+(static-bytes hosted-byte-drop-usage-bytes "usage: hosted-byte-drop BYTE < INPUT\n")
+
+(static-bytes hosted-byte-drop-invalid-byte-bytes "error: invalid byte\n")
+
+(static-bytes hosted-byte-drop-read-failed-bytes "error: stdin read failed\n")
+
+(claim hosted-byte-drop-usage-text TextView)
+
+(def
+  hosted-byte-drop-usage-text
+  (text-view-from hosted-byte-drop-usage-bytes hosted-byte-drop-usage-bytes-len))
+
+(claim hosted-byte-drop-invalid-byte-text TextView)
+
+(def
+  hosted-byte-drop-invalid-byte-text
+  (text-view-from
+    hosted-byte-drop-invalid-byte-bytes
+    hosted-byte-drop-invalid-byte-bytes-len))
+
+(claim hosted-byte-drop-read-failed-text TextView)
+
+(def
+  hosted-byte-drop-read-failed-text
+  (text-view-from
+    hosted-byte-drop-read-failed-bytes
+    hosted-byte-drop-read-failed-bytes-len))
+
+(claim hosted-byte-drop-ok U64)
+
+(def hosted-byte-drop-ok (u64 0))
+
+(claim hosted-byte-drop-usage U64)
+
+(def hosted-byte-drop-usage (u64 2))
+
+(claim hosted-byte-drop-invalid-byte U64)
+
+(def hosted-byte-drop-invalid-byte (u64 4))
+
+(claim hosted-byte-drop-read-failed U64)
+
+(def hosted-byte-drop-read-failed (u64 6))
+
+(claim
+  hosted-byte-drop-diagnostic
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def hosted-byte-drop-diagnostic host-status-with-error-text)
+
+(claim
+  hosted-byte-drop-loop
+  (Pi ((count Nat) (base (Ptr U8)) (needle U8)) (Eff HostIO HostIO Unit)))
+
+(def
+  hosted-byte-drop-loop
+  (fn
+    ((count Nat) (base (Ptr U8)) (needle U8))
+    (nat-elim
+      (Eff HostIO HostIO Unit)
+      (pure HostIO Unit tt)
+      (fn
+        ((index Nat) (rec (Eff HostIO HostIO Unit)))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Unit
+          Unit
+          rec
+          (fn
+            ((done 1 Unit))
+            (let
+              ((ignored 0 done))
+              (bind
+                HostIO
+                HostIO
+                HostIO
+                U8
+                Unit
+                (load HostIO U8 (ptr-step U8 base (nat-to-u64 index)))
+                (fn
+                  ((byte 1 U8))
+                  (if
+                    (u8-eq byte needle)
+                    (pure HostIO Unit tt)
+                    (host-write-byte-at base (nat-to-u64 index)))))))))
+      count)))
+
+(claim
+  hosted-byte-drop-write
+  (Pi ((body TextView) (needle U8)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-byte-drop-write
+  (fn
+    ((body TextView) (needle U8))
+    (host-status-after
+      (hosted-byte-drop-loop (u64-to-nat (text-len body)) (text-base body) needle)
+      hosted-byte-drop-ok)))
+
+(claim hosted-byte-drop-read-and-write (Pi ((needle U8)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-byte-drop-read-and-write
+  (fn
+    ((needle U8))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      HostReadStdinResult
+      U64
+      host-read-stdin-result
+      (fn
+        ((read-result 1 HostReadStdinResult))
+        (let-layout
+          HostReadStdinResult
+          ((ok read-ok) (text body))
+          read-result
+          (if
+            read-ok
+            (hosted-byte-drop-write body needle)
+            (hosted-byte-drop-diagnostic
+              hosted-byte-drop-read-failed-text
+              hosted-byte-drop-read-failed)))))))
+
+(claim
+  hosted-byte-drop-run-with-arg
+  (Pi ((needle-text TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-byte-drop-run-with-arg
+  (fn
+    ((needle-text TextView))
+    (if
+      (u64-eq (text-len needle-text) (u64 1))
+      (bind
+        HostIO
+        HostIO
+        HostIO
+        U8
+        U64
+        (load HostIO U8 (text-byte-at needle-text (u64 0)))
+        (fn ((needle 1 U8)) (hosted-byte-drop-read-and-write needle)))
+      (hosted-byte-drop-diagnostic
+        hosted-byte-drop-invalid-byte-text
+        hosted-byte-drop-invalid-byte))))
+
+(claim hosted-byte-drop-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-byte-drop-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (if
+        (u64-eq count (u64 2))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          TextView
+          U64
+          (host-arg-text (u64 1))
+          (fn ((needle-text 1 TextView)) (hosted-byte-drop-run-with-arg needle-text)))
+        (hosted-byte-drop-diagnostic hosted-byte-drop-usage-text hosted-byte-drop-usage)))))

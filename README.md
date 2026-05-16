@@ -80,8 +80,8 @@ production kernel.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, `hosted-copy`, and
   `hosted-size-report` / `hosted-config-report` / `hosted-lf-count` /
-  `hosted-stdin-lf-count`, that build and run through the package spine, plus
-  `text-eq-test`,
+  `hosted-stdin-lf-count` / `hosted-byte-drop`, that build and run through the
+  package spine, plus `text-eq-test`,
   `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `text-line-test`,
   `text-count-test`, `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
   `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`,
@@ -106,6 +106,10 @@ production kernel.
 - A hosted stdin LF-count filter, `hosted-stdin-lf-count`, that reads stdin as
   one host-owned `TextView`, counts literal LF bytes, writes the decimal count
   to stdout, and keeps this claim separate from streaming or general hosted IO.
+- A hosted byte-drop filter, `hosted-byte-drop`, that reads stdin as one
+  host-owned `TextView`, requires a one-byte argument, drops matching bytes,
+  writes the remaining bytes to stdout, and keeps this claim separate from
+  streaming, `tr`, or general hosted IO.
 - A hosted one-byte search pressure-test bin, `hosted-byte-search`, that reads
   an input file, validates a one-byte argument, searches file text through the
   explicit byte-containment helper, and reports found/missing through
@@ -153,6 +157,7 @@ scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
 scripts/verify-hosted-lf-count.sh
 scripts/verify-hosted-stdin-lf-count.sh
+scripts/verify-hosted-byte-drop.sh
 scripts/verify-hosted-byte-search.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh

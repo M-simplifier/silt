@@ -124,6 +124,16 @@
       examples/hosted-stdin-lf-count.silt)
     (entry hosted-stdin-lf-count-main))
   (bin
+    hosted-byte-drop
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-byte-drop.silt)
+    (entry hosted-byte-drop-main))
+  (bin
     hosted-byte-search
     (sources
       stdlib/core.silt
