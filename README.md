@@ -47,9 +47,11 @@ production kernel.
   and `doc` for no-argument hosted entry functions, plus argument forwarding,
   selected test-target execution, manifest-derived package docs, and exit status
   propagation through the hosted package harness.
-- A conservative standard-library seed: checker/normalizer-backed `Option`,
-  `Result`, and `List` helpers including option-shaped list head/tail
-  accessors, pure `Nat` arithmetic/order helpers, byte/text view types over
+- A conservative standard-library seed: checker/normalizer-backed `Option` and
+  `Result` helpers, plus a built-in checker/normalizer-backed `List` with
+  option-shaped head/tail accessors and closed structural recursion through
+  `list-elim`, `list-length`, `list-map`, and `list-fold-right`; pure `Nat`
+  arithmetic/order helpers, byte/text view types over
   `U8` and `Ptr U8`, bounded pure view helpers for
   empty/take/drop, byte-wise equality through `byte-slice-eq` / `text-eq`,
   prefix checks through `byte-slice-starts-with` / `text-starts-with`, suffix
@@ -70,15 +72,16 @@ production kernel.
   read-status observation, a first-order `HostReadFileResult` body/status
   wrapper, and explicit stderr byte/text diagnostics.
 - Example-level primitive-recursive factorial and Fibonacci programs over
-  `Nat`, written with `nat-elim` rather than top-level self-recursion.
+  `Nat`, written with `nat-elim` rather than top-level self-recursion, plus
+  closed `List` length, map, and fold examples written through `list-elim`.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, `hosted-copy`, and
   `hosted-size-report` / `hosted-config-report` / `hosted-lf-count`, that
   build and run through the package spine, plus `text-eq-test`,
   `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `text-line-test`,
   `text-count-test`, `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
-  `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`, and
-  `nat-recursion-test` as package test targets.
+  `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`,
+  `nat-recursion-test`, and `list-recursion-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
 - Target and boot contracts for the current `x86_64-sysv-elf`,
   `x86_64-limine-elf`, and `limine-x86_64` bridges.

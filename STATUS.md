@@ -27,9 +27,10 @@ Silt currently demonstrates:
   manifest-derived package docs, and exit status propagation through the hosted
   package harness
 - a conservative standard-library seed with checker/normalizer-backed
-  `Option`, `Result`, and `List` helpers, including map/and-then-style
-  combinators for `Option` and `Result` plus option-shaped list head/tail
-  accessors; pure `Nat` addition,
+  `Option` and `Result` helpers, including map/and-then-style combinators,
+  plus a built-in checker/normalizer-backed `List` with option-shaped head/tail
+  accessors and closed structural recursion through `list-elim`,
+  `list-length`, `list-map`, and `list-fold-right`; pure `Nat` addition,
   multiplication, predecessor, saturating subtraction, equality, and order
   helpers backed by `nat-elim`; explicit `ByteSlice` and `TextView` views over `U8` /
   `Ptr U8`; bounded pure view helpers for empty checks, `take`, and `drop`;
@@ -61,7 +62,8 @@ Silt currently demonstrates:
   a first-order `HostReadFileResult` body/status wrapper plus explicit stderr
   byte/text writers
 - primitive-recursive factorial and Fibonacci examples over `Nat`, written with
-  `nat-elim` and tested through closed normalization plus a package test target
+  `nat-elim`, plus closed `List` length, map, and fold examples written through
+  `list-elim`, all tested through closed normalization plus package test targets
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
   `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-size-report`, and
   `hosted-config-report` / `hosted-lf-count` / `hosted-byte-search` package
@@ -72,7 +74,7 @@ Silt currently demonstrates:
   `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
   `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
   `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`, and
-  `nat-recursion-test` as package test targets
+  `nat-recursion-test` / `list-recursion-test` as package test targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
   bridges
 - generated-code, object, linker, and QEMU marker-observation evidence for the
@@ -189,7 +191,9 @@ Silt does not currently claim:
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline
-- runtime representation for generic ADTs or general closure conversion
+- structural recursion for arbitrary user-defined data, dependent list
+  induction, runtime code generation for generic `List` recursion, runtime
+  representation for generic ADTs, or general closure conversion
 - Unicode categories, locale-sensitive behavior, case conversion, UTF-8
   validation, CRLF normalization, split-all line APIs, generic strings, arrays,
   dynamic slices, allocator-backed byte/text buffers, multi-byte search tools,

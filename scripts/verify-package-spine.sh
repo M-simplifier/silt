@@ -128,6 +128,8 @@ grep -Fq '<code>examples/hosted-config-report.silt</code>' out/silt/doc/index.ht
 grep -Fq '<td><code>hosted-copy</code></td>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-copy-main</code></td>' out/silt/doc/index.html
 grep -Fq '<code>examples/hosted-copy.silt</code>' out/silt/doc/index.html
+grep -Fq '<td><code>list-recursion-test</code></td>' out/silt/doc/index.html
+grep -Fq '<code>examples/list-recursion.silt</code>' out/silt/doc/index.html
 
 (
   cd test/fixtures/packages/hello

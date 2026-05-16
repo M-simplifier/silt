@@ -96,6 +96,7 @@ main = runChecks
       , (PackageTest, "ascii-decimal-u64-format-test")
       , (PackageTest, "stdlib-test")
       , (PackageTest, "nat-recursion-test")
+      , (PackageTest, "list-recursion-test")
       , (PackageTest, "text-eq-test")
       , (PackageTest, "text-prefix-test")
       , (PackageTest, "text-suffix-test")
@@ -129,6 +130,12 @@ main = runChecks
         , expectNormalizedFiles "stdlib list head option nil normalization" stdlibHostedSources "stdlib-list-head-option-nil-sample" "(u64 77)"
         , expectNormalizedFiles "stdlib list tail option normalization" stdlibHostedSources "stdlib-list-tail-option-sample" "(u64 2)"
         , expectNormalizedFiles "stdlib list tail option nil normalization" stdlibHostedSources "stdlib-list-tail-option-nil-sample" "(u64 55)"
+        , expectNormalizedFiles "stdlib list-elim sum normalization" stdlibHostedSources "stdlib-list-elim-sum-sample" "(u64 6)"
+        , expectNormalizedFiles "stdlib list length normalization" stdlibHostedSources "stdlib-list-length-sample" "(u64 2)"
+        , expectNormalizedFiles "stdlib list length nil normalization" stdlibHostedSources "stdlib-list-length-nil-sample" "(u64 0)"
+        , expectNormalizedFiles "stdlib list map normalization" stdlibHostedSources "stdlib-list-map-sample" "(u64 10)"
+        , expectNormalizedFiles "stdlib list fold-right normalization" stdlibHostedSources "stdlib-list-fold-right-sample" "(u64 9)"
+        , expectNormalizedFiles "stdlib list recursion test normalization" stdlibHostedSources "stdlib-list-recursion-test" "True"
         , expectNormalizedFiles "stdlib Nat add normalization" stdlibHostedSources "stdlib-nat-add-sample" "(u64 5)"
         , expectNormalizedFiles "stdlib Nat add zero-left normalization" stdlibHostedSources "stdlib-nat-add-zero-left-sample" "(u64 2)"
         , expectNormalizedFiles "stdlib Nat add zero-right normalization" stdlibHostedSources "stdlib-nat-add-zero-right-sample" "(u64 2)"
@@ -143,6 +150,10 @@ main = runChecks
         , expectNormalizedFiles "Nat recursion factorial normalization" stdlibHostedSources "nat-recursion-factorial-five" "(u64 120)"
         , expectNormalizedFiles "Nat recursion fibonacci normalization" stdlibHostedSources "nat-recursion-fibonacci-ten" "(u64 55)"
         , expectNormalizedFiles "Nat recursion test normalization" stdlibHostedSources "nat-recursion-test" "True"
+        , expectNormalizedFiles "List recursion length normalization" stdlibHostedSources "list-recursion-length-three" "(u64 3)"
+        , expectNormalizedFiles "List recursion fold normalization" stdlibHostedSources "list-recursion-fold-sum" "(u64 6)"
+        , expectNormalizedFiles "List recursion map normalization" stdlibHostedSources "list-recursion-map-head" "(u64 11)"
+        , expectNormalizedFiles "List recursion test normalization" stdlibHostedSources "list-recursion-test" "True"
         , expectNormalizedFiles "stdlib combinator happy test normalization" stdlibHostedSources "stdlib-combinator-happy-test" "True"
         , expectNormalizedFiles "stdlib combinator fallback test normalization" stdlibHostedSources "stdlib-combinator-fallback-test" "True"
         , expectNormalizedFiles "stdlib combinator test normalization" stdlibHostedSources "stdlib-combinator-test" "True"
@@ -326,6 +337,8 @@ main = runChecks
   , expectCodegenFiles "hosted byte search stderr codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_put_error_byte(byte_"
   , expectCheck "generic data" optionSource
   , expectCheck "recursive generic data" recursiveDataSource
+  , expectFailureWithFragment "builtin List cannot be redefined" badListRedefinitionSource "duplicate top-level name List"
+  , expectFailureWithFragment "list-elim primitive cannot be retyped" badListElimRetypeSource "duplicate top-level name list-elim"
   , expectCheck "acyclic shared definition graph" acyclicSharedDefinitionsSource
   , expectFailure "missing claim" "(def nope Type)"
   , expectFailureWithFragment "direct recursive definition" directRecursiveDefinitionSource "recursive definition cycle: loop -> loop"
@@ -2997,17 +3010,31 @@ optionSource =
 recursiveDataSource :: String
 recursiveDataSource =
   unlines
+    [ "(data StageList ((A 0 Type))"
+    , "  (StageNil)"
+    , "  (StageCons A (StageList A)))"
+    , "(claim head-or (Pi ((A 0 Type) (fallback A) (xs (StageList A))) A))"
+    , "(def head-or"
+    , "  (fn ((A 0 Type) (fallback A) (xs (StageList A)))"
+    , "    (match xs"
+    , "      ((StageNil) fallback)"
+    , "      ((StageCons head tail) head))))"
+    , "(claim picked-head Nat)"
+    , "(def picked-head (head-or Nat (S Z) (StageCons Nat Z (StageNil Nat))))"
+    ]
+
+badListRedefinitionSource :: String
+badListRedefinitionSource =
+  unlines
     [ "(data List ((A 0 Type))"
     , "  (Nil)"
     , "  (Cons A (List A)))"
-    , "(claim head-or (Pi ((A 0 Type) (fallback A) (xs (List A))) A))"
-    , "(def head-or"
-    , "  (fn ((A 0 Type) (fallback A) (xs (List A)))"
-    , "    (match xs"
-    , "      ((Nil) fallback)"
-    , "      ((Cons head tail) head))))"
-    , "(claim picked-head Nat)"
-    , "(def picked-head (head-or Nat (S Z) (Cons Nat Z (Nil Nat))))"
+    ]
+
+badListElimRetypeSource :: String
+badListElimRetypeSource =
+  unlines
+    [ "(claim list-elim (Pi ((A 0 Type) (R 0 Type) (nil U64) (cons U64) (value (List A))) Bool))"
     ]
 
 acyclicSharedDefinitionsSource :: String
@@ -3105,6 +3132,7 @@ stdlibHostedSources =
   , "stdlib/hosted.silt"
   , "examples/hosted-hello.silt"
   , "examples/nat-recursion.silt"
+  , "examples/list-recursion.silt"
   , "test/fixtures/stdlib/stdlib-tests.silt"
   ]
 
