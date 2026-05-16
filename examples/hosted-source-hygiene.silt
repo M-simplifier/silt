@@ -1,0 +1,178 @@
+; Hosted source-byte hygiene checker.
+
+; Usage: hosted-source-hygiene INPUT
+
+; The program reads INPUT, reports NUL before CR on stdout, and returns a dirty
+
+; status for non-clean input.
+
+(static-bytes hosted-source-hygiene-usage-bytes "usage: hosted-source-hygiene INPUT\n")
+
+(static-bytes hosted-source-hygiene-clean-bytes "clean\n")
+
+(static-bytes hosted-source-hygiene-nul-bytes "nul\n")
+
+(static-bytes hosted-source-hygiene-cr-bytes "cr\n")
+
+(static-bytes hosted-source-hygiene-read-failed-bytes "error: read failed\n")
+
+(claim hosted-source-hygiene-usage-text TextView)
+
+(def
+  hosted-source-hygiene-usage-text
+  (text-view-from
+    hosted-source-hygiene-usage-bytes
+    hosted-source-hygiene-usage-bytes-len))
+
+(claim hosted-source-hygiene-clean-text TextView)
+
+(def
+  hosted-source-hygiene-clean-text
+  (text-view-from
+    hosted-source-hygiene-clean-bytes
+    hosted-source-hygiene-clean-bytes-len))
+
+(claim hosted-source-hygiene-nul-text TextView)
+
+(def
+  hosted-source-hygiene-nul-text
+  (text-view-from hosted-source-hygiene-nul-bytes hosted-source-hygiene-nul-bytes-len))
+
+(claim hosted-source-hygiene-cr-text TextView)
+
+(def
+  hosted-source-hygiene-cr-text
+  (text-view-from hosted-source-hygiene-cr-bytes hosted-source-hygiene-cr-bytes-len))
+
+(claim hosted-source-hygiene-read-failed-text TextView)
+
+(def
+  hosted-source-hygiene-read-failed-text
+  (text-view-from
+    hosted-source-hygiene-read-failed-bytes
+    hosted-source-hygiene-read-failed-bytes-len))
+
+(claim hosted-source-hygiene-clean U64)
+
+(def hosted-source-hygiene-clean (u64 0))
+
+(claim hosted-source-hygiene-dirty U64)
+
+(def hosted-source-hygiene-dirty (u64 1))
+
+(claim hosted-source-hygiene-usage U64)
+
+(def hosted-source-hygiene-usage (u64 2))
+
+(claim hosted-source-hygiene-read-failed U64)
+
+(def hosted-source-hygiene-read-failed (u64 6))
+
+(claim
+  hosted-source-hygiene-diagnostic
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def hosted-source-hygiene-diagnostic host-status-with-error-text)
+
+(claim
+  hosted-source-hygiene-status-with-text
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-source-hygiene-status-with-text
+  (fn
+    ((message TextView) (status U64))
+    (host-status-after (host-write-text message) status)))
+
+(claim hosted-source-hygiene-finish (Pi ((body TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-source-hygiene-finish
+  (fn
+    ((body TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      U64
+      (text-contains-byte HostIO body (u8 0))
+      (fn
+        ((has-nul 1 Bool))
+        (if
+          has-nul
+          (hosted-source-hygiene-status-with-text
+            hosted-source-hygiene-nul-text
+            hosted-source-hygiene-dirty)
+          (bind
+            HostIO
+            HostIO
+            HostIO
+            Bool
+            U64
+            (text-contains-byte HostIO body (u8 13))
+            (fn
+              ((has-cr 1 Bool))
+              (if
+                has-cr
+                (hosted-source-hygiene-status-with-text
+                  hosted-source-hygiene-cr-text
+                  hosted-source-hygiene-dirty)
+                (hosted-source-hygiene-status-with-text
+                  hosted-source-hygiene-clean-text
+                  hosted-source-hygiene-clean)))))))))
+
+(claim
+  hosted-source-hygiene-read-input
+  (Pi ((input-path TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-source-hygiene-read-input
+  (fn
+    ((input-path TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      HostReadFileResult
+      U64
+      (host-read-file-result input-path)
+      (fn
+        ((read-result 1 HostReadFileResult))
+        (let-layout
+          HostReadFileResult
+          ((ok read-ok) (text body))
+          read-result
+          (if
+            read-ok
+            (hosted-source-hygiene-finish body)
+            (hosted-source-hygiene-diagnostic
+              hosted-source-hygiene-read-failed-text
+              hosted-source-hygiene-read-failed)))))))
+
+(claim hosted-source-hygiene-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-source-hygiene-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (if
+        (u64-eq count (u64 2))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          TextView
+          U64
+          (host-arg-text (u64 1))
+          (fn ((input-path 1 TextView)) (hosted-source-hygiene-read-input input-path)))
+        (hosted-source-hygiene-diagnostic
+          hosted-source-hygiene-usage-text
+          hosted-source-hygiene-usage)))))

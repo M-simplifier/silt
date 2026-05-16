@@ -25,6 +25,7 @@ on:
       - "scripts/verify-hosted-lf-count.sh"
       - "scripts/verify-hosted-stdin-lf-count.sh"
       - "scripts/verify-hosted-byte-drop.sh"
+      - "scripts/verify-hosted-source-hygiene.sh"
       - "scripts/verify-hosted-byte-search.sh"
       - "scripts/lib/**"
       - "scripts/verify-text-eq.sh"
@@ -124,6 +125,9 @@ jobs:
 
       - name: Verify hosted byte drop
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-byte-drop.sh
+
+      - name: Verify hosted source hygiene
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-source-hygiene.sh
 
       - name: Verify hosted byte search
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-byte-search.sh
