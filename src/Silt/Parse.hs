@@ -231,6 +231,19 @@ sexprToSurface sexpr =
       SStoreFields (SVar "Heap") layoutName <$> sexprToSurface base <*> traverse sexprToLayoutFieldInit fields
     List [Atom "store-fields", cap, Atom layoutName, base, List fields] ->
       SStoreFields <$> sexprToSurface cap <*> pure layoutName <*> sexprToSurface base <*> traverse sexprToLayoutFieldInit fields
+    List [Atom "if", condition, thenBranch, elseBranch] -> do
+      condition' <- sexprToSurface condition
+      thenBranch' <- sexprToSurface thenBranch
+      elseBranch' <- sexprToSurface elseBranch
+      Right
+        ( SMatch
+            condition'
+            [ MatchArm (PConstructor "False" []) elseBranch'
+            , MatchArm (PConstructor "True" []) thenBranch'
+            ]
+        )
+    List (Atom "if" : _) ->
+      Left "expected (if condition then else)"
     List (Atom "match" : scrutinee : arms) ->
       SMatch <$> sexprToSurface scrutinee <*> traverse sexprToMatchArm arms
     List [Atom "layout", Atom name, List fields] ->

@@ -8,7 +8,8 @@ claim as limited to the checked subset in this repository.
 Silt currently demonstrates:
 
 - a homoiconic S-expression surface for the implemented declaration and
-  expression forms
+  expression forms, including surface `if` sugar over `Bool` branches that
+  desugars to `match`
 - a small CoC-style dependent core with universes, `Pi`, normalization, and
   definitional equality
 - conservative quantity-sensitive value-use checks for `0`, `1`, and `omega`

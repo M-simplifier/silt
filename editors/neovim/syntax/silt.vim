@@ -12,7 +12,7 @@ syntax keyword siltDeclaration
       \ static-value target-contract
 
 syntax keyword siltForm
-      \ Eff Pi addr align-of bind bool-case field field-offset fn let
+      \ Eff Pi addr align-of bind bool-case field field-offset fn if let
       \ ascii-byte-is-alnum ascii-byte-is-alpha ascii-byte-is-digit
       \ ascii-byte-decimal-digit-value-unchecked
       \ ascii-byte-is-hex-digit ascii-byte-is-lower ascii-byte-is-space
