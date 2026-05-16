@@ -61,6 +61,16 @@
       examples/hosted-cat.silt)
     (entry hosted-cat-main))
   (bin
+    hosted-copy
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/hosted.silt
+      examples/hosted-copy.silt)
+    (entry hosted-copy-main))
+  (bin
     hosted-size-report
     (sources
       stdlib/core.silt

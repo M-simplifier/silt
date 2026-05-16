@@ -125,6 +125,9 @@ grep -Fq '<code>examples/hosted-size-report.silt</code>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-config-report</code></td>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-config-report-main</code></td>' out/silt/doc/index.html
 grep -Fq '<code>examples/hosted-config-report.silt</code>' out/silt/doc/index.html
+grep -Fq '<td><code>hosted-copy</code></td>' out/silt/doc/index.html
+grep -Fq '<td><code>hosted-copy-main</code></td>' out/silt/doc/index.html
+grep -Fq '<code>examples/hosted-copy.silt</code>' out/silt/doc/index.html
 
 (
   cd test/fixtures/packages/hello
