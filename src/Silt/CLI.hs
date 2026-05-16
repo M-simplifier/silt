@@ -237,7 +237,7 @@ validateNewPackageName packageName
 
 isPackageNameDelimiter :: Char -> Bool
 isPackageNameDelimiter ch =
-  isSpace ch || ch == '(' || ch == ')' || ch == ';'
+  isSpace ch || ch == '(' || ch == ')' || ch == ';' || ch == '"'
 
 newPackageManifest :: String -> String
 newPackageManifest packageName =

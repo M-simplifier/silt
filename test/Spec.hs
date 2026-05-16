@@ -52,8 +52,11 @@ main = runChecks
   , expectCheckFile "byte buffer example file" "examples/bytes.silt"
   , expectCheckFile "limine protocol shared source" "examples/limine-protocol.silt"
   , expectFormat "formatter compacts current surface" "(claim id(Pi((A Type)(x A))A))" "(claim id (Pi ((A Type) (x A)) A))\n"
+  , expectFormat "formatter keeps static byte string literal" "(static-bytes greeting\"Hi\\x0A\")" "(static-bytes greeting \"Hi\\n\")\n"
+  , expectFormat "formatter keeps nonprintable byte escape" "(static-bytes raw \"\\xFF\")" "(static-bytes raw \"\\xFF\")\n"
   , expectFormatIdempotent "formatter is idempotent" formatFixtureSource
   , expectFormatParses "formatter output parses" formatFixtureMessySource
+  , expectFormatParses "formatter output parses static byte string literal" "(static-bytes greeting \"hello world\\n\")"
   , expectFormat "formatter preserves top-level include" "(include test/fixtures/includes/lib.silt)\n" "(include test/fixtures/includes/lib.silt)\n"
   , expectLintSuccess "lint accepts canonical checked source" ["test/fixtures/lint/clean.silt"]
   , expectLintFailure "lint rejects non-canonical source" ["test/fixtures/lint/messy.silt"] "not canonical"
@@ -398,6 +401,7 @@ main = runChecks
   , expectNormalizedFile "byte slice base normalization" "examples/bytes.silt" "byte-slice-base-addr" "(addr 4096)"
   , expectNormalizedFile "static byte length normalization" "examples/bytes.silt" "static-byte-sample-len-value" "(u64 4)"
   , expectNormalizedFile "static byte slice length normalization" "examples/bytes.silt" "static-byte-sample-slice-len" "(u64 4)"
+  , expectNormalized "static byte string literal length normalization" staticByteStringSource "static-string-len-value" "(u64 4)"
   , expectCodegen "C backend seed" normalizationSource "three" "uint64_t three(void) {"
   , expectCodegen "C backend add fn" codegenFunctionSource "add" "uint64_t add(uint64_t a, uint64_t b) {"
   , expectCodegen "C backend erase arg" codegenFunctionSource "erase-first" "uint64_t erase_first(uint64_t x) {"
@@ -434,12 +438,17 @@ main = runChecks
   , expectFreestandingCodegenFiles "freestanding u8 store write" ["examples/bytes.silt"] "store-byte" "(*((uint8_t*)(ptr))) = value;"
   , expectFreestandingCodegenFiles "freestanding static bytes rodata" ["examples/bytes.silt"] "static-byte-sample-first" "static const uint8_t silt_static_static_byte_sample[4] __attribute__((section(\".rodata.silt\"))) = {83u, 73u, 76u, 84u};"
   , expectFreestandingCodegenFiles "freestanding static bytes load" ["examples/bytes.silt"] "static-byte-sample-first" "return (*((uint8_t*)(((uintptr_t)&silt_static_static_byte_sample[0]))));"
+  , expectCodegen "C backend static byte string literal rodata" staticByteStringSource "static-string-first" "static const uint8_t silt_static_static_string_sample[4] __attribute__((section(\".rodata.silt\"))) = {65u, 10u, 0u, 90u};"
   , expectCheck "layout literals" layoutLiteralSource
   , expectFailure "layout literal missing field" layoutLiteralMissingFieldSource
   , expectFailure "layout literal unknown field" layoutLiteralUnknownFieldSource
   , expectFailure "layout-values arity" layoutValuesAritySource
   , expectFailure "layout-values wrong field type" layoutValuesWrongTypeSource
   , expectFailure "u8 literal out of range" "(claim bad U8)\n(def bad (u8 256))"
+  , expectFailureWithFragment "string literal expression rejected" "(claim bad U64)\n(def bad \"x\")" "string literal is only supported as the body of static-bytes"
+  , expectFailureWithFragment "static byte string rejects unknown escape" "(static-bytes bad \"\\q\")" "unsupported string escape"
+  , expectFailureWithFragment "static byte string rejects bad hex escape" "(static-bytes bad \"\\xGG\")" "expected two hex digits after \\x"
+  , expectFailureWithFragment "static byte string rejects raw newline" "(static-bytes bad \"line\nbreak\")" "newline in string literal"
   , expectFailure "u8 store rejects u64" badU8StoreSource
   , expectFailure "static bytes reject empty object" "(static-bytes empty-bytes ())"
   , expectFailure "static cell rejects non-runtime type" "(static-cell bad-cell (Pi ((x U64)) U64))"
@@ -3021,6 +3030,17 @@ recursiveDataSource =
     , "      ((StageCons head tail) head))))"
     , "(claim picked-head Nat)"
     , "(def picked-head (head-or Nat (S Z) (StageCons Nat Z (StageNil Nat))))"
+    ]
+
+staticByteStringSource :: String
+staticByteStringSource =
+  unlines
+    [ "(data ByteMem0 ())"
+    , "(static-bytes static-string-sample \"A\\n\\0Z\")"
+    , "(claim static-string-len-value U64)"
+    , "(def static-string-len-value static-string-sample-len)"
+    , "(claim static-string-first (Eff ByteMem0 ByteMem0 U8))"
+    , "(def static-string-first (load ByteMem0 U8 static-string-sample))"
     ]
 
 badListRedefinitionSource :: String

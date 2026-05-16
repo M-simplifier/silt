@@ -4,7 +4,7 @@ module Silt.Parse
   , parseSExprs
   ) where
 
-import Data.Char (isDigit, isSpace)
+import Data.Char (digitToInt, isDigit, isHexDigit, isSpace, ord)
 import Data.Word (Word64)
 import Silt.Syntax
 
@@ -18,6 +18,7 @@ data Token
   = TLParen Position
   | TRParen Position
   | TAtom Position String
+  | TString Position [Word64]
   deriving (Eq, Show)
 
 parseProgram :: String -> Either String Program
@@ -48,6 +49,9 @@ lexTokens = go (Position 1 1) []
           go (advance pos c) (TLParen pos : acc) cs
       | c == ')' =
           go (advance pos c) (TRParen pos : acc) cs
+      | c == '"' = do
+          (bytes, pos', rest) <- scanString pos (advance pos c) [] cs
+          go pos' (TString pos bytes : acc) rest
       | otherwise =
           let (atom, pos', rest) = scanAtom pos (c : cs)
            in go pos' (TAtom pos atom : acc) rest
@@ -68,7 +72,49 @@ scanAtom = go []
 
 isDelimiter :: Char -> Bool
 isDelimiter c =
-  isSpace c || c == '(' || c == ')' || c == ';'
+  isSpace c || c == '(' || c == ')' || c == ';' || c == '"'
+
+scanString :: Position -> Position -> [Word64] -> String -> Either String ([Word64], Position, String)
+scanString start pos acc input =
+  case input of
+    [] -> Left ("unclosed string literal starting at " ++ showPos start)
+    '"' : rest -> Right (reverse acc, advance pos '"', rest)
+    '\\' : rest -> scanEscape start (advance pos '\\') acc rest
+    c : rest
+      | c == '\n' || c == '\r' ->
+          Left ("newline in string literal at " ++ showPos pos ++ "; use \\n or \\r")
+      | isRawByteChar c ->
+          scanString start (advance pos c) (fromIntegral (ord c) : acc) rest
+      | otherwise ->
+          Left ("static byte string literal only supports ASCII bytes at " ++ showPos pos ++ "; use \\xNN")
+
+scanEscape :: Position -> Position -> [Word64] -> String -> Either String ([Word64], Position, String)
+scanEscape start pos acc input =
+  case input of
+    [] -> Left ("unclosed string literal starting at " ++ showPos start)
+    '"' : rest -> scanString start (advance pos '"') (34 : acc) rest
+    '\\' : rest -> scanString start (advance pos '\\') (92 : acc) rest
+    '0' : rest -> scanString start (advance pos '0') (0 : acc) rest
+    'n' : rest -> scanString start (advance pos 'n') (10 : acc) rest
+    'r' : rest -> scanString start (advance pos 'r') (13 : acc) rest
+    't' : rest -> scanString start (advance pos 't') (9 : acc) rest
+    'x' : rest -> scanHexEscape start pos acc rest
+    c : _ -> Left ("unsupported string escape \\" ++ [c] ++ " at " ++ showPos pos)
+
+scanHexEscape :: Position -> Position -> [Word64] -> String -> Either String ([Word64], Position, String)
+scanHexEscape start pos acc input =
+  case input of
+    h1 : h2 : rest
+      | isHexDigit h1 && isHexDigit h2 ->
+          let value = fromIntegral (digitToInt h1 * 16 + digitToInt h2)
+              pos' = advance (advance (advance pos 'x') h1) h2
+           in scanString start pos' (value : acc) rest
+    _ -> Left ("expected two hex digits after \\x at " ++ showPos pos)
+
+isRawByteChar :: Char -> Bool
+isRawByteChar c =
+  let value = ord c
+   in value >= 32 && value <= 126
 
 advance :: Position -> Char -> Position
 advance (Position line column) c
@@ -86,6 +132,8 @@ parseOne [] =
   Left "unexpected end of input"
 parseOne (TAtom _ atom : rest) =
   Right (Atom atom, rest)
+parseOne (TString _ bytes : rest) =
+  Right (StringLit bytes, rest)
 parseOne (TRParen pos : _) =
   Left ("unexpected ')' at " ++ showPos pos)
 parseOne (TLParen pos : rest) =
@@ -115,6 +163,8 @@ sexprToDecl sexpr =
       LayoutDecl name <$> parseNatural size <*> parseNatural align <*> traverse sexprToLayoutFieldDecl fields
     List [Atom "static-bytes", Atom name, List values] ->
       StaticBytes name <$> traverse sexprToStaticByte values
+    List [Atom "static-bytes", Atom name, StringLit bytes] ->
+      Right (StaticBytes name bytes)
     List [Atom "static-cell", Atom name, ty] ->
       StaticCell name <$> sexprToSurface ty
     List [Atom "static-value", Atom name, ty, Atom sectionName, value] ->
@@ -207,6 +257,8 @@ sexprToBootContractClause sexpr =
 sexprToSurface :: SExpr -> Either String Surface
 sexprToSurface sexpr =
   case sexpr of
+    StringLit _ ->
+      Left "string literal is only supported as the body of static-bytes"
     Atom atom ->
       case parseUniverse atom of
         Just level -> Right (SUniverse level)

@@ -28,6 +28,7 @@ type Name = String
 
 data SExpr
   = Atom String
+  | StringLit [Word64]
   | List [SExpr]
   deriving (Eq, Show)
 

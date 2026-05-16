@@ -33,7 +33,8 @@ production kernel.
 - Runtime-backed scalar and pointer primitives: `U8`, `U64`, `Addr`, `Ptr A`.
 - Nominal `layout` declarations with size, alignment, field offsets, field
   projection, loads, stores, and layout literals.
-- `static-bytes`, `static-cell`, and `static-value` for checked rodata, bss, and
+- `static-bytes`, including explicit `u8` lists and narrow byte string
+  literals, plus `static-cell` and `static-value` for checked rodata, bss, and
   section-backed objects.
 - A canonical formatter for the current S-expression source subset, with stdout,
   check, and in-place write modes.

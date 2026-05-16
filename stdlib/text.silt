@@ -1,6 +1,6 @@
 ; TextView is a byte view with an explicit unchecked text boundary.
 
-; No UTF-8 validation or string literal surface is claimed yet.
+; No UTF-8 validation or general string surface is claimed yet.
 
 (layout TextView 16 8 ((base (Ptr U8) 0) (len U64 8)))
 

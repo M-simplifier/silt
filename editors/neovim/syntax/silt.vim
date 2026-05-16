@@ -3,6 +3,7 @@ if exists("b:current_syntax")
 endif
 
 syntax match siltComment ";.*$"
+syntax region siltString start=+"+ skip=+\\\\\|\\"+ end=+"+
 syntax match siltNumber "\v<\d+>"
 syntax match siltAtom "\v[[:alnum:]_+\-*\/<>=!?$%&~.^:|]+"
 
@@ -76,6 +77,7 @@ syntax keyword siltConstant False S True Z tt
 syntax match siltParen "[()]"
 
 highlight default link siltComment Comment
+highlight default link siltString String
 highlight default link siltNumber Number
 highlight default link siltDeclaration Keyword
 highlight default link siltForm Function

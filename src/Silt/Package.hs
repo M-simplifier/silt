@@ -145,6 +145,7 @@ expectAtom :: SExpr -> Either String String
 expectAtom expr =
   case expr of
     Atom atom -> Right atom
+    StringLit _ -> Left "expected atom"
     List _ -> Left "expected atom"
 
 validateSourcePath :: FilePath -> Either String FilePath
@@ -159,6 +160,7 @@ validateName label name
   | null name = Left (label ++ " cannot be empty")
   | "/" `isInfixOf` name = Left (label ++ " cannot contain '/'")
   | "\\" `isInfixOf` name = Left (label ++ " cannot contain '\\'")
+  | "\"" `isInfixOf` name = Left (label ++ " cannot contain '\"'")
   | otherwise = Right ()
 
 ensureUniqueTargets :: [PackageTarget] -> Either String ()
