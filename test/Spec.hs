@@ -106,6 +106,7 @@ main = runChecks
       , (PackageBin, "hosted-byte-drop")
       , (PackageBin, "hosted-source-hygiene")
       , (PackageBin, "hosted-byte-search")
+      , (PackageBin, "hosted-text-search")
       , (PackageTest, "ascii-test")
       , (PackageTest, "ascii-slice-test")
       , (PackageTest, "ascii-trim-test")
@@ -118,6 +119,7 @@ main = runChecks
       , (PackageTest, "text-prefix-test")
       , (PackageTest, "text-suffix-test")
       , (PackageTest, "text-scan-test")
+      , (PackageTest, "text-search-test")
       , (PackageTest, "text-line-test")
       , (PackageTest, "text-count-test")
       ]
@@ -257,6 +259,16 @@ main = runChecks
       , expectCodegenFiles "text scan needle compare codegen" textScanSources "text-scan-test" "== ((uint8_t)58u)"
       , expectCodegenFiles "text scan split-after codegen" textScanSources "text-scan-test" "+ 1ULL) * 1ULL)"
       , expectCodegenFiles "text scan split-after base check codegen" textScanSources "text-scan-test" "(5ULL * 1ULL)"
+      ]
+  , expectAll
+      [ expectCheckFiles "text search example bundle" textSearchSources
+      , expectCodegenFiles "text search find result layout codegen" textSearchSources "text-search-test" "silt_layout_ByteFindResult"
+      , expectCodegenFiles "text search outer loop codegen" textSearchSources "text-search-test" "for (uint64_t index_"
+      , expectCodegenFiles "text search needle loop codegen" textSearchSources "text-search-test" "for (uint64_t needle_index_"
+      , expectCodegenFiles "text search byte load codegen" textSearchSources "text-search-test" "(*((uint8_t*)"
+      , expectCodegenFiles "text search needle compare codegen" textSearchSources "text-search-test" "== needle_byte_"
+      , expectCodegenFiles "text search static subject codegen" textSearchSources "text-search-test" "silt_static_text_search_subject_bytes"
+      , expectCodegenFiles "text search missing-at-length codegen" textSearchSources "text-search-test" "15ULL"
       ]
   , expectAll
       [ expectCheckFiles "text line example bundle" textLineSources
@@ -410,6 +422,17 @@ main = runChecks
   , expectCodegenFiles "hosted byte search needle compare codegen" hostedByteSearchSources "hosted-byte-search-main" "== needle_"
   , expectCodegenFiles "hosted byte search stdout codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_put_byte(byte_"
   , expectCodegenFiles "hosted byte search stderr codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_put_error_byte(byte_"
+  , expectCheckFiles "hosted text search pressure app bundle" hostedTextSearchSources
+  , expectCodegenFiles "hosted text search arg count codegen" hostedTextSearchSources "hosted-text-search-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted text search arg base codegen" hostedTextSearchSources "hosted-text-search-main" "silt_host_arg_base"
+  , expectCodegenFiles "hosted text search file read codegen" hostedTextSearchSources "hosted-text-search-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted text search file-read status codegen" hostedTextSearchSources "hosted-text-search-main" "silt_host_file_read_ok"
+  , expectCodegenFiles "hosted text search read result layout codegen" hostedTextSearchSources "hosted-text-search-main" "silt_layout_HostReadFileResult"
+  , expectCodegenFiles "hosted text search outer loop codegen" hostedTextSearchSources "hosted-text-search-main" "for (uint64_t index_"
+  , expectCodegenFiles "hosted text search needle loop codegen" hostedTextSearchSources "hosted-text-search-main" "for (uint64_t needle_index_"
+  , expectCodegenFiles "hosted text search needle compare codegen" hostedTextSearchSources "hosted-text-search-main" "== needle_byte_"
+  , expectCodegenFiles "hosted text search stdout codegen" hostedTextSearchSources "hosted-text-search-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted text search stderr codegen" hostedTextSearchSources "hosted-text-search-main" "silt_host_put_error_byte(byte_"
   , expectCheck "generic data" optionSource
   , expectCheck "recursive generic data" recursiveDataSource
   , expectFailureWithFragment "builtin List cannot be redefined" badListRedefinitionSource "duplicate top-level name List"
@@ -3504,6 +3527,16 @@ textScanSources =
   , "examples/text-scan.silt"
   ]
 
+textSearchSources :: [FilePath]
+textSearchSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/text-search.silt"
+  ]
+
 textLineSources :: [FilePath]
 textLineSources =
   [ "stdlib/core.silt"
@@ -3673,6 +3706,16 @@ hostedByteSearchSources =
   , "stdlib/text.silt"
   , "stdlib/hosted.silt"
   , "examples/hosted-byte-search.silt"
+  ]
+
+hostedTextSearchSources :: [FilePath]
+hostedTextSearchSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/hosted-text-search.silt"
   ]
 
 textViewSources :: [FilePath]

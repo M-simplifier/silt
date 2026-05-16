@@ -28,6 +28,7 @@ on:
       - "scripts/verify-hosted-byte-drop.sh"
       - "scripts/verify-hosted-source-hygiene.sh"
       - "scripts/verify-hosted-byte-search.sh"
+      - "scripts/verify-hosted-text-search.sh"
       - "scripts/lib/**"
       - "scripts/verify-text-eq.sh"
       - "scripts/verify-text-prefix.sh"
@@ -35,6 +36,7 @@ on:
       - "scripts/verify-text-scan.sh"
       - "scripts/verify-text-lines.sh"
       - "scripts/verify-text-count.sh"
+      - "scripts/verify-text-search.sh"
       - "scripts/verify-text-view-helpers.sh"
       - "scripts/verify-ascii-predicates.sh"
       - "scripts/verify-ascii-slice-predicates.sh"
@@ -136,6 +138,9 @@ jobs:
       - name: Verify hosted byte search
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-byte-search.sh
 
+      - name: Verify hosted text search
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-text-search.sh
+
       - name: Verify text equality
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-eq.sh
 
@@ -153,6 +158,9 @@ jobs:
 
       - name: Verify text count
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-count.sh
+
+      - name: Verify text search
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-search.sh
 
       - name: Verify text view helpers
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-text-view-helpers.sh

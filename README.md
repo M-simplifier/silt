@@ -62,7 +62,8 @@ production kernel.
   empty/take/drop, byte-wise equality through `byte-slice-eq` / `text-eq`,
   prefix checks through `byte-slice-starts-with` / `text-starts-with`, suffix
   checks through `byte-slice-ends-with` / `text-ends-with`, first-byte
-  find/contains/split results, LF-oriented
+  find/contains/split results, narrow byte/text substring find/contains
+  helpers, LF-oriented
   first-line split helpers, single-byte count helpers, pure ASCII byte
   predicates for digit, alpha, alnum, hexadecimal, space, and whitespace
   classification, narrow all-ASCII slice/text predicates for digits, alnum,
@@ -89,10 +90,12 @@ production kernel.
   `hosted-ascii-trim`, and
   `hosted-size-report` / `hosted-config-report` / `hosted-lf-count` /
   `hosted-stdin-lf-count` / `hosted-byte-drop` / `hosted-source-hygiene` /
-  `hosted-byte-search`, that build and run through the package spine, plus
+  `hosted-byte-search` / `hosted-text-search`, that build and run through the
+  package spine, plus
   `text-eq-test`,
-  `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `text-line-test`,
-  `text-count-test`, `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
+  `text-prefix-test`, `text-suffix-test`, `text-scan-test`,
+  `text-search-test`, `text-line-test`, `text-count-test`, `ascii-test`,
+  `ascii-slice-test`, `ascii-trim-test`,
   `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`,
   `nat-recursion-test`, and `list-recursion-test` as package test targets.
 - Freestanding C emission for the supported first-order subset.
@@ -132,6 +135,10 @@ production kernel.
   an input file, validates a one-byte argument, searches file text through the
   explicit byte-containment helper, and reports found/missing through
   stdout/status.
+- A hosted text-search pressure-test bin, `hosted-text-search`, that reads an
+  input file, rejects an empty needle, searches file text through explicit
+  byte/text substring helpers, and reports found/missing through stdout/status
+  without claiming Unicode, regex, collation, or allocation-backed strings.
 - A hosted file-copy bin, `hosted-copy`, that reads one file through
   `HostReadFileResult`, writes the same bytes to another path, and reports
   narrow read/write/usage failures through stderr and process status.
@@ -162,6 +169,7 @@ scripts/verify-text-suffix.sh
 scripts/verify-text-scan.sh
 scripts/verify-text-lines.sh
 scripts/verify-text-count.sh
+scripts/verify-text-search.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-trim.sh
@@ -179,6 +187,7 @@ scripts/verify-hosted-stdin-lf-count.sh
 scripts/verify-hosted-byte-drop.sh
 scripts/verify-hosted-source-hygiene.sh
 scripts/verify-hosted-byte-search.sh
+scripts/verify-hosted-text-search.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 ```

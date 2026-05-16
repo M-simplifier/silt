@@ -79,15 +79,17 @@ Silt currently demonstrates:
   `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-ascii-trim`,
   `hosted-size-report`, and
   `hosted-config-report` / `hosted-lf-count` / `hosted-stdin-lf-count` /
-  `hosted-byte-drop` / `hosted-source-hygiene` / `hosted-byte-search` package
+  `hosted-byte-drop` / `hosted-source-hygiene` / `hosted-byte-search` /
+  `hosted-text-search` package
   examples that compile, run, print, read, write, report, count literal LF
   bytes from files or stdin, trim ASCII whitespace from files, drop matching
-  bytes from stdin, check source-byte hygiene, or search for one byte through
-  the hosted package harness, and
+  bytes from stdin, check source-byte hygiene, search for one byte, or search
+  for a non-empty byte/text substring through the hosted package harness, and
   exercise process status where relevant, plus
   `text-eq-test`, `text-prefix-test`,
-  `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
-  `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
+  `text-suffix-test`, `text-scan-test`, `text-search-test`,
+  `text-line-test`, `text-count-test`, `ascii-test`, `ascii-slice-test`,
+  `ascii-trim-test`,
   `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`, and
   `nat-recursion-test` / `list-recursion-test` as package test targets
 - ABI, target, and boot contract checks for the current x86_64 and Limine
@@ -149,6 +151,11 @@ Silt currently demonstrates:
   byte-containment search over an explicit `TextView`, stdout found/missing
   reporting, stderr diagnostics, and process status in one checked runnable
   example
+- a hosted text-search pressure-test package target, `hosted-text-search`, that
+  combines process args, non-empty needle validation, file read, byte/text
+  substring containment over explicit `TextView` values, stdout found/missing
+  reporting, stderr diagnostics, and process status in one checked runnable
+  example
 - a hosted file-copy package target, `hosted-copy`, that combines process args,
   a first-order file read result layout, file write, stderr diagnostics, and
   process status in one checked runnable example
@@ -184,6 +191,7 @@ scripts/verify-text-suffix.sh
 scripts/verify-text-scan.sh
 scripts/verify-text-lines.sh
 scripts/verify-text-count.sh
+scripts/verify-text-search.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-trim.sh
@@ -201,6 +209,7 @@ scripts/verify-hosted-stdin-lf-count.sh
 scripts/verify-hosted-byte-drop.sh
 scripts/verify-hosted-source-hygiene.sh
 scripts/verify-hosted-byte-search.sh
+scripts/verify-hosted-text-search.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh
 scripts/verify-public.sh
@@ -245,12 +254,13 @@ Silt does not currently claim:
   validation, general string literals or a string type beyond the current
   `static-bytes` byte literal convenience, CRLF normalization, split-all line
   APIs, generic strings, arrays, dynamic slices, allocator-backed byte/text
-  buffers, multi-byte search tools,
+  buffers, regex or Unicode-aware search tools,
   substring/search/general scanning APIs beyond the current single-byte
-  find/contains/split/count helpers, LF-oriented first-line split helpers,
-  literal LF-byte counting, narrow all-ASCII class checks, ASCII decimal `U64`
-  parser, ASCII decimal `U64` formatter, and narrow ASCII whitespace trimming,
-  collation, line semantics beyond literal LF bytes, or text-normalization APIs
+  find/contains/split/count helpers, narrow byte/text substring find/contains,
+  LF-oriented first-line split helpers, literal LF-byte counting, narrow
+  all-ASCII class checks, ASCII decimal `U64` parser, ASCII decimal `U64`
+  formatter, and narrow ASCII whitespace trimming, collation, line semantics
+  beyond literal LF bytes, or text-normalization APIs
 - decimal signs, radix prefixes, separators, whitespace trimming beyond the
   narrow ASCII view helper, detailed parse-error categories, signed formatting,
   radix formatting, padding, alignment, locale formatting, generic decimal

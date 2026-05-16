@@ -197,3 +197,29 @@
 (def
   text-count-lf
   (fn ((cap 0 Type) (text TextView)) (text-count-byte cap text (u8 10))))
+
+(claim
+  text-find-text
+  (Pi ((cap 0 Type) (text TextView) (needle TextView)) (Eff cap cap ByteFindResult)))
+
+(def
+  text-find-text
+  (fn
+    ((cap 0 Type) (text TextView) (needle TextView))
+    (byte-slice-find-slice
+      cap
+      (byte-slice-from (text-base text) (text-len text))
+      (byte-slice-from (text-base needle) (text-len needle)))))
+
+(claim
+  text-contains-text
+  (Pi ((cap 0 Type) (text TextView) (needle TextView)) (Eff cap cap Bool)))
+
+(def
+  text-contains-text
+  (fn
+    ((cap 0 Type) (text TextView) (needle TextView))
+    (byte-slice-contains-slice
+      cap
+      (byte-slice-from (text-base text) (text-len text))
+      (byte-slice-from (text-base needle) (text-len needle)))))

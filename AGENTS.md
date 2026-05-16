@@ -37,9 +37,10 @@ new/build/run/test/doc CLI spine, hosted stdlib seed
 with pure `Nat` arithmetic/order helpers, built-in `List` structural recursion
 helpers including any/all/find/count and append/filter/reverse, byte/text,
 ASCII predicate, single-byte count, ASCII
+text substring find/contains,
 decimal parse/format, text output, process-argument reads, environment lookup,
 first-order file writes and reads with read-status observation, hosted
-size/config/LF-count/stdin-LF-count/byte-drop/source-hygiene/one-byte-search
+size/config/LF-count/stdin-LF-count/byte-drop/source-hygiene/byte-search/text-search
 pressure examples, and lightweight Neovim filetype/syntax files.
 
 Silt is not a production compiler, package ecosystem, mature editor/LSP
@@ -115,6 +116,7 @@ scripts/verify-text-suffix.sh
 scripts/verify-text-scan.sh
 scripts/verify-text-lines.sh
 scripts/verify-text-count.sh
+scripts/verify-text-search.sh
 scripts/verify-ascii-predicates.sh
 scripts/verify-ascii-slice-predicates.sh
 scripts/verify-ascii-trim.sh
@@ -127,6 +129,7 @@ scripts/verify-hosted-stdin-lf-count.sh
 scripts/verify-hosted-byte-drop.sh
 scripts/verify-hosted-source-hygiene.sh
 scripts/verify-hosted-byte-search.sh
+scripts/verify-hosted-text-search.sh
 ```
 
 For backend, ABI, target, or boot bridge changes, add the relevant verifier:

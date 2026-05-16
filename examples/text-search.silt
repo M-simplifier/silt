@@ -1,0 +1,283 @@
+; Byte/text substring search examples over explicit byte-backed views.
+
+; This searches one explicit byte/text view inside another. It does not claim
+
+; Unicode, collation, regexes, allocation, parser combinators, or a general
+
+; scanning library.
+
+(static-bytes text-search-subject-bytes "alpha beta tail")
+
+(static-bytes text-search-alpha-bytes "alpha")
+
+(static-bytes text-search-beta-bytes "beta")
+
+(static-bytes text-search-tail-bytes "tail")
+
+(static-bytes text-search-missing-bytes "gamma")
+
+(static-bytes text-search-too-long-bytes "alpha beta tail!")
+
+(claim text-search-subject-byte-view ByteSlice)
+
+(def
+  text-search-subject-byte-view
+  (byte-slice-from text-search-subject-bytes text-search-subject-bytes-len))
+
+(claim text-search-alpha-byte-view ByteSlice)
+
+(def
+  text-search-alpha-byte-view
+  (byte-slice-from text-search-alpha-bytes text-search-alpha-bytes-len))
+
+(claim text-search-beta-byte-view ByteSlice)
+
+(def
+  text-search-beta-byte-view
+  (byte-slice-from text-search-beta-bytes text-search-beta-bytes-len))
+
+(claim text-search-tail-byte-view ByteSlice)
+
+(def
+  text-search-tail-byte-view
+  (byte-slice-from text-search-tail-bytes text-search-tail-bytes-len))
+
+(claim text-search-missing-byte-view ByteSlice)
+
+(def
+  text-search-missing-byte-view
+  (byte-slice-from text-search-missing-bytes text-search-missing-bytes-len))
+
+(claim text-search-empty-byte-view ByteSlice)
+
+(def text-search-empty-byte-view (byte-slice-from text-search-subject-bytes (u64 0)))
+
+(claim text-search-too-long-byte-view ByteSlice)
+
+(def
+  text-search-too-long-byte-view
+  (byte-slice-from text-search-too-long-bytes text-search-too-long-bytes-len))
+
+(claim text-search-subject-text-view TextView)
+
+(def
+  text-search-subject-text-view
+  (text-view-from text-search-subject-bytes text-search-subject-bytes-len))
+
+(claim text-search-beta-text-view TextView)
+
+(def
+  text-search-beta-text-view
+  (text-view-from text-search-beta-bytes text-search-beta-bytes-len))
+
+(claim text-search-missing-text-view TextView)
+
+(def
+  text-search-missing-text-view
+  (text-view-from text-search-missing-bytes text-search-missing-bytes-len))
+
+(claim text-search-empty-text-view TextView)
+
+(def text-search-empty-text-view (text-view-from text-search-subject-bytes (u64 0)))
+
+(claim text-search-bool-same (Pi ((left Bool) (right Bool)) Bool))
+
+(def
+  text-search-bool-same
+  (fn ((left Bool) (right Bool)) (match left ((False) (bool-not right)) ((True) right))))
+
+(claim
+  text-search-effect-and
+  (Pi
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-search-effect-and
+  (fn
+    ((left 1 (Eff HostIO HostIO Bool)) (right 1 (Eff HostIO HostIO Bool)))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      left
+      (fn
+        ((left-value 1 Bool))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          Bool
+          Bool
+          right
+          (fn
+            ((right-value 1 Bool))
+            (pure HostIO Bool (bool-and left-value right-value))))))))
+
+(claim
+  text-search-result-is
+  (Pi
+    ((value 1 (Eff HostIO HostIO ByteFindResult))
+     (expected-found Bool)
+     (expected-index U64))
+    (Eff HostIO HostIO Bool)))
+
+(def
+  text-search-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO ByteFindResult))
+     (expected-found Bool)
+     (expected-index U64))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      ByteFindResult
+      Bool
+      value
+      (fn
+        ((result 1 ByteFindResult))
+        (let-layout
+          ByteFindResult
+          ((found found) (index index))
+          result
+          (pure
+            HostIO
+            Bool
+            (bool-and
+              (text-search-bool-same found expected-found)
+              (u64-eq index expected-index))))))))
+
+(claim
+  text-search-bool-result-is
+  (Pi ((value 1 (Eff HostIO HostIO Bool)) (expected Bool)) (Eff HostIO HostIO Bool)))
+
+(def
+  text-search-bool-result-is
+  (fn
+    ((value 1 (Eff HostIO HostIO Bool)) (expected Bool))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      Bool
+      value
+      (fn ((actual 1 Bool)) (pure HostIO Bool (text-search-bool-same actual expected))))))
+
+(claim text-search-byte-leading-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-search-byte-leading-result
+  (byte-slice-find-slice
+    HostIO
+    text-search-subject-byte-view
+    text-search-alpha-byte-view))
+
+(claim text-search-byte-middle-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-search-byte-middle-result
+  (byte-slice-find-slice
+    HostIO
+    text-search-subject-byte-view
+    text-search-beta-byte-view))
+
+(claim text-search-byte-final-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-search-byte-final-result
+  (byte-slice-find-slice
+    HostIO
+    text-search-subject-byte-view
+    text-search-tail-byte-view))
+
+(claim text-search-byte-missing-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-search-byte-missing-result
+  (byte-slice-find-slice
+    HostIO
+    text-search-subject-byte-view
+    text-search-missing-byte-view))
+
+(claim text-search-byte-empty-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-search-byte-empty-result
+  (byte-slice-find-slice
+    HostIO
+    text-search-subject-byte-view
+    text-search-empty-byte-view))
+
+(claim text-search-byte-too-long-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-search-byte-too-long-result
+  (byte-slice-find-slice
+    HostIO
+    text-search-subject-byte-view
+    text-search-too-long-byte-view))
+
+(claim text-search-text-middle-result (Eff HostIO HostIO ByteFindResult))
+
+(def
+  text-search-text-middle-result
+  (text-find-text HostIO text-search-subject-text-view text-search-beta-text-view))
+
+(claim text-search-text-contains-result (Eff HostIO HostIO Bool))
+
+(def
+  text-search-text-contains-result
+  (text-contains-text HostIO text-search-subject-text-view text-search-beta-text-view))
+
+(claim text-search-text-missing-result (Eff HostIO HostIO Bool))
+
+(def
+  text-search-text-missing-result
+  (text-contains-text
+    HostIO
+    text-search-subject-text-view
+    text-search-missing-text-view))
+
+(claim text-search-text-empty-result (Eff HostIO HostIO Bool))
+
+(def
+  text-search-text-empty-result
+  (text-contains-text HostIO text-search-subject-text-view text-search-empty-text-view))
+
+(claim text-search-byte-test (Eff HostIO HostIO Bool))
+
+(def
+  text-search-byte-test
+  (text-search-effect-and
+    (text-search-result-is text-search-byte-leading-result True (u64 0))
+    (text-search-effect-and
+      (text-search-result-is text-search-byte-middle-result True (u64 6))
+      (text-search-effect-and
+        (text-search-result-is text-search-byte-final-result True (u64 11))
+        (text-search-effect-and
+          (text-search-result-is text-search-byte-missing-result False (u64 15))
+          (text-search-effect-and
+            (text-search-result-is text-search-byte-empty-result True (u64 0))
+            (text-search-result-is text-search-byte-too-long-result False (u64 15))))))))
+
+(claim text-search-text-test (Eff HostIO HostIO Bool))
+
+(def
+  text-search-text-test
+  (text-search-effect-and
+    (text-search-result-is text-search-text-middle-result True (u64 6))
+    (text-search-effect-and
+      (text-search-bool-result-is text-search-text-contains-result True)
+      (text-search-effect-and
+        (text-search-bool-result-is text-search-text-missing-result False)
+        (text-search-bool-result-is text-search-text-empty-result True)))))
+
+(claim text-search-test (Eff HostIO HostIO Bool))
+
+(def
+  text-search-test
+  (text-search-effect-and text-search-byte-test text-search-text-test))

@@ -1,0 +1,196 @@
+; Hosted multi-byte text search pressure example.
+
+; Usage: hosted-text-search INPUT NEEDLE
+
+; The program reads INPUT, rejects an empty NEEDLE, searches file text for that
+
+; explicit byte-backed text view, writes found/missing to stdout, and returns
+
+; distinct statuses for found, missing, usage, empty needle, and read failure.
+
+(static-bytes hosted-text-search-usage-bytes "usage: hosted-text-search INPUT NEEDLE\n")
+
+(static-bytes hosted-text-search-found-bytes "found\n")
+
+(static-bytes hosted-text-search-missing-bytes "missing\n")
+
+(static-bytes hosted-text-search-empty-needle-bytes "error: empty needle\n")
+
+(static-bytes hosted-text-search-read-failed-bytes "error: read failed\n")
+
+(claim hosted-text-search-usage-text TextView)
+
+(def
+  hosted-text-search-usage-text
+  (text-view-from hosted-text-search-usage-bytes hosted-text-search-usage-bytes-len))
+
+(claim hosted-text-search-found-text TextView)
+
+(def
+  hosted-text-search-found-text
+  (text-view-from hosted-text-search-found-bytes hosted-text-search-found-bytes-len))
+
+(claim hosted-text-search-missing-text TextView)
+
+(def
+  hosted-text-search-missing-text
+  (text-view-from hosted-text-search-missing-bytes hosted-text-search-missing-bytes-len))
+
+(claim hosted-text-search-empty-needle-text TextView)
+
+(def
+  hosted-text-search-empty-needle-text
+  (text-view-from
+    hosted-text-search-empty-needle-bytes
+    hosted-text-search-empty-needle-bytes-len))
+
+(claim hosted-text-search-read-failed-text TextView)
+
+(def
+  hosted-text-search-read-failed-text
+  (text-view-from
+    hosted-text-search-read-failed-bytes
+    hosted-text-search-read-failed-bytes-len))
+
+(claim hosted-text-search-found U64)
+
+(def hosted-text-search-found (u64 0))
+
+(claim hosted-text-search-missing U64)
+
+(def hosted-text-search-missing (u64 1))
+
+(claim hosted-text-search-usage U64)
+
+(def hosted-text-search-usage (u64 2))
+
+(claim hosted-text-search-empty-needle U64)
+
+(def hosted-text-search-empty-needle (u64 4))
+
+(claim hosted-text-search-read-failed U64)
+
+(def hosted-text-search-read-failed (u64 6))
+
+(claim
+  hosted-text-search-diagnostic
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def hosted-text-search-diagnostic host-status-with-error-text)
+
+(claim
+  hosted-text-search-status-with-text
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-text-search-status-with-text
+  (fn
+    ((message TextView) (status U64))
+    (host-status-after (host-write-text message) status)))
+
+(claim
+  hosted-text-search-finish
+  (Pi ((body TextView) (needle TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-text-search-finish
+  (fn
+    ((body TextView) (needle TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      Bool
+      U64
+      (text-contains-text HostIO body needle)
+      (fn
+        ((found 1 Bool))
+        (if
+          found
+          (hosted-text-search-status-with-text
+            hosted-text-search-found-text
+            hosted-text-search-found)
+          (hosted-text-search-status-with-text
+            hosted-text-search-missing-text
+            hosted-text-search-missing))))))
+
+(claim
+  hosted-text-search-read-input
+  (Pi ((input-path TextView) (needle TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-text-search-read-input
+  (fn
+    ((input-path TextView) (needle TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      HostReadFileResult
+      U64
+      (host-read-file-result input-path)
+      (fn
+        ((read-result 1 HostReadFileResult))
+        (let-layout
+          HostReadFileResult
+          ((ok read-ok) (text body))
+          read-result
+          (if
+            read-ok
+            (hosted-text-search-finish body needle)
+            (hosted-text-search-diagnostic
+              hosted-text-search-read-failed-text
+              hosted-text-search-read-failed)))))))
+
+(claim
+  hosted-text-search-with-needle
+  (Pi ((input-path TextView) (needle TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-text-search-with-needle
+  (fn
+    ((input-path TextView) (needle TextView))
+    (if
+      (u64-eq (text-len needle) (u64 0))
+      (hosted-text-search-diagnostic
+        hosted-text-search-empty-needle-text
+        hosted-text-search-empty-needle)
+      (hosted-text-search-read-input input-path needle))))
+
+(claim hosted-text-search-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-text-search-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (if
+        (u64-eq count (u64 3))
+        (bind
+          HostIO
+          HostIO
+          HostIO
+          TextView
+          U64
+          (host-arg-text (u64 1))
+          (fn
+            ((input-path 1 TextView))
+            (bind
+              HostIO
+              HostIO
+              HostIO
+              TextView
+              U64
+              (host-arg-text (u64 2))
+              (fn
+                ((needle 1 TextView))
+                (hosted-text-search-with-needle input-path needle)))))
+        (hosted-text-search-diagnostic
+          hosted-text-search-usage-text
+          hosted-text-search-usage)))))

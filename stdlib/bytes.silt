@@ -357,3 +357,139 @@
            bytes
            (u64-sub (byte-slice-len bytes) (byte-slice-len suffix)))
          suffix)))))
+
+(claim
+  byte-slice-find-slice
+  (Pi ((cap 0 Type) (bytes ByteSlice) (needle ByteSlice)) (Eff cap cap ByteFindResult)))
+
+(def
+  byte-slice-find-slice
+  (fn
+    ((cap 0 Type) (bytes ByteSlice) (needle ByteSlice))
+    (match
+      (u64-eq (byte-slice-len needle) (u64 0))
+      ((True) (pure cap ByteFindResult (byte-find-result True (u64 0))))
+      ((False)
+       (match
+         (u64-lte (byte-slice-len needle) (byte-slice-len bytes))
+         ((False)
+          (pure cap ByteFindResult (byte-find-result False (byte-slice-len bytes))))
+         ((True)
+          (nat-elim
+            (Eff cap cap ByteFindResult)
+            (pure cap ByteFindResult (byte-find-result False (byte-slice-len bytes)))
+            (fn
+              ((index Nat) (rec (Eff cap cap ByteFindResult)))
+              (bind
+                cap
+                cap
+                cap
+                ByteFindResult
+                ByteFindResult
+                rec
+                (fn
+                  ((previous 1 ByteFindResult))
+                  (let-layout
+                    ByteFindResult
+                    ((found found) (index found-index))
+                    previous
+                    (match
+                      found
+                      ((True)
+                       (pure cap ByteFindResult (byte-find-result True found-index)))
+                      ((False)
+                       (bind
+                         cap
+                         cap
+                         cap
+                         Bool
+                         ByteFindResult
+                         (nat-elim
+                           (Eff cap cap Bool)
+                           (pure cap Bool True)
+                           (fn
+                             ((needle-index Nat) (needle-rec (Eff cap cap Bool)))
+                             (bind
+                               cap
+                               cap
+                               cap
+                               Bool
+                               Bool
+                               needle-rec
+                               (fn
+                                 ((previous-match 1 Bool))
+                                 (match
+                                   previous-match
+                                   ((False) (pure cap Bool False))
+                                   ((True)
+                                    (bind
+                                      cap
+                                      cap
+                                      cap
+                                      U8
+                                      Bool
+                                      (load
+                                        cap
+                                        U8
+                                        (byte-slice-at
+                                          bytes
+                                          (u64-add
+                                            (nat-to-u64 index)
+                                            (nat-to-u64 needle-index))))
+                                      (fn
+                                        ((byte 1 U8))
+                                        (bind
+                                          cap
+                                          cap
+                                          cap
+                                          U8
+                                          Bool
+                                          (load
+                                            cap
+                                            U8
+                                            (byte-slice-at
+                                              needle
+                                              (nat-to-u64 needle-index)))
+                                          (fn
+                                            ((needle-byte 1 U8))
+                                            (pure cap Bool (u8-eq byte needle-byte)))))))))))
+                           (u64-to-nat (byte-slice-len needle)))
+                         (fn
+                           ((matches 1 Bool))
+                           (match
+                             matches
+                             ((False)
+                              (pure
+                                cap
+                                ByteFindResult
+                                (byte-find-result False found-index)))
+                             ((True)
+                              (pure
+                                cap
+                                ByteFindResult
+                                (byte-find-result True (nat-to-u64 index)))))))))))))
+            (u64-to-nat
+              (u64-add (u64-sub (byte-slice-len bytes) (byte-slice-len needle)) (u64 1))))))))))
+
+(claim
+  byte-slice-contains-slice
+  (Pi ((cap 0 Type) (bytes ByteSlice) (needle ByteSlice)) (Eff cap cap Bool)))
+
+(def
+  byte-slice-contains-slice
+  (fn
+    ((cap 0 Type) (bytes ByteSlice) (needle ByteSlice))
+    (bind
+      cap
+      cap
+      cap
+      ByteFindResult
+      Bool
+      (byte-slice-find-slice cap bytes needle)
+      (fn
+        ((result 1 ByteFindResult))
+        (let-layout
+          ByteFindResult
+          ((found found) (index 0 ignored-index))
+          result
+          (pure cap Bool found))))))
