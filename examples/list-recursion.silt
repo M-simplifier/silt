@@ -58,6 +58,34 @@
       U64
       (list-filter U64 (fn ((value U64)) (u64-lt value (u64 3))) list-recursion-values))))
 
+(claim list-recursion-any-small Bool)
+
+(def
+  list-recursion-any-small
+  (list-any U64 (fn ((value U64)) (u64-lt value (u64 2))) list-recursion-values))
+
+(claim list-recursion-all-small Bool)
+
+(def
+  list-recursion-all-small
+  (list-all U64 (fn ((value U64)) (u64-lt value (u64 4))) list-recursion-values))
+
+(claim list-recursion-find-large U64)
+
+(def
+  list-recursion-find-large
+  (option-unwrap-or
+    U64
+    (u64 0)
+    (list-find U64 (fn ((value U64)) (u64-lt (u64 2) value)) list-recursion-values)))
+
+(claim list-recursion-count-small U64)
+
+(def
+  list-recursion-count-small
+  (nat-to-word
+    (list-count U64 (fn ((value U64)) (u64-lt value (u64 3))) list-recursion-values)))
+
 (claim list-recursion-reverse-head U64)
 
 (def
@@ -80,4 +108,12 @@
             (u64-eq list-recursion-append-length (u64 5))
             (bool-and
               (u64-eq list-recursion-filter-length (u64 2))
-              (u64-eq list-recursion-reverse-head (u64 3)))))))))
+              (bool-and
+                list-recursion-any-small
+                (bool-and
+                  list-recursion-all-small
+                  (bool-and
+                    (u64-eq list-recursion-find-large (u64 3))
+                    (bool-and
+                      (u64-eq list-recursion-count-small (u64 2))
+                      (u64-eq list-recursion-reverse-head (u64 3)))))))))))))

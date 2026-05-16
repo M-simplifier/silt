@@ -293,6 +293,76 @@
         (fn ((value U64)) (u64-lt value (u64 3)))
         (Cons U64 (u64 1) (Cons U64 (u64 3) (Cons U64 (u64 2) (Nil U64))))))))
 
+(claim stdlib-list-any-true-sample Bool)
+
+(def
+  stdlib-list-any-true-sample
+  (list-any
+    U64
+    (fn ((value U64)) (u64-lt value (u64 3)))
+    (Cons U64 (u64 4) (Cons U64 (u64 2) (Nil U64)))))
+
+(claim stdlib-list-any-false-sample Bool)
+
+(def
+  stdlib-list-any-false-sample
+  (list-any
+    U64
+    (fn ((value U64)) (u64-lt value (u64 3)))
+    (Cons U64 (u64 4) (Cons U64 (u64 5) (Nil U64)))))
+
+(claim stdlib-list-all-true-sample Bool)
+
+(def
+  stdlib-list-all-true-sample
+  (list-all
+    U64
+    (fn ((value U64)) (u64-lt value (u64 6)))
+    (Cons U64 (u64 4) (Cons U64 (u64 5) (Nil U64)))))
+
+(claim stdlib-list-all-false-sample Bool)
+
+(def
+  stdlib-list-all-false-sample
+  (list-all
+    U64
+    (fn ((value U64)) (u64-lt value (u64 5)))
+    (Cons U64 (u64 4) (Cons U64 (u64 5) (Nil U64)))))
+
+(claim stdlib-list-find-sample U64)
+
+(def
+  stdlib-list-find-sample
+  (option-unwrap-or
+    U64
+    (u64 0)
+    (list-find
+      U64
+      (fn ((value U64)) (u64-lt (u64 2) value))
+      (Cons U64 (u64 1) (Cons U64 (u64 3) (Cons U64 (u64 4) (Nil U64)))))))
+
+(claim stdlib-list-find-none-sample U64)
+
+(def
+  stdlib-list-find-none-sample
+  (option-unwrap-or
+    U64
+    (u64 88)
+    (list-find
+      U64
+      (fn ((value U64)) (u64-lt (u64 5) value))
+      (Cons U64 (u64 1) (Cons U64 (u64 3) (Nil U64))))))
+
+(claim stdlib-list-count-sample U64)
+
+(def
+  stdlib-list-count-sample
+  (nat-to-word
+    (list-count
+      U64
+      (fn ((value U64)) (u64-lt value (u64 3)))
+      (Cons U64 (u64 1) (Cons U64 (u64 3) (Cons U64 (u64 2) (Nil U64)))))))
+
 (claim stdlib-list-reverse-head-sample U64)
 
 (def
@@ -322,7 +392,21 @@
                 (u64-eq stdlib-list-append-empty-left-sample (u64 44))
                 (bool-and
                   (u64-eq stdlib-list-filter-length-sample (u64 2))
-                  (u64-eq stdlib-list-reverse-head-sample (u64 5)))))))))))
+                  (bool-and
+                    stdlib-list-any-true-sample
+                    (bool-and
+                      (bool-not stdlib-list-any-false-sample)
+                      (bool-and
+                        stdlib-list-all-true-sample
+                        (bool-and
+                          (bool-not stdlib-list-all-false-sample)
+                          (bool-and
+                            (u64-eq stdlib-list-find-sample (u64 3))
+                            (bool-and
+                              (u64-eq stdlib-list-find-none-sample (u64 88))
+                              (bool-and
+                                (u64-eq stdlib-list-count-sample (u64 2))
+                                (u64-eq stdlib-list-reverse-head-sample (u64 5))))))))))))))))))
 
 (claim stdlib-text-len-sample U64)
 

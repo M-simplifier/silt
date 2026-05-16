@@ -50,7 +50,8 @@ syntax keyword siltForm
       \ host-write-error-text host-write-error-text-n host-write-file
       \ host-status-after host-status-with-error-text
       \ host-write-file-u64-decimal host-write-u64-decimal
-      \ host-write-text let-layout let-load-layout list-head-option list-head-or list-is-empty
+      \ host-write-text let-layout let-load-layout list-all list-any list-count
+      \ list-find list-head-option list-head-or list-is-empty
       \ list-append list-elim list-filter list-fold-right list-length list-map
       \ list-reverse list-tail-option list-tail-or load match nat-add nat-case nat-elim nat-eq nat-is-zero nat-lt nat-lte nat-mul nat-pred
       \ nat-sub-saturating pure
