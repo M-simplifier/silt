@@ -128,8 +128,6 @@
      (value (Result E A)))
     (match value ((Err err) (Err E B err)) ((Ok inner) (f inner)))))
 
-(data List ((A 0 Type)) (Nil) (Cons A (List A)))
-
 (claim list-is-empty (Pi ((A 0 Type) (value (List A))) Bool))
 
 (def
@@ -167,3 +165,38 @@
   (fn
     ((A 0 Type) (value (List A)))
     (match value ((Nil) (None (List A))) ((Cons head tail) (Some (List A) tail)))))
+
+(claim
+  list-fold-right
+  (Pi
+    ((A 0 Type) (B 0 Type) (nil B) (cons (Pi ((head A) (rec B)) B)) (value (List A)))
+    B))
+
+(def
+  list-fold-right
+  (fn
+    ((A 0 Type) (B 0 Type) (nil B) (cons (Pi ((head A) (rec B)) B)) (value (List A)))
+    (list-elim A B nil (fn ((head A) (tail (List A)) (rec B)) (cons head rec)) value)))
+
+(claim list-length (Pi ((A 0 Type) (value (List A))) Nat))
+
+(def
+  list-length
+  (fn
+    ((A 0 Type) (value (List A)))
+    (list-elim A Nat Z (fn ((head A) (tail (List A)) (rec Nat)) (S rec)) value)))
+
+(claim
+  list-map
+  (Pi ((A 0 Type) (B 0 Type) (f (Pi ((value A)) B)) (value (List A))) (List B)))
+
+(def
+  list-map
+  (fn
+    ((A 0 Type) (B 0 Type) (f (Pi ((value A)) B)) (value (List A)))
+    (list-elim
+      A
+      (List B)
+      (Nil B)
+      (fn ((head A) (tail (List A)) (rec (List B))) (Cons B (f head) rec))
+      value)))

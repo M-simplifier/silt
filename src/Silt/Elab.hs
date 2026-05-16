@@ -2131,6 +2131,11 @@ reducePrimitive globals name args =
     ("nat-elim", [resultTy, zeroCase, succCase, VPrim "S" [n]]) ->
       let recursive = mkSymbolValue globals "nat-elim" [resultTy, zeroCase, succCase, n]
        in Just (vApp globals (vApp globals succCase n) recursive)
+    ("list-elim", [_a, _resultTy, nilCase, _consCase, VPrim "Nil" [_a']]) ->
+      Just nilCase
+    ("list-elim", [a, resultTy, nilCase, consCase, VPrim "Cons" [_a', headValue, tailValue]]) ->
+      let recursive = mkSymbolValue globals "list-elim" [a, resultTy, nilCase, consCase, tailValue]
+       in Just (vApp globals (vApp globals (vApp globals consCase headValue) tailValue) recursive)
     _ ->
       Nothing
 
@@ -2311,6 +2316,7 @@ primitiveArities =
     , ("bool-case", 4)
     , ("nat-case", 4)
     , ("nat-elim", 4)
+    , ("list-elim", 5)
     ]
 
 builtinsGlobals :: Globals
@@ -2384,6 +2390,10 @@ builtinEntries globals =
     , builtinEntry globals "S" (TPi "n" Q1 (TGlobal "Nat") (TGlobal "Nat"))
     , builtinEntry globals "nat-case" natCaseType
     , builtinEntry globals "nat-elim" natElimType
+    , builtinEntry globals "List" listType
+    , builtinEntry globals "Nil" nilType
+    , builtinEntry globals "Cons" consType
+    , builtinEntry globals "list-elim" listElimType
     ]
 
 builtinDataInfos :: Map.Map Name DataInfo
@@ -2392,6 +2402,7 @@ builtinDataInfos =
     [ ("Unit", DataInfo ["tt"])
     , ("Bool", DataInfo ["True", "False"])
     , ("Nat", DataInfo ["Z", "S"])
+    , ("List", DataInfo ["Nil", "Cons"])
     ]
 
 builtinConstructorInfos :: Map.Map Name ConstructorInfo
@@ -2402,6 +2413,8 @@ builtinConstructorInfos =
     , ("False", ConstructorInfo "False" "Bool" 0 [])
     , ("Z", ConstructorInfo "Z" "Nat" 0 [])
     , ("S", ConstructorInfo "S" "Nat" 0 [TGlobal "Nat"])
+    , ("Nil", ConstructorInfo "Nil" "List" 1 [])
+    , ("Cons", ConstructorInfo "Cons" "List" 1 [TVar 0, TApp (TGlobal "List") (TVar 0)])
     ]
 
 builtinEntry :: Globals -> Name -> Term -> (Name, GlobalEntry)
@@ -2443,6 +2456,39 @@ natElimType =
       TPi "s" Q1 (TPi "n" QOmega (TGlobal "Nat") (TPi "rec" QOmega (TVar 2) (TVar 3))) $
         TPi "n" Q1 (TGlobal "Nat") $
           TVar 3
+
+listType :: Term
+listType =
+  TPi "A" Q0 (TUniverse 0) $
+    TUniverse 0
+
+nilType :: Term
+nilType =
+  TPi "A" Q0 (TUniverse 0) $
+    TApp (TGlobal "List") (TVar 0)
+
+consType :: Term
+consType =
+  TPi "A" Q0 (TUniverse 0) $
+    TPi "head" QOmega (TVar 0) $
+      TPi "tail" QOmega (TApp (TGlobal "List") (TVar 1)) $
+        TApp (TGlobal "List") (TVar 2)
+
+listElimType :: Term
+listElimType =
+  TPi "A" Q0 (TUniverse 0) $
+    TPi "R" Q0 (TUniverse 0) $
+      TPi "nil" Q1 (TVar 0) $
+        TPi
+          "cons"
+          Q1
+          ( TPi "head" QOmega (TVar 2) $
+              TPi "tail" QOmega (TApp (TGlobal "List") (TVar 3)) $
+                TPi "rec" QOmega (TVar 3) $
+                  TVar 4
+          ) $
+          TPi "value" Q1 (TApp (TGlobal "List") (TVar 3)) $
+            TVar 3
 
 effType :: Term
 effType =

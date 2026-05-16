@@ -18,6 +18,7 @@ stdlib_sources=(
   stdlib/hosted.silt
   examples/hosted-hello.silt
   examples/nat-recursion.silt
+  examples/list-recursion.silt
   test/fixtures/stdlib/stdlib-tests.silt
 )
 
@@ -54,6 +55,12 @@ expect_norm stdlib-list-head-option-sample "(u64 9)"
 expect_norm stdlib-list-head-option-nil-sample "(u64 77)"
 expect_norm stdlib-list-tail-option-sample "(u64 2)"
 expect_norm stdlib-list-tail-option-nil-sample "(u64 55)"
+expect_norm stdlib-list-elim-sum-sample "(u64 6)"
+expect_norm stdlib-list-length-sample "(u64 2)"
+expect_norm stdlib-list-length-nil-sample "(u64 0)"
+expect_norm stdlib-list-map-sample "(u64 10)"
+expect_norm stdlib-list-fold-right-sample "(u64 9)"
+expect_norm stdlib-list-recursion-test "True"
 expect_norm stdlib-nat-add-sample "(u64 5)"
 expect_norm stdlib-nat-add-zero-left-sample "(u64 2)"
 expect_norm stdlib-nat-add-zero-right-sample "(u64 2)"
@@ -76,6 +83,11 @@ expect_norm stdlib-nat-order-test "True"
 expect_norm nat-recursion-factorial-five "(u64 120)"
 expect_norm nat-recursion-fibonacci-ten "(u64 55)"
 expect_norm nat-recursion-test "True"
+expect_norm list-recursion-length-three "(u64 3)"
+expect_norm list-recursion-length-empty "(u64 0)"
+expect_norm list-recursion-fold-sum "(u64 6)"
+expect_norm list-recursion-map-head "(u64 11)"
+expect_norm list-recursion-test "True"
 expect_norm stdlib-combinator-happy-test "True"
 expect_norm stdlib-combinator-fallback-test "True"
 expect_norm stdlib-combinator-test "True"
@@ -91,6 +103,13 @@ nat_test_output="$("$silt_bin" test nat-recursion-test)"
 if ! grep -Fq 'PASS [nat-recursion-test]' <<<"$nat_test_output"; then
   echo "silt test did not run nat-recursion-test successfully" >&2
   echo "$nat_test_output" >&2
+  exit 1
+fi
+
+list_test_output="$("$silt_bin" test list-recursion-test)"
+if ! grep -Fq 'PASS [list-recursion-test]' <<<"$list_test_output"; then
+  echo "silt test did not run list-recursion-test successfully" >&2
+  echo "$list_test_output" >&2
   exit 1
 fi
 

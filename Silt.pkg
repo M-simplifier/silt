@@ -189,6 +189,10 @@
     (sources stdlib/core.silt stdlib/nat.silt examples/nat-recursion.silt)
     (entry nat-recursion-test))
   (test
+    list-recursion-test
+    (sources stdlib/core.silt stdlib/nat.silt examples/list-recursion.silt)
+    (entry list-recursion-test))
+  (test
     text-eq-test
     (sources
       stdlib/core.silt

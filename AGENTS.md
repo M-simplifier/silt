@@ -32,7 +32,8 @@ allocator handoff case study with a bounded live frame-pool cell update. It
 also has early platform tooling: canonical formatter stdout/check/write modes,
 lint through formatter/parser/checker facts plus a machine-readable diagnostics JSON seed, a
 single-local-package hosted new/build/run/test/doc CLI spine, hosted stdlib seed
-with pure `Nat` arithmetic/order helpers, byte/text, ASCII predicate, single-byte count, ASCII
+with pure `Nat` arithmetic/order helpers, built-in `List` structural recursion
+helpers, byte/text, ASCII predicate, single-byte count, ASCII
 decimal parse/format, text output, process-argument reads, environment lookup,
 first-order file writes and reads with read-status observation, hosted
 size/config/LF-count/one-byte-search pressure examples, and lightweight Neovim
