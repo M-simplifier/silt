@@ -71,14 +71,17 @@ production kernel.
   first-order hosted file-write over explicit `TextView` path/body values, and
   first-order hosted file-read into an explicit `TextView` with a narrow
   read-status observation, a first-order `HostReadFileResult` body/status
-  wrapper, and explicit stderr byte/text diagnostics.
+  wrapper, a first-order hosted stdin read into a host-owned `TextView` with a
+  narrow `HostReadStdinResult` body/status wrapper, and explicit stderr
+  byte/text diagnostics.
 - Example-level primitive-recursive factorial and Fibonacci programs over
   `Nat`, written with `nat-elim` rather than top-level self-recursion, plus
   closed `List` length, map, and fold examples written through `list-elim`.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, `hosted-copy`, and
-  `hosted-size-report` / `hosted-config-report` / `hosted-lf-count`, that
-  build and run through the package spine, plus `text-eq-test`,
+  `hosted-size-report` / `hosted-config-report` / `hosted-lf-count` /
+  `hosted-stdin-lf-count`, that build and run through the package spine, plus
+  `text-eq-test`,
   `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `text-line-test`,
   `text-count-test`, `ascii-test`, `ascii-slice-test`, `ascii-trim-test`,
   `ascii-decimal-u64-test`, `ascii-decimal-u64-format-test`,
@@ -100,6 +103,9 @@ production kernel.
 - A hosted LF-count pressure-test bin, `hosted-lf-count`, that reads an input
   file, counts literal LF bytes through explicit text views, and writes the
   decimal count to an output file plus stdout with narrow diagnostics/statuses.
+- A hosted stdin LF-count filter, `hosted-stdin-lf-count`, that reads stdin as
+  one host-owned `TextView`, counts literal LF bytes, writes the decimal count
+  to stdout, and keeps this claim separate from streaming or general hosted IO.
 - A hosted one-byte search pressure-test bin, `hosted-byte-search`, that reads
   an input file, validates a one-byte argument, searches file text through the
   explicit byte-containment helper, and reports found/missing through
@@ -146,6 +152,7 @@ scripts/verify-limine-bridge.sh
 scripts/verify-hosted-size-report.sh
 scripts/verify-hosted-config-report.sh
 scripts/verify-hosted-lf-count.sh
+scripts/verify-hosted-stdin-lf-count.sh
 scripts/verify-hosted-byte-search.sh
 scripts/verify-limine-qemu-nix.sh
 scripts/verify-limine-panic-qemu-nix.sh

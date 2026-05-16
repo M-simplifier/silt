@@ -91,6 +91,7 @@ main = runChecks
       , (PackageBin, "hosted-size-report")
       , (PackageBin, "hosted-config-report")
       , (PackageBin, "hosted-lf-count")
+      , (PackageBin, "hosted-stdin-lf-count")
       , (PackageBin, "hosted-byte-search")
       , (PackageTest, "ascii-test")
       , (PackageTest, "ascii-slice-test")
@@ -329,6 +330,15 @@ main = runChecks
   , expectCodegenFiles "hosted LF count file write codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_file_write_bytes"
   , expectCodegenFiles "hosted LF count stdout codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_put_byte(byte_"
   , expectCodegenFiles "hosted LF count stderr codegen" hostedLfCountSources "hosted-lf-count-main" "silt_host_put_error_byte(byte_"
+  , expectCheckFiles "hosted stdin LF count filter bundle" hostedStdinLfCountSources
+  , expectCodegenFiles "hosted stdin LF count arg count codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted stdin LF count read codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "silt_host_stdin_read_base"
+  , expectCodegenFiles "hosted stdin LF count read status codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "silt_host_stdin_read_ok"
+  , expectCodegenFiles "hosted stdin LF count result layout codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "silt_layout_HostReadStdinResult"
+  , expectCodegenFiles "hosted stdin LF count loop codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "for (uint64_t index_"
+  , expectCodegenFiles "hosted stdin LF count LF compare codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "== ((uint8_t)10u)"
+  , expectCodegenFiles "hosted stdin LF count stdout codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted stdin LF count stderr codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "silt_host_put_error_byte(byte_"
   , expectCheckFiles "hosted byte search pressure app bundle" hostedByteSearchSources
   , expectCodegenFiles "hosted byte search arg count codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_arg_count"
   , expectCodegenFiles "hosted byte search file read codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_file_read_base"
@@ -3382,6 +3392,19 @@ hostedLfCountSources =
   , "stdlib/hosted.silt"
   , "stdlib/hosted-decimal.silt"
   , "examples/hosted-lf-count.silt"
+  ]
+
+hostedStdinLfCountSources :: [FilePath]
+hostedStdinLfCountSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/ascii.silt"
+  , "stdlib/ascii-decimal.silt"
+  , "stdlib/hosted.silt"
+  , "stdlib/hosted-decimal.silt"
+  , "examples/hosted-stdin-lf-count.silt"
   ]
 
 hostedByteSearchSources :: [FilePath]

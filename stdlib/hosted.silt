@@ -51,7 +51,15 @@
 
 (extern host-file-read-ok (Eff HostIO HostIO Bool) silt_host_file_read_ok)
 
+(extern host-stdin-read-base (Eff HostIO HostIO (Ptr U8)) silt_host_stdin_read_base)
+
+(extern host-stdin-read-len (Eff HostIO HostIO U64) silt_host_stdin_read_len)
+
+(extern host-stdin-read-ok (Eff HostIO HostIO Bool) silt_host_stdin_read_ok)
+
 (layout HostReadFileResult 24 8 ((ok Bool 0) (text TextView 8)))
+
+(layout HostReadStdinResult 24 8 ((ok Bool 0) (text TextView 8)))
 
 (claim
   host-seq
@@ -285,6 +293,56 @@
 (claim host-read-file-ok (Eff HostIO HostIO Bool))
 
 (def host-read-file-ok host-file-read-ok)
+
+(claim host-read-stdin (Eff HostIO HostIO TextView))
+
+(def
+  host-read-stdin
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    (Ptr U8)
+    TextView
+    host-stdin-read-base
+    (fn
+      ((base 1 (Ptr U8)))
+      (bind
+        HostIO
+        HostIO
+        HostIO
+        U64
+        TextView
+        host-stdin-read-len
+        (fn ((len 1 U64)) (pure HostIO TextView (text-view-from base len)))))))
+
+(claim host-read-stdin-ok (Eff HostIO HostIO Bool))
+
+(def host-read-stdin-ok host-stdin-read-ok)
+
+(claim host-read-stdin-result (Eff HostIO HostIO HostReadStdinResult))
+
+(def
+  host-read-stdin-result
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    TextView
+    HostReadStdinResult
+    host-read-stdin
+    (fn
+      ((body 1 TextView))
+      (bind
+        HostIO
+        HostIO
+        HostIO
+        Bool
+        HostReadStdinResult
+        host-stdin-read-ok
+        (fn
+          ((ok 1 Bool))
+          (pure HostIO HostReadStdinResult (layout-values HostReadStdinResult ok body)))))))
 
 (claim
   host-read-file-result
