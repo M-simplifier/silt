@@ -175,6 +175,10 @@
       test/fixtures/stdlib/stdlib-tests.silt)
     (entry stdlib-test))
   (test
+    nat-recursion-test
+    (sources stdlib/core.silt stdlib/nat.silt examples/nat-recursion.silt)
+    (entry nat-recursion-test))
+  (test
     text-eq-test
     (sources
       stdlib/core.silt

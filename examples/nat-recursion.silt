@@ -1,0 +1,71 @@
+; Primitive-recursive Nat examples over the total core surface.
+
+; These examples intentionally use nat-elim instead of top-level self-recursion.
+
+; They demonstrate ordinary introductory functional programs without claiming
+
+; unrestricted recursion or termination inference.
+
+(data NatFibState () (MkNatFibState Nat Nat))
+
+(claim nat-recursion-fib-current (Pi ((state NatFibState)) Nat))
+
+(def
+  nat-recursion-fib-current
+  (fn ((state NatFibState)) (match state ((MkNatFibState current next) current))))
+
+(claim nat-recursion-fib-next (Pi ((state NatFibState)) Nat))
+
+(def
+  nat-recursion-fib-next
+  (fn ((state NatFibState)) (match state ((MkNatFibState current next) next))))
+
+(claim nat-recursion-factorial (Pi ((value Nat)) Nat))
+
+(def
+  nat-recursion-factorial
+  (fn
+    ((value Nat))
+    (nat-elim Nat (S Z) (fn ((index Nat) (rec Nat)) (nat-mul (S index) rec)) value)))
+
+(claim nat-recursion-fib-state (Pi ((value Nat)) NatFibState))
+
+(def
+  nat-recursion-fib-state
+  (fn
+    ((value Nat))
+    (nat-elim
+      NatFibState
+      (MkNatFibState Z (S Z))
+      (fn
+        ((index Nat) (rec NatFibState))
+        (MkNatFibState
+          (nat-recursion-fib-next rec)
+          (nat-add (nat-recursion-fib-current rec) (nat-recursion-fib-next rec))))
+      value)))
+
+(claim nat-recursion-fibonacci (Pi ((value Nat)) Nat))
+
+(def
+  nat-recursion-fibonacci
+  (fn ((value Nat)) (nat-recursion-fib-current (nat-recursion-fib-state value))))
+
+(claim nat-recursion-factorial-five U64)
+
+(def
+  nat-recursion-factorial-five
+  (nat-to-word (nat-recursion-factorial (S (S (S (S (S Z))))))))
+
+(claim nat-recursion-fibonacci-ten U64)
+
+(def
+  nat-recursion-fibonacci-ten
+  (nat-to-word (nat-recursion-fibonacci (S (S (S (S (S (S (S (S (S (S Z)))))))))))))
+
+(claim nat-recursion-test Bool)
+
+(def
+  nat-recursion-test
+  (bool-and
+    (u64-eq nat-recursion-factorial-five (u64 120))
+    (u64-eq nat-recursion-fibonacci-ten (u64 55))))

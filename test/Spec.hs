@@ -93,6 +93,7 @@ main = runChecks
       , (PackageTest, "ascii-decimal-u64-test")
       , (PackageTest, "ascii-decimal-u64-format-test")
       , (PackageTest, "stdlib-test")
+      , (PackageTest, "nat-recursion-test")
       , (PackageTest, "text-eq-test")
       , (PackageTest, "text-prefix-test")
       , (PackageTest, "text-suffix-test")
@@ -137,6 +138,9 @@ main = runChecks
         , expectNormalizedFiles "stdlib Nat sub normalization" stdlibHostedSources "stdlib-nat-sub-sample" "(u64 3)"
         , expectNormalizedFiles "stdlib Nat sub underflow normalization" stdlibHostedSources "stdlib-nat-sub-underflow-sample" "(u64 0)"
         , expectNormalizedFiles "stdlib Nat order test normalization" stdlibHostedSources "stdlib-nat-order-test" "True"
+        , expectNormalizedFiles "Nat recursion factorial normalization" stdlibHostedSources "nat-recursion-factorial-five" "(u64 120)"
+        , expectNormalizedFiles "Nat recursion fibonacci normalization" stdlibHostedSources "nat-recursion-fibonacci-ten" "(u64 55)"
+        , expectNormalizedFiles "Nat recursion test normalization" stdlibHostedSources "nat-recursion-test" "True"
         , expectNormalizedFiles "stdlib combinator happy test normalization" stdlibHostedSources "stdlib-combinator-happy-test" "True"
         , expectNormalizedFiles "stdlib combinator fallback test normalization" stdlibHostedSources "stdlib-combinator-fallback-test" "True"
         , expectNormalizedFiles "stdlib combinator test normalization" stdlibHostedSources "stdlib-combinator-test" "True"
@@ -3068,6 +3072,7 @@ stdlibHostedSources =
   , "stdlib/text.silt"
   , "stdlib/hosted.silt"
   , "examples/hosted-hello.silt"
+  , "examples/nat-recursion.silt"
   , "test/fixtures/stdlib/stdlib-tests.silt"
   ]
 
