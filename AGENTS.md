@@ -105,6 +105,7 @@ scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
 scripts/verify-hosted-copy.sh
+scripts/verify-hosted-ascii-trim.sh
 scripts/verify-stdlib-core-combinators.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-view-helpers.sh
