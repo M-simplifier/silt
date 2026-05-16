@@ -92,6 +92,7 @@ main = runChecks
       , (PackageBin, "hosted-config-report")
       , (PackageBin, "hosted-lf-count")
       , (PackageBin, "hosted-stdin-lf-count")
+      , (PackageBin, "hosted-byte-drop")
       , (PackageBin, "hosted-byte-search")
       , (PackageTest, "ascii-test")
       , (PackageTest, "ascii-slice-test")
@@ -339,6 +340,17 @@ main = runChecks
   , expectCodegenFiles "hosted stdin LF count LF compare codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "== ((uint8_t)10u)"
   , expectCodegenFiles "hosted stdin LF count stdout codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "silt_host_put_byte(byte_"
   , expectCodegenFiles "hosted stdin LF count stderr codegen" hostedStdinLfCountSources "hosted-stdin-lf-count-main" "silt_host_put_error_byte(byte_"
+  , expectCheckFiles "hosted byte drop filter bundle" hostedByteDropSources
+  , expectCodegenFiles "hosted byte drop arg count codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted byte drop arg base codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_arg_base"
+  , expectCodegenFiles "hosted byte drop arg length codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_arg_len"
+  , expectCodegenFiles "hosted byte drop read codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_stdin_read_base"
+  , expectCodegenFiles "hosted byte drop read status codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_stdin_read_ok"
+  , expectCodegenFiles "hosted byte drop result layout codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_layout_HostReadStdinResult"
+  , expectCodegenFiles "hosted byte drop loop codegen" hostedByteDropSources "hosted-byte-drop-main" "for (uint64_t index_"
+  , expectCodegenFiles "hosted byte drop needle compare codegen" hostedByteDropSources "hosted-byte-drop-main" "== needle_"
+  , expectCodegenFiles "hosted byte drop stdout codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted byte drop stderr codegen" hostedByteDropSources "hosted-byte-drop-main" "silt_host_put_error_byte(byte_"
   , expectCheckFiles "hosted byte search pressure app bundle" hostedByteSearchSources
   , expectCodegenFiles "hosted byte search arg count codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_arg_count"
   , expectCodegenFiles "hosted byte search file read codegen" hostedByteSearchSources "hosted-byte-search-main" "silt_host_file_read_base"
@@ -3405,6 +3417,16 @@ hostedStdinLfCountSources =
   , "stdlib/hosted.silt"
   , "stdlib/hosted-decimal.silt"
   , "examples/hosted-stdin-lf-count.silt"
+  ]
+
+hostedByteDropSources :: [FilePath]
+hostedByteDropSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/hosted-byte-drop.silt"
   ]
 
 hostedByteSearchSources :: [FilePath]
