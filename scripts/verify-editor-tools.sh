@@ -95,6 +95,10 @@ grep -q "syntax keyword siltDeclaration" editors/neovim/syntax/silt.vim
 grep -q "syntax region siltString" editors/neovim/syntax/silt.vim
 grep -q "u64-to-nat" editors/neovim/syntax/silt.vim
 grep -q "list-elim" editors/neovim/syntax/silt.vim
+grep -q "list-any" editors/neovim/syntax/silt.vim
+grep -q "list-all" editors/neovim/syntax/silt.vim
+grep -q "list-find" editors/neovim/syntax/silt.vim
+grep -q "list-count" editors/neovim/syntax/silt.vim
 grep -q "list-append" editors/neovim/syntax/silt.vim
 grep -q "list-filter" editors/neovim/syntax/silt.vim
 grep -q "list-reverse" editors/neovim/syntax/silt.vim

@@ -35,7 +35,8 @@ Silt currently demonstrates:
   `Option` and `Result` helpers, including map/and-then-style combinators,
   plus a built-in checker/normalizer-backed `List` with option-shaped head/tail
   accessors and closed structural recursion through `list-elim`,
-  `list-length`, `list-map`, `list-filter`, `list-append`, `list-reverse`, and
+  `list-length`, `list-map`, `list-filter`, `list-any`, `list-all`,
+  `list-find`, `list-count`, `list-append`, `list-reverse`, and
   `list-fold-right`; pure `Nat` addition,
   multiplication, predecessor, saturating subtraction, equality, and order
   helpers backed by `nat-elim`; explicit `ByteSlice` and `TextView` views over `U8` /
@@ -70,8 +71,9 @@ Silt currently demonstrates:
   `HostReadStdinResult` body/status wrapper plus explicit stderr byte/text
   writers
 - primitive-recursive factorial and Fibonacci examples over `Nat`, written with
-  `nat-elim`, plus closed `List` length, map, filter, append, reverse, and fold
-  examples written through `list-elim`, all tested through closed normalization
+  `nat-elim`, plus closed `List` length, map, filter, any/all/find/count,
+  append, reverse, and fold examples written through `list-elim`, all tested
+  through closed normalization
   plus package test targets
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
   `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-ascii-trim`,

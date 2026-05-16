@@ -54,8 +54,9 @@ production kernel.
 - A conservative standard-library seed: checker/normalizer-backed `Option` and
   `Result` helpers, plus a built-in checker/normalizer-backed `List` with
   option-shaped head/tail accessors and closed structural recursion through
-  `list-elim`, `list-length`, `list-map`, `list-filter`, `list-append`,
-  `list-reverse`, and `list-fold-right`; pure `Nat`
+  `list-elim`, `list-length`, `list-map`, `list-filter`, `list-any`,
+  `list-all`, `list-find`, `list-count`, `list-append`, `list-reverse`,
+  and `list-fold-right`; pure `Nat`
   arithmetic/order helpers, byte/text view types over
   `U8` and `Ptr U8`, bounded pure view helpers for
   empty/take/drop, byte-wise equality through `byte-slice-eq` / `text-eq`,
@@ -80,7 +81,8 @@ production kernel.
   byte/text diagnostics.
 - Example-level primitive-recursive factorial and Fibonacci programs over
   `Nat`, written with `nat-elim` rather than top-level self-recursion, plus
-  closed `List` length, map, filter, append, reverse, and fold examples written
+  closed `List` length, map, filter, any/all/find/count, append, reverse,
+  and fold examples written
   through `list-elim`.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
   `hosted-exit`, `hosted-write-file`, `hosted-cat`, `hosted-copy`,

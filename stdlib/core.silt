@@ -231,6 +231,70 @@
         (match (keep head) ((False) rec) ((True) (Cons A head rec))))
       value)))
 
+(claim
+  list-any
+  (Pi ((A 0 Type) (predicate (Pi ((value A)) Bool)) (value (List A))) Bool))
+
+(def
+  list-any
+  (fn
+    ((A 0 Type) (predicate (Pi ((value A)) Bool)) (value (List A)))
+    (list-elim
+      A
+      Bool
+      False
+      (fn ((head A) (tail (List A)) (rec Bool)) (bool-or (predicate head) rec))
+      value)))
+
+(claim
+  list-all
+  (Pi ((A 0 Type) (predicate (Pi ((value A)) Bool)) (value (List A))) Bool))
+
+(def
+  list-all
+  (fn
+    ((A 0 Type) (predicate (Pi ((value A)) Bool)) (value (List A)))
+    (list-elim
+      A
+      Bool
+      True
+      (fn ((head A) (tail (List A)) (rec Bool)) (bool-and (predicate head) rec))
+      value)))
+
+(claim
+  list-find
+  (Pi ((A 0 Type) (predicate (Pi ((value A)) Bool)) (value (List A))) (Option A)))
+
+(def
+  list-find
+  (fn
+    ((A 0 Type) (predicate (Pi ((value A)) Bool)) (value (List A)))
+    (list-elim
+      A
+      (Option A)
+      (None A)
+      (fn
+        ((head A) (tail (List A)) (rec (Option A)))
+        (match (predicate head) ((False) rec) ((True) (Some A head))))
+      value)))
+
+(claim
+  list-count
+  (Pi ((A 0 Type) (predicate (Pi ((value A)) Bool)) (value (List A))) Nat))
+
+(def
+  list-count
+  (fn
+    ((A 0 Type) (predicate (Pi ((value A)) Bool)) (value (List A)))
+    (list-elim
+      A
+      Nat
+      Z
+      (fn
+        ((head A) (tail (List A)) (rec Nat))
+        (match (predicate head) ((False) rec) ((True) (S rec))))
+      value)))
+
 (claim list-reverse (Pi ((A 0 Type) (value (List A))) (List A)))
 
 (def
