@@ -72,7 +72,7 @@ production kernel.
 - Example-level primitive-recursive factorial and Fibonacci programs over
   `Nat`, written with `nat-elim` rather than top-level self-recursion.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
-  `hosted-exit`, `hosted-write-file`, `hosted-cat`, and
+  `hosted-exit`, `hosted-write-file`, `hosted-cat`, `hosted-copy`, and
   `hosted-size-report` / `hosted-config-report` / `hosted-lf-count`, that
   build and run through the package spine, plus `text-eq-test`,
   `text-prefix-test`, `text-suffix-test`, `text-scan-test`, `text-line-test`,
@@ -100,6 +100,9 @@ production kernel.
   an input file, validates a one-byte argument, searches file text through the
   explicit byte-containment helper, and reports found/missing through
   stdout/status.
+- A hosted file-copy bin, `hosted-copy`, that reads one file through
+  `HostReadFileResult`, writes the same bytes to another path, and reports
+  narrow read/write/usage failures through stderr and process status.
 - A small hosted helper layer for reused diagnostic/status sequencing and
   caller-buffer decimal writes to stdout or explicit file paths.
 
@@ -119,6 +122,7 @@ scripts/verify-hosted-env.sh
 scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
+scripts/verify-hosted-copy.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh

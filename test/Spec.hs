@@ -84,6 +84,7 @@ main = runChecks
       , (PackageBin, "hosted-exit")
       , (PackageBin, "hosted-write-file")
       , (PackageBin, "hosted-cat")
+      , (PackageBin, "hosted-copy")
       , (PackageBin, "hosted-size-report")
       , (PackageBin, "hosted-config-report")
       , (PackageBin, "hosted-lf-count")
@@ -171,6 +172,13 @@ main = runChecks
   , expectCodegenFiles "hosted file read base codegen" hostedFileReadSources "hosted-cat-main" "silt_host_file_read_base"
   , expectCodegenFiles "hosted file read length codegen" hostedFileReadSources "hosted-cat-main" "silt_host_file_read_len"
   , expectCodegenFiles "hosted file read output codegen" hostedFileReadSources "hosted-cat-main" "silt_host_put_byte(byte_"
+  , expectCheckFiles "hosted copy example bundle" hostedCopySources
+  , expectCodegenFiles "hosted copy arg count codegen" hostedCopySources "hosted-copy-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted copy file read codegen" hostedCopySources "hosted-copy-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted copy file-read status codegen" hostedCopySources "hosted-copy-main" "silt_host_file_read_ok"
+  , expectCodegenFiles "hosted copy read result layout codegen" hostedCopySources "hosted-copy-main" "silt_layout_HostReadFileResult"
+  , expectCodegenFiles "hosted copy file write codegen" hostedCopySources "hosted-copy-main" "silt_host_file_write_bytes"
+  , expectCodegenFiles "hosted copy stderr codegen" hostedCopySources "hosted-copy-main" "silt_host_put_error_byte(byte_"
   , expectCheckFiles "text equality example bundle" textEqSources
   , expectCodegenFiles "text equality loop codegen" textEqSources "text-eq-test" "for (uint64_t index_"
   , expectCodegenFiles "text equality byte load codegen" textEqSources "text-eq-test" "(*((uint8_t*)"
@@ -3148,6 +3156,16 @@ hostedFileReadSources =
   , "stdlib/text.silt"
   , "stdlib/hosted.silt"
   , "examples/hosted-cat.silt"
+  ]
+
+hostedCopySources :: [FilePath]
+hostedCopySources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/hosted.silt"
+  , "examples/hosted-copy.silt"
   ]
 
 textEqSources :: [FilePath]

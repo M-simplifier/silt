@@ -63,7 +63,7 @@ Silt currently demonstrates:
 - primitive-recursive factorial and Fibonacci examples over `Nat`, written with
   `nat-elim` and tested through closed normalization plus a package test target
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
-  `hosted-write-file`, `hosted-cat`, `hosted-size-report`, and
+  `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-size-report`, and
   `hosted-config-report` / `hosted-lf-count` / `hosted-byte-search` package
   examples that compile, run, print, read, write, report, count literal LF
   bytes, or search for one byte through the hosted package harness, and exercise
@@ -110,6 +110,9 @@ Silt currently demonstrates:
   byte-containment search over an explicit `TextView`, stdout found/missing
   reporting, stderr diagnostics, and process status in one checked runnable
   example
+- a hosted file-copy package target, `hosted-copy`, that combines process args,
+  a first-order file read result layout, file write, stderr diagnostics, and
+  process status in one checked runnable example
 - a small hosted helper layer for diagnostic/status sequencing and
   caller-buffer ASCII decimal writes to stdout or explicit file paths, used by
   the hosted pressure-test examples without claiming a general hosted app
@@ -133,6 +136,7 @@ scripts/verify-hosted-env.sh
 scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
+scripts/verify-hosted-copy.sh
 scripts/verify-stdlib-core-combinators.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
