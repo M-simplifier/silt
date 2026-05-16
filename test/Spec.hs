@@ -98,6 +98,7 @@ main = runChecks
       , (PackageBin, "hosted-write-file")
       , (PackageBin, "hosted-cat")
       , (PackageBin, "hosted-copy")
+      , (PackageBin, "hosted-ascii-trim")
       , (PackageBin, "hosted-size-report")
       , (PackageBin, "hosted-config-report")
       , (PackageBin, "hosted-lf-count")
@@ -206,6 +207,16 @@ main = runChecks
   , expectCodegenFiles "hosted copy read result layout codegen" hostedCopySources "hosted-copy-main" "silt_layout_HostReadFileResult"
   , expectCodegenFiles "hosted copy file write codegen" hostedCopySources "hosted-copy-main" "silt_host_file_write_bytes"
   , expectCodegenFiles "hosted copy stderr codegen" hostedCopySources "hosted-copy-main" "silt_host_put_error_byte(byte_"
+  , expectCheckFiles "hosted ASCII trim example bundle" hostedAsciiTrimSources
+  , expectCodegenFiles "hosted ASCII trim arg count codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "silt_host_arg_count"
+  , expectCodegenFiles "hosted ASCII trim file read codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "silt_host_file_read_base"
+  , expectCodegenFiles "hosted ASCII trim file-read status codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "silt_host_file_read_ok"
+  , expectCodegenFiles "hosted ASCII trim read result layout codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "silt_layout_HostReadFileResult"
+  , expectCodegenFiles "hosted ASCII trim state layout codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "silt_layout_AsciiTrimState"
+  , expectCodegenFiles "hosted ASCII trim loop codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "for (uint64_t index_"
+  , expectCodegenFiles "hosted ASCII trim file write codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "silt_host_file_write_bytes"
+  , expectCodegenFiles "hosted ASCII trim stdout codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "silt_host_put_byte(byte_"
+  , expectCodegenFiles "hosted ASCII trim stderr codegen" hostedAsciiTrimSources "hosted-ascii-trim-main" "silt_host_put_error_byte(byte_"
   , expectCheckFiles "text equality example bundle" textEqSources
   , expectCodegenFiles "text equality loop codegen" textEqSources "text-eq-test" "for (uint64_t index_"
   , expectCodegenFiles "text equality byte load codegen" textEqSources "text-eq-test" "(*((uint8_t*)"
@@ -3421,6 +3432,18 @@ hostedCopySources =
   , "stdlib/text.silt"
   , "stdlib/hosted.silt"
   , "examples/hosted-copy.silt"
+  ]
+
+hostedAsciiTrimSources :: [FilePath]
+hostedAsciiTrimSources =
+  [ "stdlib/core.silt"
+  , "stdlib/nat.silt"
+  , "stdlib/bytes.silt"
+  , "stdlib/text.silt"
+  , "stdlib/ascii.silt"
+  , "stdlib/ascii-slice.silt"
+  , "stdlib/hosted.silt"
+  , "examples/hosted-ascii-trim.silt"
   ]
 
 textEqSources :: [FilePath]

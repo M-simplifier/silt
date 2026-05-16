@@ -20,6 +20,7 @@ on:
       - "scripts/verify-hosted-file-read.sh"
       - "scripts/verify-hosted-file-write.sh"
       - "scripts/verify-hosted-copy.sh"
+      - "scripts/verify-hosted-ascii-trim.sh"
       - "scripts/verify-hosted-config-report.sh"
       - "scripts/verify-hosted-size-report.sh"
       - "scripts/verify-hosted-lf-count.sh"
@@ -110,6 +111,9 @@ jobs:
 
       - name: Verify hosted copy
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-copy.sh
+
+      - name: Verify hosted ASCII trim
+        run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-ascii-trim.sh
 
       - name: Verify hosted size report
         run: SILT_SKIP_CABAL_TEST=1 scripts/verify-hosted-size-report.sh

@@ -1,0 +1,169 @@
+; Hosted whole-file ASCII whitespace trim tool.
+
+; Usage: hosted-ascii-trim INPUT OUTPUT
+
+; The program reads INPUT, trims ASCII whitespace from both ends, writes the
+
+; trimmed bytes to OUTPUT and stdout, and returns narrow statuses for usage,
+
+; read failure, and write failure.
+
+(static-bytes hosted-ascii-trim-usage-bytes "usage: hosted-ascii-trim INPUT OUTPUT\n")
+
+(static-bytes hosted-ascii-trim-read-failed-bytes "error: read failed\n")
+
+(static-bytes hosted-ascii-trim-write-failed-bytes "error: write failed\n")
+
+(claim hosted-ascii-trim-usage-text TextView)
+
+(def
+  hosted-ascii-trim-usage-text
+  (text-view-from hosted-ascii-trim-usage-bytes hosted-ascii-trim-usage-bytes-len))
+
+(claim hosted-ascii-trim-read-failed-text TextView)
+
+(def
+  hosted-ascii-trim-read-failed-text
+  (text-view-from
+    hosted-ascii-trim-read-failed-bytes
+    hosted-ascii-trim-read-failed-bytes-len))
+
+(claim hosted-ascii-trim-write-failed-text TextView)
+
+(def
+  hosted-ascii-trim-write-failed-text
+  (text-view-from
+    hosted-ascii-trim-write-failed-bytes
+    hosted-ascii-trim-write-failed-bytes-len))
+
+(claim hosted-ascii-trim-ok U64)
+
+(def hosted-ascii-trim-ok (u64 0))
+
+(claim hosted-ascii-trim-usage U64)
+
+(def hosted-ascii-trim-usage (u64 2))
+
+(claim hosted-ascii-trim-write-failed U64)
+
+(def hosted-ascii-trim-write-failed (u64 3))
+
+(claim hosted-ascii-trim-read-failed U64)
+
+(def hosted-ascii-trim-read-failed (u64 6))
+
+(claim
+  hosted-ascii-trim-diagnostic
+  (Pi ((message TextView) (status U64)) (Eff HostIO HostIO U64)))
+
+(def hosted-ascii-trim-diagnostic host-status-with-error-text)
+
+(claim
+  hosted-ascii-trim-write-output
+  (Pi ((output-path TextView) (body TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-ascii-trim-write-output
+  (fn
+    ((output-path TextView) (body TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      TextView
+      U64
+      (text-trim-ascii-whitespace HostIO body)
+      (fn
+        ((trimmed 1 TextView))
+        (let-layout
+          TextView
+          ((base trimmed-base) (len trimmed-len))
+          trimmed
+          (bind
+            HostIO
+            HostIO
+            HostIO
+            Bool
+            U64
+            (host-write-file output-path (text-view-from trimmed-base trimmed-len))
+            (fn
+              ((written 1 Bool))
+              (match
+                written
+                ((False)
+                 (hosted-ascii-trim-diagnostic
+                   hosted-ascii-trim-write-failed-text
+                   hosted-ascii-trim-write-failed))
+                ((True)
+                 (host-status-after
+                   (host-write-text (text-view-from trimmed-base trimmed-len))
+                   hosted-ascii-trim-ok))))))))))
+
+(claim
+  hosted-ascii-trim-read-input
+  (Pi ((input-path TextView) (output-path TextView)) (Eff HostIO HostIO U64)))
+
+(def
+  hosted-ascii-trim-read-input
+  (fn
+    ((input-path TextView) (output-path TextView))
+    (bind
+      HostIO
+      HostIO
+      HostIO
+      HostReadFileResult
+      U64
+      (host-read-file-result input-path)
+      (fn
+        ((read-result 1 HostReadFileResult))
+        (let-layout
+          HostReadFileResult
+          ((ok read-ok) (text body))
+          read-result
+          (match
+            read-ok
+            ((False)
+             (hosted-ascii-trim-diagnostic
+               hosted-ascii-trim-read-failed-text
+               hosted-ascii-trim-read-failed))
+            ((True) (hosted-ascii-trim-write-output output-path body))))))))
+
+(claim hosted-ascii-trim-main (Eff HostIO HostIO U64))
+
+(def
+  hosted-ascii-trim-main
+  (bind
+    HostIO
+    HostIO
+    HostIO
+    U64
+    U64
+    host-arg-count
+    (fn
+      ((count 1 U64))
+      (match
+        (u64-eq count (u64 3))
+        ((False)
+         (hosted-ascii-trim-diagnostic
+           hosted-ascii-trim-usage-text
+           hosted-ascii-trim-usage))
+        ((True)
+         (bind
+           HostIO
+           HostIO
+           HostIO
+           TextView
+           U64
+           (host-arg-text (u64 1))
+           (fn
+             ((input-path 1 TextView))
+             (bind
+               HostIO
+               HostIO
+               HostIO
+               TextView
+               U64
+               (host-arg-text (u64 2))
+               (fn
+                 ((output-path 1 TextView))
+                 (hosted-ascii-trim-read-input input-path output-path))))))))))

@@ -72,12 +72,14 @@ Silt currently demonstrates:
   `nat-elim`, plus closed `List` length, map, and fold examples written through
   `list-elim`, all tested through closed normalization plus package test targets
 - root `hosted-hello`, `hosted-echo`, `hosted-env`, `hosted-exit`,
-  `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-size-report`, and
+  `hosted-write-file`, `hosted-cat`, `hosted-copy`, `hosted-ascii-trim`,
+  `hosted-size-report`, and
   `hosted-config-report` / `hosted-lf-count` / `hosted-stdin-lf-count` /
   `hosted-byte-drop` / `hosted-source-hygiene` / `hosted-byte-search` package
   examples that compile, run, print, read, write, report, count literal LF
-  bytes from files or stdin, drop matching bytes from stdin, check source-byte
-  hygiene, or search for one byte through the hosted package harness, and
+  bytes from files or stdin, trim ASCII whitespace from files, drop matching
+  bytes from stdin, check source-byte hygiene, or search for one byte through
+  the hosted package harness, and
   exercise process status where relevant, plus
   `text-eq-test`, `text-prefix-test`,
   `text-suffix-test`, `text-scan-test`, `text-line-test`, `text-count-test`,
@@ -116,6 +118,10 @@ Silt currently demonstrates:
   ASCII whitespace trimming, static key comparison, ASCII decimal parse/format,
   file write, stdout, stderr diagnostics, and process status in one checked
   runnable example
+- a hosted ASCII-trim package target, `hosted-ascii-trim`, that combines
+  process args, file read, allocation-free ASCII whitespace trimming over an
+  explicit `TextView`, file write, stdout, stderr diagnostics, and process
+  status in one checked runnable example
 - a hosted LF-count pressure-test package target, `hosted-lf-count`, that
   combines process args, file read, literal-LF byte counting over an explicit
   `TextView`, ASCII decimal formatting, file write, stdout, stderr diagnostics,
@@ -166,6 +172,7 @@ scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
 scripts/verify-hosted-copy.sh
+scripts/verify-hosted-ascii-trim.sh
 scripts/verify-stdlib-core-combinators.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
@@ -219,9 +226,10 @@ Silt does not currently claim:
   lifetimes, `tr`-style byte translation, process spawning, signals,
   stdout/stderr abstractions beyond the current explicit byte/text writers,
   general hosted IO, environment enumeration or mutation, multi-file source
-  traversal, CRLF normalization, source-comment or type-signature API docs,
-  cross-package docs, or package argument policy beyond `silt new NAME`,
-  `silt run [TARGET] -- ARG...`, `silt test TARGET`, and `silt doc`
+  traversal, in-place file editing, CRLF normalization, source-comment or
+  type-signature API docs, cross-package docs, or package argument policy
+  beyond `silt new NAME`, `silt run [TARGET] -- ARG...`, `silt test TARGET`,
+  and `silt doc`
 - indexed inductive families
 - complete totality checking
 - inferred ownership or a full aliasing discipline

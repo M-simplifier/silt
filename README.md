@@ -81,7 +81,8 @@ production kernel.
   `Nat`, written with `nat-elim` rather than top-level self-recursion, plus
   closed `List` length, map, and fold examples written through `list-elim`.
 - Root package examples, `hosted-hello`, `hosted-echo`, `hosted-env`,
-  `hosted-exit`, `hosted-write-file`, `hosted-cat`, `hosted-copy`, and
+  `hosted-exit`, `hosted-write-file`, `hosted-cat`, `hosted-copy`,
+  `hosted-ascii-trim`, and
   `hosted-size-report` / `hosted-config-report` / `hosted-lf-count` /
   `hosted-stdin-lf-count` / `hosted-byte-drop` / `hosted-source-hygiene` /
   `hosted-byte-search`, that build and run through the package spine, plus
@@ -104,6 +105,10 @@ production kernel.
   input and config files, splits a tiny `expected: N` ASCII config shape, trims
   fields, checks the key, parses the expected length, and reports the actual
   input length through file/stdout/status paths.
+- A hosted ASCII-trim bin, `hosted-ascii-trim`, that reads one file, trims
+  ASCII whitespace from both ends through explicit text views, writes the
+  trimmed bytes to an output file plus stdout, and keeps this claim separate
+  from Unicode, CRLF normalization, streaming, or in-place editing.
 - A hosted LF-count pressure-test bin, `hosted-lf-count`, that reads an input
   file, counts literal LF bytes through explicit text views, and writes the
   decimal count to an output file plus stdout with narrow diagnostics/statuses.
@@ -146,6 +151,7 @@ scripts/verify-hosted-exit.sh
 scripts/verify-hosted-file-write.sh
 scripts/verify-hosted-file-read.sh
 scripts/verify-hosted-copy.sh
+scripts/verify-hosted-ascii-trim.sh
 scripts/verify-text-eq.sh
 scripts/verify-text-prefix.sh
 scripts/verify-text-suffix.sh

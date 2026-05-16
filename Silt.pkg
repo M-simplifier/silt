@@ -71,6 +71,18 @@
       examples/hosted-copy.silt)
     (entry hosted-copy-main))
   (bin
+    hosted-ascii-trim
+    (sources
+      stdlib/core.silt
+      stdlib/nat.silt
+      stdlib/bytes.silt
+      stdlib/text.silt
+      stdlib/ascii.silt
+      stdlib/ascii-slice.silt
+      stdlib/hosted.silt
+      examples/hosted-ascii-trim.silt)
+    (entry hosted-ascii-trim-main))
+  (bin
     hosted-size-report
     (sources
       stdlib/core.silt

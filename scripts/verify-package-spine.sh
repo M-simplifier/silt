@@ -132,6 +132,9 @@ grep -Fq '<code>examples/hosted-config-report.silt</code>' out/silt/doc/index.ht
 grep -Fq '<td><code>hosted-copy</code></td>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-copy-main</code></td>' out/silt/doc/index.html
 grep -Fq '<code>examples/hosted-copy.silt</code>' out/silt/doc/index.html
+grep -Fq '<td><code>hosted-ascii-trim</code></td>' out/silt/doc/index.html
+grep -Fq '<td><code>hosted-ascii-trim-main</code></td>' out/silt/doc/index.html
+grep -Fq '<code>examples/hosted-ascii-trim.silt</code>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-stdin-lf-count</code></td>' out/silt/doc/index.html
 grep -Fq '<td><code>hosted-stdin-lf-count-main</code></td>' out/silt/doc/index.html
 grep -Fq '<code>examples/hosted-stdin-lf-count.silt</code>' out/silt/doc/index.html
