@@ -30,6 +30,7 @@ main = runChecks
   , expectCheck "composition module" compositionSource
   , expectCheck "let bindings" letSource
   , expectCheck "bool match" boolSource
+  , expectCheck "if expression" ifSource
   , expectCheck "nat recursion primitive" natElimSource
   , expectCheck "quantities" quantitiesSource
   , expectCheck "effects" effectSource
@@ -324,11 +325,14 @@ main = runChecks
   , expectFailureWithFragment "three-node recursive definitions" threeNodeRecursiveDefinitionSource "recursive definition cycle: alpha -> beta -> gamma -> alpha"
   , expectFailure "ill-typed body" illTypedSource
   , expectFailure "bad match scrutinee" badMatchSource
+  , expectFailureWithFragment "if rejects bad arity" badIfAritySource "expected (if condition then else)"
   , expectFailureWithFragment "bool match rejects extra Nat arm" badBoolExtraArmSource "constructor Z does not belong to data Bool"
   , expectFailureWithFragment "nat match rejects extra Bool arm" badNatExtraArmSource "constructor True does not belong to data Nat"
   , expectFailure "erased binder used" badErasedSource
   , expectFailure "linear binder duplicated" badLinearSource
   , expectNormalized "normalization" normalizationSource "three" "(S (S (S Z)))"
+  , expectNormalized "if true normalization" ifSource "if-true-sample" "(u64 1)"
+  , expectNormalized "if false normalization" ifSource "if-false-sample" "(u64 2)"
   , expectNormalized "effect normalization" effectSource "eff-three" "(((pure Console) Nat) (S (S Z)))"
   , expectNormalized "u64 normalization" u64Source "word-answer" "(u64 42)"
   , expectNormalized "nat-to-u64 normalization" u64Source "nat-two-word" "(u64 2)"
@@ -1177,6 +1181,19 @@ boolSource =
     , "      ((False) True))))"
     ]
 
+ifSource :: String
+ifSource =
+  unlines
+    [ "(claim if-true-sample U64)"
+    , "(def if-true-sample (if True (u64 1) (u64 2)))"
+    , "(claim if-false-sample U64)"
+    , "(def if-false-sample (if False (u64 1) (u64 2)))"
+    , "(claim if-argument-sample (Pi ((flag Bool)) U64))"
+    , "(def if-argument-sample"
+    , "  (fn ((flag Bool))"
+    , "    (if flag (u64 1) (u64 2))))"
+    ]
+
 natElimSource :: String
 natElimSource =
   unlines
@@ -1198,6 +1215,13 @@ badMatchSource =
     , "    (match x"
     , "      ((True) x)"
     , "      ((False) x))))"
+    ]
+
+badIfAritySource :: String
+badIfAritySource =
+  unlines
+    [ "(claim bad-if U64)"
+    , "(def bad-if (if True (u64 1)))"
     ]
 
 badBoolExtraArmSource :: String

@@ -32,6 +32,14 @@ Siltの `match` は、builtinの `Bool` や `Nat` だけでなく、ユーザー
   ((False) b))
 ```
 
+`Bool` だけを分岐する場合は、同じ意味を短く書く `if` も使えます。
+
+```lisp
+(if flag a b)
+```
+
+これは新しいcore機能ではなく、`Bool` の `match` へ展開されるsurface構文です。
+
 Siltはindexed inductive familiesを提供していません。つまり、AgdaやIdrisのように、コンストラクタごとに結果型が精密に変わる完全な依存パターンマッチは扱いません。しかし、普通のparametric algebraic dataとpattern binder数量は動きます。
 
 数量付きpattern binderは、リソース表現の入口になります。

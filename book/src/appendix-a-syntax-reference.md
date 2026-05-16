@@ -58,6 +58,7 @@ Z
 ## 分岐
 
 ```lisp
+(if b t f)
 (match b
   ((True) t)
   ((False) f))
